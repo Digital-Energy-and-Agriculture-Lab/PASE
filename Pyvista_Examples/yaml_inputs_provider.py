@@ -10,4 +10,10 @@ import yaml
 
 with open (r'PV_central.yaml') as file:
     
-    Centrale_PV = yaml.load(file, Loader=yaml.FullLoader)
+    PV_central_yaml = yaml.load(file, Loader=yaml.FullLoader)
+    
+for data in PV_central_yaml.values():
+
+    print(type(data['Value']))
+    print(data['Type'])
+    
