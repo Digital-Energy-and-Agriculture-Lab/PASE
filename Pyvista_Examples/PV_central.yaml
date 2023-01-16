@@ -1,0 +1,30 @@
+PanelDimensionX: 
+ - 2
+ - Panel dimension on the x axis
+PanelDimensionY:
+ - 1
+ - Panel dimension on the y axis
+NumberOfPanelsX:
+ - 10
+ - Number of panels on the x axis in one block of panels (x axis being the potential rotation axis of the block of panels)
+NumberOfPanelsY:
+ - 2
+ - Number of panels on the y axis in one block of panels
+RepetitionDistanceOfPanelsX:
+ - 2
+ - Length between the repetition of 2 panels on the x axis of one block of panels
+RepetitionDistanceOfPanelsY:
+ - 1.2
+ - Length between the repetition of 2 panels on the y axis of one block of panels
+NumberOfPVBlocksX:
+ - 1
+ - Number of blocks on the x axis of the photovoltaic central (x axis being the potential rotation axis of the block of panels)
+NumberOfPVBlocksY:
+ - 5
+ - Number of blocks on the y axis of the photovoltaic central (x axis being the potential rotation axis of the block of panels)
+ RepetitionDistanceOfPVBlocksX:
+ - 23
+ - Length between the repetition of 2 blocks of panels on the x axis of the photovoltaic central
+ RepetitionDistanceOfPVBlocksY:
+ - 10
+ - Length between the repetition of 2 blocks of panels on the y axis of the photovoltaic central

@@ -51,6 +51,7 @@ sPV = pv.PolyData(vertices, faces)
 #Rotation of the PV
 sPV.rotate_x(35)
 
+sPV.plot()
 
 #Ground creation (only for visualisation purpose)
 vGround = np.array([[-100, -100, -1], [100, -100, -1], [-100, 100, -1], [100, 100, -1]])
@@ -66,6 +67,9 @@ x,y,z = np.mgrid[-3:3, -3:3, 0:1]
 Localmesh = pv.StructuredGrid(x, y, z)
 LocalPVArray = Localmesh.glyph(geom=sPV, factor=0.75)
 
+LocalPVArray.plot()
+
+
 # Global PV array creation
 x,y,z = np.mgrid[-3:3, -3:3, 1:2]*5
 GlobalMesh = pv.StructuredGrid(x, y, z)
@@ -78,6 +82,7 @@ GlobalPVArray  = GlobalMesh.glyph(geom=LocalPVArray, factor=0.75)
 # Sky sampling; sky location toward which a ray will be casted
 nSkyRay=360
 pTarget = fibonacci_half_sphere(nSkyRay)
+
 
 # Ground sampling; ground location from which a ray will be casted
 xs = np.linspace(-5, 5, 6)
