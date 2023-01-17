@@ -13,4 +13,6 @@ from MODULES.data_management.yaml_inputs_provider import YAML_Inputs_provider
 
 PASE_Logger()
 
-YAML_Inputs_provider(file='PV_central.yaml')
+PV_1 = YAML_Inputs_provider(file='PV_central.yaml')
+
+print(PV_1.inputs)

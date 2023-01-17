@@ -1,5 +1,5 @@
 PanelDimensionX: 
-   Value: Coucou
+   Value: 2
    Type: float
    Limit: [0.1,4]
    Unit: meters [m]
