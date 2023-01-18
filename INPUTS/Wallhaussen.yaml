@@ -1,0 +1,10 @@
+LocationName: 
+   Value: Wallhaussen
+   Type: string
+   Definition: Name of the location
+Latitude:
+   Value: 50
+   Type: float
+   Limit: [-90, 90]
+   Unit: degrés décimaux [-]
+   Definition: Latitude of the location

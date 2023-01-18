@@ -11,7 +11,7 @@ import os
 
 class PASE_Logger:
     
-    def __init__(self, msg=None, level=None):
+    def __init__(self, msg=None, level=None, error_type=None):
         
         log_file = 'logging_file.log'
         logging.basicConfig(filename=log_file, filemode='a', level=logging.DEBUG,
@@ -28,7 +28,7 @@ class PASE_Logger:
         elif level == 'WARNING':
             self.write_warning(msg)
         elif level == 'ERROR':
-            self.write_error(msg)
+            self.write_error(msg, error_type)
         elif level == 'CRITICAL':
             self.write_critical(msg)
             
@@ -59,9 +59,11 @@ class PASE_Logger:
         print(msg)
         
         
-    def write_error(self, msg):
+    def write_error(self, msg, error_type):
         logging.error(msg)
-        raise ValueError(msg)
+        
+        if error_type == 'value':
+            raise ValueError(msg)
         
         
     def write_critical(self, msg):

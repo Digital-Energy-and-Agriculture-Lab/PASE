@@ -1,60 +1,65 @@
 PanelDimensionX: 
    Value: 2
    Type: float
-   Limit: [0.1,4]
+   Limit: [0.1,5]
    Unit: meters [m]
    Definition: Panel dimension on the x axis
 PanelDimensionY:
    Value: 1
    Type: float
-   Limit: [0.1,4]
+   Limit: [0.1,5]
    Unit: meters [m]
    Definition: Panel dimension on the y axis
+Bifaciality:
+   Value: True
+   Type: boolean
+   Possibilities: [False, True]
+   Definition: Boolean telling if the panels are bifacial (True) or not (False)
 NumberOfPanelsX:
    Value: 10
-   Type: int
+   Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
    Definition: Number of panels on the x axis in one block of panels (x axis being the potential rotation axis of the block of panels)
 NumberOfPanelsY:
    Value: 2
-   Type: int
+   Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
    Definition: Number of panels on the y axis in one block of panels
 RepetitionDistanceOfPanelsX:
-   Value: 2.1
+   Value: 2.2
    Type: float
-   Limit: [PanelDimensionX, 10]
+   Limit: [PanelDimensionX, 100]
    Unit: meters [m]
    Definition: Length between the repetition of 2 panels on the x axis of one block of panels
 RepetitionDistanceOfPanelsY:
-   Value: 1
+   Value: 1.1
    Type: float
-   Limit: [PanelDimensionY, 10]
+   Limit: [PanelDimensionY, 100]
    Unit: meters [m]
    Definition: Length between the repetition of 2 panels on the y axis of one block of panels
 NumberOfPVBlocksX:
    Value: 1
-   Type: int
+   Type: integer
    Limit: [0, 1000]
    Unit: dimensionless [-]
    Definition: Number of blocks on the x axis of the photovoltaic central (x axis being the potential rotation axis of the block of panels)
 NumberOfPVBlocksY:
-   Value: 5
-   Type: int
+   Value: 10
+   Type: integer
    Limit: [0, 1000]
    Unit: dimensionless [-]
    Definition: Number of blocks on the y axis of the photovoltaic central (x axis being the potential rotation axis of the block of panels)
 RepetitionDistanceOfPVBlocksX:
-   Value: 23
+   Value: 25
    Type: float
-   Limit: [0,1000]
+   Limit: [NumberOfPanelsX*RepetitionDistanceOfPanelsX,1000]
    Unit: meters [m]
    Definition: Length between the repetition of 2 blocks of panels on the x axis of the photovoltaic central
 RepetitionDistanceOfPVBlocksY:
    Value: 10
    Type: float
-   Limit: [0, 1000]
+   Limit: [NumberOfPanelsY*RepetitionDistanceOfPanelsY, 1000]
    Unit: meters [m]
    Definition: Length between the repetition of 2 blocks of panels on the y axis of the photovoltaic central
