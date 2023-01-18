@@ -39,6 +39,12 @@ RepetitionDistanceOfPanelsY:
    Limit: [PanelDimensionY, 100]
    Unit: meters [m]
    Definition: Length between the repetition of 2 panels on the y axis of one block of panels
+RotationAxisNumber:
+   Value: 0
+   Type: integer
+   Limit: [0, 1]
+   Unit: dimensionless [-]
+   Definition: Number of rotation axis that drive the block of panels
 NumberOfPVBlocksX:
    Value: 1
    Type: integer
