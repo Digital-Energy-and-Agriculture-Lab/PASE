@@ -1,4 +1,5 @@
-12:06:51 PM  (INFO)  -  START OF THE SIMULATION
-12:06:51 PM  (ERROR)  -  Input "Longitude" value is outside the limits: [-180, 180]
-12:07:12 PM  (ERROR)  -  Task was destroyed but it is pending!
-task: <Task pending name='Task-2' coro=<Kernel.poll_control_queue() running at /home/roxane/anaconda3/envs/naldeo/lib/python3.8/site-packages/ipykernel/kernelbase.py:227> wait_for=<Future finished result=<Future at 0x...state=pending>> cb=[_chain_future.<locals>._call_set_state() at /home/roxane/anaconda3/envs/naldeo/lib/python3.8/asyncio/futures.py:367]>
+02:57:43 PM  (INFO)  -  START OF THE SIMULATION
+02:57:43 PM  (INFO)  -  Input values from Wallhausen.yaml have been imported successfully
+02:57:43 PM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
+02:58:02 PM  (ERROR)  -  Task was destroyed but it is pending!
+task: <Task pending name='Task-1' coro=<Kernel.poll_control_queue() running at /home/roxane/anaconda3/envs/naldeo/lib/python3.8/site-packages/ipykernel/kernelbase.py:227> wait_for=<Future finished result=<Future at 0x...state=pending>> cb=[_chain_future.<locals>._call_set_state() at /home/roxane/anaconda3/envs/naldeo/lib/python3.8/asyncio/futures.py:367]>

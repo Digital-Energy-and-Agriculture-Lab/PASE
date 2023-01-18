@@ -3,7 +3,7 @@
 """
 Created on Tue Jan 17 14:29:46 2023
 
-@author: roxane
+@author: Roxane Bruhwyler
 """
 
 import logging

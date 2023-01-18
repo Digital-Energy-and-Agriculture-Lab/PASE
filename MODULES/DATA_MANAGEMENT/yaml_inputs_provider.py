@@ -3,7 +3,7 @@
 """
 Created on Mon Jan 16 11:49:51 2023
 
-@author: roxane
+@author: Roxane Bruhwyler
 """
 
 import yaml
@@ -15,9 +15,9 @@ class YAML_Inputs_provider:
     
     def __init__(self, file=None, path='INPUTS/'):
         
-        with open (path+file, 'r') as file:
+        with open (path+file, 'r') as inputs_file:
             
-            inputs = yaml.load(file, Loader=yaml.FullLoader)
+            inputs = yaml.load(inputs_file, Loader=yaml.FullLoader)
             
         self.i = {}
    
@@ -36,6 +36,7 @@ class YAML_Inputs_provider:
                 elif data['Type'] == 'boolean':
                     self.check_value_bool(key, data, inputs)
         
+        PASE_Logger('Input values from '+file+' have been imported successfully', 'INFO')
 
                 
             
