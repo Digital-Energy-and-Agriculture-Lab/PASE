@@ -13,8 +13,7 @@ from MODULES.data_management.yaml_inputs_provider import YAML_Inputs_provider
 
 PASE_Logger()
 
-Loc_1 = YAML_Inputs_provider(file='Wallhaussen.yaml')
+Loc_1 = YAML_Inputs_provider(file='Wallhausen.yaml').i
 
-PV_1 = YAML_Inputs_provider(file='PV_central.yaml')
+PV_1 = YAML_Inputs_provider(file='PV_central.yaml').i
 
-print(PV_1.i)
