@@ -39,46 +39,58 @@ class PV_Configuration_3D:
     
     def create_block_of_panels(self, fst_panel):
         
-        xrng = np.arange(-self.PV_i['NumberOfPanelsX']*self.PV_i['RepetitionDistanceOfPanelsX']/2, 
-                         self.PV_i['NumberOfPanelsX']*self.PV_i['RepetitionDistanceOfPanelsX']/2,
+        xrng = np.arange(self.PV_i['RepetitionDistanceOfPanelsX']*0.5*(1-self.PV_i['NumberOfPanelsX']), 
+                         self.PV_i['RepetitionDistanceOfPanelsX']*0.5*(self.PV_i['NumberOfPanelsX']+1),
                          self.PV_i['RepetitionDistanceOfPanelsX'], dtype=np.float32)
-        yrng = np.arange(-self.PV_i['NumberOfPanelsY']*self.PV_i['RepetitionDistanceOfPanelsY']/2, 
-                         self.PV_i['NumberOfPanelsY']*self.PV_i['RepetitionDistanceOfPanelsY']/2,
+        yrng = np.arange(self.PV_i['RepetitionDistanceOfPanelsY']*0.5*(1-self.PV_i['NumberOfPanelsY']), 
+                         self.PV_i['RepetitionDistanceOfPanelsY']*0.5*(self.PV_i['NumberOfPanelsY']+1),
                          self.PV_i['RepetitionDistanceOfPanelsY'], dtype=np.float32)
         zrng = np.arange(0, 1, 2, dtype=np.float32)
+        
         x, y, z = np.meshgrid(xrng, yrng, zrng)    
         
         GlobalMesh = pyV.StructuredGrid(x, y, z)
         self.PV_block  = GlobalMesh.glyph(geom=fst_panel, factor=1)
         
-        self.PV_block.plot()
-
         
     def rotation_1st_axis(self):
         
         self.tilted_PV_block = self.PV_block.rotate_x(self.PV_i['TiltX'])
         
-        self.tilted_PV_block.plot()
-        
         
     def create_central(self):
         
-        xrng = np.arange(-self.PV_i['NumberOfPVBlocksX']*self.PV_i['RepetitionDistanceOfPVBlocksX']/2, 
-                         self.PV_i['NumberOfPVBlocksX']*self.PV_i['RepetitionDistanceOfPVBlocksX']/2,
+        xrng = np.arange(self.PV_i['RepetitionDistanceOfPVBlocksX']*0.5*(1-self.PV_i['NumberOfPVBlocksX']), 
+                         self.PV_i['RepetitionDistanceOfPVBlocksX']*0.5*(self.PV_i['NumberOfPVBlocksX']+1),
                          self.PV_i['RepetitionDistanceOfPVBlocksX'], dtype=np.float32)
-        yrng = np.arange(-self.PV_i['NumberOfPVBlocksY']*self.PV_i['RepetitionDistanceOfPVBlocksY']/2, 
-                         self.PV_i['NumberOfPVBlocksY']*self.PV_i['RepetitionDistanceOfPVBlocksY']/2,
+        yrng = np.arange(self.PV_i['RepetitionDistanceOfPVBlocksY']*0.5*(1-self.PV_i['NumberOfPVBlocksY']), 
+                         self.PV_i['RepetitionDistanceOfPVBlocksY']*0.5*(self.PV_i['NumberOfPVBlocksY']+1),
                          self.PV_i['RepetitionDistanceOfPVBlocksY'], dtype=np.float32)
-        zrng = np.arange(0, 1, 2, dtype=np.float32)
+        zrng = np.arange(self.PV_i['Height'], self.PV_i['Height']*2, self.PV_i['Height'], dtype=np.float32)
         x, y, z = np.meshgrid(xrng, yrng, zrng)
         
         GlobalMesh = pyV.StructuredGrid(x, y, z)
         
         self.PV_central = GlobalMesh.glyph(geom=self.tilted_PV_block, factor=1)
         
+        #test afficher le sol
+        
         plotter = pyV.Plotter()
         plotter.add_mesh(self.PV_central, color='black')
-        plotter.add_mesh(self.tilted_PV_block, color='red')
+        
+        ground = np.array([[-100, 100, 0],
+                           [100, 100, 0],
+                           [-100, -100, 0],
+                           [100, -100, 0]])
+        
+        ground_m = np.hstack([[3, 0, 1, 2],    
+                              [3, 1, 2, 3],])
+        
+        grnd = pyV.PolyData(ground, ground_m)
+        
+        plotter.add_mesh(grnd, color='green')
+        
+        plotter.set_background(color='#A6D0DE')
         
         plotter.show()
         
