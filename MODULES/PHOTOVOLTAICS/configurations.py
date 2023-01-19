@@ -19,6 +19,7 @@ class PV_Configuration_3D:
         fst_panel = self.create_first_panel()
         self.create_block_of_panels(fst_panel)
         self.rotation_1st_axis()
+        self.create_central()
         
         
     def create_first_panel(self):
@@ -55,8 +56,26 @@ class PV_Configuration_3D:
         
     def rotation_1st_axis(self):
         
-        tilted_PV_block = self.PV_block.rotate_x(self.PV_i['TiltX'])
+        self.tilted_PV_block = self.PV_block.rotate_x(self.PV_i['TiltX'])
         
-        tilted_PV_block.plot()
+        self.tilted_PV_block.plot()
+        
+        
+    def create_central(self):
+        
+        xrng = np.arange(-self.PV_i['NumberOfPVBlocksX']*self.PV_i['RepetitionDistanceOfPVBlocksX']/2, 
+                         self.PV_i['NumberOfPVBlocksX']*self.PV_i['RepetitionDistanceOfPVBlocksX']/2,
+                         self.PV_i['RepetitionDistanceOfPVBlocksX'], dtype=np.float32)
+        yrng = np.arange(-self.PV_i['NumberOfPVBlocksY']*self.PV_i['RepetitionDistanceOfPVBlocksY']/2, 
+                         self.PV_i['NumberOfPVBlocksY']*self.PV_i['RepetitionDistanceOfPVBlocksY']/2,
+                         self.PV_i['RepetitionDistanceOfPVBlocksY'], dtype=np.float32)
+        zrng = np.arange(0, 1, 2, dtype=np.float32)
+        x, y, z = np.meshgrid(xrng, yrng, zrng)
+        
+        GlobalMesh = pyV.StructuredGrid(x, y, z)
+        
+        self.PV_central = GlobalMesh.glyph(geom=self.tilted_PV_block, factor=1)
+        
+        self.PV_central.plot()
         
         
