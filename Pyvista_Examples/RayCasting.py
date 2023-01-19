@@ -49,7 +49,7 @@ faces = np.hstack(
     )
 sPV = pv.PolyData(vertices, faces)
 #Rotation of the PV
-sPV.rotate_x(35)
+sPV.rotate_x(0)
 
 sPV.plot()
 
@@ -66,6 +66,8 @@ sGround = pv.PolyData(vGround,fGround)
 x,y,z = np.mgrid[-3:3, -3:3, 0:1]
 Localmesh = pv.StructuredGrid(x, y, z)
 LocalPVArray = Localmesh.glyph(geom=sPV, factor=0.75)
+
+LocalPVArray.rotate_x(90)
 
 LocalPVArray.plot()
 
