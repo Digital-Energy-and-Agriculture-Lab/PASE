@@ -76,6 +76,10 @@ class PV_Configuration_3D:
         
         self.PV_central = GlobalMesh.glyph(geom=self.tilted_PV_block, factor=1)
         
-        self.PV_central.plot()
+        plotter = pyV.Plotter()
+        plotter.add_mesh(self.PV_central, color='black')
+        plotter.add_mesh(self.tilted_PV_block, color='red')
+        
+        plotter.show()
         
         
