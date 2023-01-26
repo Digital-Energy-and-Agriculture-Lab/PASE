@@ -22,7 +22,7 @@ Output:
 * Triplet of coordinates
 """
 
-def fibonacci_half_sphere(samples=18,scale = 100):
+def fibonacci_half_sphere(samples=18,scale = 1):
     points = []
     phi = math.pi * (3. - math.sqrt(5.))
     for i in range(samples):
@@ -82,7 +82,7 @@ GlobalPVArray  = GlobalMesh.glyph(geom=LocalPVArray, factor=0.75)
 
 
 # Sky sampling; sky location toward which a ray will be casted
-nSkyRay=360
+nSkyRay=72
 pTarget = fibonacci_half_sphere(nSkyRay)
 
 
