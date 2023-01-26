@@ -2,6 +2,18 @@
 
 
 
+## Installation
+
+# Windows User
+The python code requires the module PyEmbree for the ray casting. Currently (01/23), the package can NOT be easily installed via conda on windows device (it as to be compiled from the source). The solution is to install the package via pip.
+
+
+
+
+
+
+
+
 ## Getting started
 
 To make it easy for you to get started with GitLab, here's a list of recommended next steps.
