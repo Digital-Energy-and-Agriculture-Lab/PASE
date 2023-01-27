@@ -18,7 +18,7 @@ def fibonacci_half_sphere(samples=18):
     theta = phi * i 
     xp = np.cos(theta) * radius
     zp = np.sin(theta) * radius
-    return np.column_stack([xp,yp,zp])
+    return np.column_stack([xp,zp,yp])
 
 def get_sun_position():
     
