@@ -11,7 +11,7 @@ import numpy as np
 
 #PVCoord on the PV
 PVCoord = np.array([[0,0,0],[1,0,0],[1,0,1],[0,0,1]])
-v_sun = [.5,1,-4]
+v_sun = [.5,0.5,0.5]
 v_ground = [0,0,1]
 
 def Get_Shade_Coordinate(PVCoord,v_sun,v_ground):
@@ -63,8 +63,8 @@ yMesh = np.linspace(-5,5,500)
 shade_vertice = Get_Shade_Coordinate(PVCoord,v_sun,v_ground)
 
 #Computation and drawing of the grid
-gShade = np.array([0 if test_point(x,y,shade_vertice) else 1 for y in yMesh for x in xMesh ])
-gShade = gShade.reshape([len(xMesh),len(yMesh)])
+gShade1 = np.array([0 if test_point(x,y,shade_vertice) else 1 for y in yMesh for x in xMesh ])
+gShade = gShade1.reshape([len(xMesh),len(yMesh)])
 
 
 plt.imshow(gShade)
