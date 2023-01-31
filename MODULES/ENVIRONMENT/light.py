@@ -18,9 +18,20 @@ class Sun_positions:
         
         index = pd.date_range(start='2005-01-01 00:00', freq='1H', 
                               periods=365*24*4)
+        hour = index.hour
+        month = index.month
         
         self.solar_position = pvlib.solarposition.get_solarposition(index, lat, long)
         
+        self.solar_position.insert(0, "hour", hour)
+        self.solar_position.insert(1, "month", month)
         
         
         
+        self.test = self.solar_position.groupby(by=['month','hour']).mean()
+        
+        
+        
+        
+        # https://pvlib-python.readthedocs.io/en/stable/gallery/solar-position/plot_sunpath_diagrams.html#sphx-glr-gallery-solar-position-plot-sunpath-diagrams-py
+    

@@ -21,4 +21,5 @@ PV_1 = YAML_Inputs_provider(file='PV_central.yaml').i
 
 PV_1_3Dconfig = PV_Configuration_3D(PV_1)
 
-Sun_positions = Sun_positions(50.5, 14)
+Sun_positions = Sun_positions(Loc_1['Latitude'], Loc_1['Longitude'])
+
