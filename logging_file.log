@@ -1,7 +1,3 @@
-08:58:11 AM  (INFO)  -  START OF THE SIMULATION
-08:58:11 AM  (INFO)  -  Input values from Wallhausen.yaml have been imported successfully
-08:58:11 AM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
-09:37:57 AM  (DEBUG)  -  Starting new HTTPS connection (1): github.com:443
-09:37:57 AM  (DEBUG)  -  https://github.com:443 "GET /pyvista/vtk-data/raw/master/Data/dragon.ply HTTP/1.1" 302 0
-09:37:57 AM  (DEBUG)  -  Starting new HTTPS connection (1): raw.githubusercontent.com:443
-09:38:01 AM  (DEBUG)  -  https://raw.githubusercontent.com:443 "GET /pyvista/vtk-data/master/Data/dragon.ply HTTP/1.1" 200 8284558
+11:03:40 AM  (INFO)  -  START OF THE SIMULATION
+11:03:40 AM  (INFO)  -  Input values from Wallhausen.yaml have been imported successfully
+11:03:40 AM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
