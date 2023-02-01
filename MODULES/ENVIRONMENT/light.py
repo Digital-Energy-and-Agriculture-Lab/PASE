@@ -13,25 +13,59 @@ import pvlib
 
 class Sun_positions:
     
-    def __init__(self, lat, long):
+    def __init__(self, lat, long, precision_lvl):
         
+        self.get_solar_positions(lat, long, precision_lvl)
+        self.get_sun_vector(self.SP['elevation'], self.SP['azimuth'])
+        
+        
+    def get_solar_positions(self, lat, long, precision_lvl):
         
         index = pd.date_range(start='2005-01-01 00:00', freq='1H', 
-                              periods=365*24*4)
+                              periods=365*24)
+        
+        solar_position = pvlib.solarposition.get_solarposition(index, lat, long)
+        
         hour = index.hour
         month = index.month
+        week_id = index.weekofyear
+        solar_position.insert(0, "hour", hour)
+        solar_position.insert(1, "month", month)
+        solar_position.insert(2, "week", week_id)
         
-        self.solar_position = pvlib.solarposition.get_solarposition(index, lat, long)
+        if precision_lvl == 1:
+            SP_month = solar_position.groupby(by=['month','hour']).mean()
+            self.SP = SP_month[SP_month['elevation']>=0]
         
-        self.solar_position.insert(0, "hour", hour)
-        self.solar_position.insert(1, "month", month)
+        elif precision_lvl == 2:
+            SP_week = solar_position.groupby(by=['week','hour']).mean()
+            self.SP = SP_week[SP_week['elevation']>=0]
+            
+        else:
+            self.SP = solar_position[solar_position['elevation']>=0]
+               
+         
+    def get_sun_vector(self, beta, gamma):
+        #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
+        #beta : sun elevation (from -90 to 90°), negative angle means it's night
+        #gamma : azimuth from north to east
+        gamma, beta = gamma*np.pi/180, beta*np.pi/180
+        self.solar_vector = np.zeros((len(gamma),3))
+        self.solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
+        self.solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
+        self.solar_vector[:,2]=np.sin(beta)
+        #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
         
         
         
-        self.test = self.solar_position.groupby(by=['month','hour']).mean()
+        
+
+class Shade_direct_light:
+
+    def __init__(self, meshgrid, PV_central, sun_P):
         
         
         
         
-        # https://pvlib-python.readthedocs.io/en/stable/gallery/solar-position/plot_sunpath_diagrams.html#sphx-glr-gallery-solar-position-plot-sunpath-diagrams-py
-    
+
+        pass

@@ -62,14 +62,14 @@ X,Y = np.meshgrid(xs,ys)
 
 # Creation of the array of source points and target points
 # The code may be more explicit by dividing the steps
-SourcePoints = np.repeat(np.column_stack((X.flatten(),Y.flatten(),np.zeros(len(X.flatten())))),nSkyRay,axis=0)
+SourcePoints = np.repeat(np.column_stack((X.flatten(),Y.flatten(),np.zeros(len(X.flatten())))),nSkyRay,axis=0) #coord des cellules répétées au nombre de rayons
 TargetPoints = np.tile(pTarget,[len(X.flatten()),1])
 
 #Creation of the source index mapper 
-SourceI = np.repeat(np.linspace(0,len(X.flatten())-1,len(X.flatten())),nSkyRay,axis=0)
+SourceI = np.repeat(np.linspace(0,len(X.flatten())-1,len(X.flatten())),nSkyRay,axis=0) # ID des cellules répétées au nombre de rayons
 
 #Ray Casting
-_, ind_ray, _ = Geometry.multi_ray_trace(SourcePoints,TargetPoints,first_point=True,retry=False)
+_, ind_ray, test_cell = Geometry.multi_ray_trace(SourcePoints,TargetPoints,first_point=True,retry=False)
 
 #Creation of the light map (1D vector but linked by index to the X.flatten(),Y.flatten())
 #1D vector allows easier implementation
