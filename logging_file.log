@@ -1,3 +1,9 @@
-05:59:51 PM  (INFO)  -  START OF THE SIMULATION
-05:59:51 PM  (INFO)  -  Input values from Wallhausen.yaml have been imported successfully
-05:59:51 PM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
+07:01:08 PM  (INFO)  -  START OF THE SIMULATION
+07:01:08 PM  (INFO)  -  Input values from Wallhausen.yaml have been imported successfully
+07:01:08 PM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
+07:01:12 PM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
+07:01:12 PM  (DEBUG)  -  Trying `CDLL(libc.so.6)`
+07:01:12 PM  (DEBUG)  -  Library path: 'libc.so.6'
+07:01:12 PM  (DEBUG)  -  DLL: <CDLL 'libc.so.6', handle 7f207b649410 at 0x7f1ff4194c70>
+07:01:12 PM  (DEBUG)  -  generating face normals
+07:01:12 PM  (DEBUG)  -  intersects_id executed in 0.0838 seconds.

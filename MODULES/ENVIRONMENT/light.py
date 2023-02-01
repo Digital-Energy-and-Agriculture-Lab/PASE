@@ -64,8 +64,13 @@ class Shade_direct_light:
 
     def __init__(self, meshgrid, PV_central, sun_P):
         
+        SourcePoints = np.repeat(np.column_stack((meshgrid.X.flatten(),
+                                                  meshgrid.Y.flatten(),
+                                                  np.zeros(len(meshgrid.X.flatten())))),
+                                 len(sun_P),axis=0)
         
+        TargetPoints = np.tile(sun_P,[len(meshgrid.X.flatten()),1])
         
-        
+        _, self.ind_ray, _ = PV_central.multi_ray_trace(SourcePoints,TargetPoints,first_point=False,retry=False)        
 
-        pass
+        

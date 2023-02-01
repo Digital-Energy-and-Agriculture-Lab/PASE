@@ -30,3 +30,4 @@ msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_I
 
 Direct_light_map = Shade_direct_light(msh_grid, PV_1_3Dconfig.PV_central, Sun_positions.solar_vector)
 
+print(len(Sun_positions.solar_vector))
