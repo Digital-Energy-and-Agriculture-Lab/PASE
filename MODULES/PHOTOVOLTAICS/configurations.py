@@ -71,7 +71,9 @@ class PV_Configuration_3D:
         
         GlobalMesh = pyV.StructuredGrid(x, y, z)
         
-        self.PV_central = GlobalMesh.glyph(geom=self.tilted_PV_block, factor=1)
+        PV_central = GlobalMesh.glyph(geom=self.tilted_PV_block, factor=1)
+        
+        self.PV_central = PV_central.rotate_z(self.PV_i['CentralAzimut'])
         
         #test afficher le sol
         

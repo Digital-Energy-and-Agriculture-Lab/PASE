@@ -51,7 +51,7 @@ Geometry = Get_Geometry() #PolyData Geometry
 
 # Sky sampling; sky location toward which a ray will be casted
 diffuseray=72
-pTarget = fibonacci_half_sphere(diffuseray)*100
+pTarget = fibonacci_half_sphere(diffuseray)*1
 nSkyRay= len(pTarget)
 
 

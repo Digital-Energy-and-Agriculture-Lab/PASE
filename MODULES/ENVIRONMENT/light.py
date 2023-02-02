@@ -55,22 +55,107 @@ class Sun_positions:
         self.solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
         self.solar_vector[:,2]=np.sin(beta)
         #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
-        
-        
-        
-        
 
+        
+        
 class Shade_direct_light:
 
     def __init__(self, meshgrid, PV_central, sun_P):
         
+        self.SourcePoints = np.repeat(np.column_stack((meshgrid.X.flatten(),
+                                                  meshgrid.Y.flatten(),
+                                                  np.zeros(len(meshgrid.X.flatten())))),
+                                      len(sun_P),
+                                      axis=0)
+        
+        self.TargetPoints = np.tile(sun_P,[len(meshgrid.X.flatten()),1])
+        
+        self.n_rays = len(self.TargetPoints[:,0])
+        self.ID_rays = np.arange(0, self.n_rays, 1)
+        self.n_cells = len(meshgrid.X.flatten())
+        self.n_sun_P = len(sun_P[:,0])
+        
+        _, id_rays_stopped, _ = PV_central.multi_ray_trace(self.SourcePoints,
+                                                           self.TargetPoints,
+                                                           first_point=False,
+                                                           retry=False)
+        
+        self.shade_matrix_for_each_time(id_rays_stopped, meshgrid)
+        
+        
+    def shade_matrix_for_each_time(self, id_rays_stp, meshgrid):
+        
+        bool_vector = np.ones(self.n_rays)       
+        bool_vector[id_rays_stp] = 0
+        
+        self.direct_map_t = np.zeros((self.n_sun_P, len(meshgrid.Y[0,:]), len(meshgrid.X[:,0])))
+        
+        for s in range(self.n_sun_P):
+            
+            print(s)
+            
+            direct_map = np.where((self.ID_rays-np.ones(len(self.ID_rays))*s)%self.n_sun_P==0,
+                                   bool_vector,
+                                   3)
+            direct_map = direct_map[direct_map!=3]            
+            direct_map = direct_map.reshape(len(meshgrid.X[:,0]),len(meshgrid.Y[0,:])).transpose()
+                       
+            self.direct_map_t[s,:,:] = direct_map
+
+
+            
+class Sky_view_factor:
+    
+    def __init__(self, meshgrid, PV_central):
+        
+        n_small_suns = 108
+        pTarget = self.fibonacci_half_sphere(n_small_suns)
+            
+        
         SourcePoints = np.repeat(np.column_stack((meshgrid.X.flatten(),
                                                   meshgrid.Y.flatten(),
                                                   np.zeros(len(meshgrid.X.flatten())))),
-                                 len(sun_P),axis=0)
+                                      n_small_suns,
+                                      axis=0)
         
-        TargetPoints = np.tile(sun_P,[len(meshgrid.X.flatten()),1])
+        TargetPoints = np.tile(pTarget,[len(meshgrid.X.flatten()),1])
         
-        _, self.ind_ray, _ = PV_central.multi_ray_trace(SourcePoints,TargetPoints,first_point=False,retry=False)        
+        SourceID = np.repeat(np.linspace(0,
+                                         len(meshgrid.X.flatten())-1,
+                                         len(meshgrid.X.flatten())),
+                             n_small_suns,
+                             axis=0)
+    
+        _, id_rays_stopped, _ = PV_central.multi_ray_trace(SourcePoints,
+                                                           TargetPoints,
+                                                           first_point=True,
+                                                           retry=False)
+        
+        self.sky_view_matrix(n_small_suns, SourceID, id_rays_stopped, meshgrid)
+        
+        
+    def fibonacci_half_sphere(self, samples=18):
+        
+        phi = np.pi * (3. - np.sqrt(5.))
+        i = np.linspace(0,samples-1,num=samples)
+        yp = (1 - i/float(samples-1))
+        radius = np.sqrt(1-yp**2) 
+        theta = phi * i 
+        xp = np.cos(theta) * radius
+        zp = np.sin(theta) * radius
+        return np.column_stack([xp,zp,yp])
+    
+    
+    def sky_view_matrix(self, n_suns, sourcesID, ID_rays_Stp, meshgrid):
+        
+        Diffu = np.ones(len(meshgrid.X.flatten()))
+
+        Touched = sourcesID[ID_rays_Stp]
+        unique, counts = np.unique(Touched, return_counts=True)
+
+        #Computation of a 1D vector giving the diffuse light
+        Diffu[unique.astype("int")] = 1 - counts/n_suns
+        self.diffuse_map_t = Diffu.reshape(len(meshgrid.X[:,0]),len(meshgrid.Y[0,:])).transpose()
+            
 
         

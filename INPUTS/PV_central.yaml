@@ -81,3 +81,9 @@ RepetitionDistanceOfPVBlocksY:
    Limit: [NumberOfPanelsY*RepetitionDistanceOfPanelsY, 1000]
    Unit: meters [m]
    Definition: Length between the repetition of 2 blocks of panels on the y axis of the photovoltaic central
+CentralAzimut:
+   Value: 270
+   Type: float
+   Limit: [0,360]
+   Unit: degrees [°]
+   Definition: Rotation angle of the central around the z axis 
