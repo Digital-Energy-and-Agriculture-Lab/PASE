@@ -23,6 +23,7 @@ class Sun_positions:
         self.get_solar_positions(lat, long, precision_lvl)
         self.get_sun_vector(self.SP['elevation'], self.SP['azimuth'])
         self.get_sun_path_diagram()
+        self.get_PVSyst_Plot()
         
         
     def get_solar_positions(self, lat, long, precision_lvl):
@@ -74,7 +75,7 @@ class Sun_positions:
     def get_sun_path_diagram(self):
         
         #SOURCE : https://pvlib-python.readthedocs.io/en/stable/gallery/solar-position/plot_sunpath_diagrams.html#sphx-glr-gallery-solar-position-plot-sunpath-diagrams-py
-        
+       
         fig = plt.figure()        
         ax = plt.subplot(1, 1, 1, projection='polar')
         points = ax.scatter(np.radians(self.SP.azimuth), self.SP.apparent_zenith,
@@ -110,6 +111,38 @@ class Sun_positions:
         ax.set_rmax(90)
 
         fig.savefig('OUTPUTS/GRAPHS/SunPathDiagram_'+self.loc_name+'.svg')
+        
+    def get_PVSyst_Plot(self):
+        
+        fig, ax = plt.subplots()
+        points = ax.scatter(self.SP.azimuth, self.SP.apparent_elevation, s=2,
+                    c=self.SP.J_day.round(0), label=None)
+        fig.colorbar(points)
+        
+        SP_june = self.SP.query("month == 6")
+        
+        for h in np.unique(SP_june.hour):
+            # choose label position by the largest elevation for each hour
+            subset = SP_june.loc[SP_june['hour'] == h]
+            height = subset.apparent_elevation
+            pos = subset.loc[height.idxmax(),:]
+            ax.text(pos['azimuth'], pos['apparent_elevation'], str(h))
+
+        for date in pd.to_datetime(['2019-03-21', '2019-06-21', '2019-09-21','2019-12-21']):
+            times = pd.date_range(date, date+pd.Timedelta('24h'), freq='5min')
+            solpos = pvlib.solarposition.get_solarposition(times, 
+                                                           self.lat,
+                                                           self.long)
+            solpos = solpos.loc[solpos['apparent_elevation'] > 0, :]
+            label = date.strftime('%Y-%m-%d')
+            ax.plot(solpos.azimuth, solpos.apparent_elevation, label=label)
+
+        ax.figure.legend(loc='upper left')
+        ax.set_xlabel('Solar Azimuth (degrees)')
+        ax.set_ylabel('Solar Elevation (degrees)')
+
+        plt.show()
+        fig.savefig('OUTPUTS/GRAPHS/PVSystDiagram_'+self.loc_name+'.svg')
         
     
        

@@ -21,7 +21,7 @@ Altitude:
    Unit: meters [m]
    Definition: Altitude of the location
 PrecisionLevelOnSunPosition:
-   Value: 1
+   Value: 2
    Type: integer
    Limit: [1, 3]
    Unit: dimensionless [-]
