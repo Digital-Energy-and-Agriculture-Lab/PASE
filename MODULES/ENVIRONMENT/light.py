@@ -139,24 +139,19 @@ class Shade_direct_light:
         self.shade_matrix_for_each_time(id_rays_stopped, meshgrid)
         
         
+        
     def shade_matrix_for_each_time(self, id_rays_stp, meshgrid):
         
-        bool_vector = np.ones(self.n_rays)       
-        bool_vector[id_rays_stp] = 0
-        
-        self.direct_map_t = np.zeros((self.n_sun_P, len(meshgrid.Y[0,:]), len(meshgrid.X[:,0])))
-        
-        for s in range(self.n_sun_P):
-            
-            print(s)
-            
-            direct_map = np.where((self.ID_rays-np.ones(len(self.ID_rays))*s)%self.n_sun_P==0,
-                                   bool_vector,
-                                   3)
-            direct_map = direct_map[direct_map!=3]            
-            direct_map = direct_map.reshape(len(meshgrid.X[:,0]),len(meshgrid.Y[0,:])).transpose()
-                       
-            self.direct_map_t[s,:,:] = direct_map
+        direct_1D_map = np.ones(len(self.TargetPoints[:,0].flatten()))
+    
+    
+        direct_1D_map[id_rays_stp] = 0
+    
+        direct_map =  direct_1D_map.reshape(len(meshgrid.Y[:,0]),
+                                            len(meshgrid.X[0,:]),
+                                            self.n_sun_P)  
+        direct_map = np.transpose(direct_map, (1,0,2))
+        self.direct_map_t = direct_map
 
 
             
