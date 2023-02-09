@@ -159,7 +159,7 @@ class Shade_direct_light:
         
         TargetPoints = np.tile(sun_P,[len(meshgrid.X.flatten()),1])
         
-        self.n_rays = len(self.TargetPoints[:,0])
+        self.n_rays = len(TargetPoints[:,0])
         self.ID_rays = np.arange(0, self.n_rays, 1)
         self.n_cells = len(meshgrid.X.flatten())
         self.n_sun_P = len(sun_P[:,0])
@@ -242,7 +242,7 @@ class Sky_view_factor:
         self.diffuse_map_t = Diffu.reshape(len(meshgrid.X[:,0]),len(meshgrid.Y[0,:])).transpose()
             
 
-def show_light_map(light_matrix, msh_grid, PV_central, bool_Beam):
+def show_light_map(light_matrix, msh_grid, PV_central):
     
     grid = pyV.StructuredGrid(msh_grid.X, msh_grid.Y, np.ones((len(msh_grid.X[:,0]),len(msh_grid.X[0,:])))*0.05)
 
@@ -268,7 +268,7 @@ def show_light_map(light_matrix, msh_grid, PV_central, bool_Beam):
         grid,
         scalars=test1,
         lighting=False,
-        show_edges=True,
+        show_edges=False,
         scalar_bar_args={"title": "Rate of residual light [%]"},
         clim=[0, 100])
 
