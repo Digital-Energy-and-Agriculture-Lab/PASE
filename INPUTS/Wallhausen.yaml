@@ -27,13 +27,13 @@ PrecisionLevelOnSunPosition:
    Unit: dimensionless [-]
    Definition: Level 1 means the same average solar position during each days of a month, level 2 means the same average solar position during each days of a week and level 3 means solar position is computed for each day
 Xmin_InterestZone:
-   Value: -5
+   Value: -10
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Minimal x coordinates of the zone of interest for the light and crop modelling
 Xmax_InterestZone:
-   Value: 5
+   Value: 10
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]

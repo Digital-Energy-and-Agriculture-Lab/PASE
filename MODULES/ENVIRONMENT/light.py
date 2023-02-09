@@ -151,32 +151,32 @@ class Shade_direct_light:
 
     def __init__(self, meshgrid, PV_central, sun_P):
         
-        self.SourcePoints = np.repeat(np.column_stack((meshgrid.X.flatten(),
+        SourcePoints = np.repeat(np.column_stack((meshgrid.X.flatten(),
                                                   meshgrid.Y.flatten(),
                                                   np.zeros(len(meshgrid.X.flatten())))),
                                       len(sun_P),
                                       axis=0)
         
-        self.TargetPoints = np.tile(sun_P,[len(meshgrid.X.flatten()),1])
+        TargetPoints = np.tile(sun_P,[len(meshgrid.X.flatten()),1])
         
         self.n_rays = len(self.TargetPoints[:,0])
         self.ID_rays = np.arange(0, self.n_rays, 1)
         self.n_cells = len(meshgrid.X.flatten())
         self.n_sun_P = len(sun_P[:,0])
         
-        _, id_rays_stopped, _ = PV_central.multi_ray_trace(self.SourcePoints,
-                                                           self.TargetPoints,
+        _, id_rays_stopped, _ = PV_central.multi_ray_trace(SourcePoints,
+                                                           TargetPoints,
                                                            first_point=False,
                                                            retry=False)
         
-        self.shade_matrix_for_each_time(id_rays_stopped, meshgrid)
+        self.shade_matrix_for_each_time(id_rays_stopped, meshgrid, TargetPoints)
         
         
         
-    def shade_matrix_for_each_time(self, id_rays_stp, meshgrid):
+    def shade_matrix_for_each_time(self, id_rays_stp, meshgrid, TgtPoints):
         
-        direct_1D_map = np.ones(len(self.TargetPoints[:,0].flatten()))
-    
+        direct_1D_map = np.ones(len(TgtPoints[:,0].flatten()), 
+                                 dtype=np.uint16)*100
     
         direct_1D_map[id_rays_stp] = 0
     
@@ -232,17 +232,17 @@ class Sky_view_factor:
     
     def sky_view_matrix(self, n_suns, sourcesID, ID_rays_Stp, meshgrid):
         
-        Diffu = np.ones(len(meshgrid.X.flatten()))
+        Diffu = np.ones(len(meshgrid.X.flatten()), dtype=np.uint16)*100
 
         Touched = sourcesID[ID_rays_Stp]
         unique, counts = np.unique(Touched, return_counts=True)
 
         #Computation of a 1D vector giving the diffuse light
-        Diffu[unique.astype("int")] = 1 - counts/n_suns
+        Diffu[unique.astype("int")] = 100 - (counts*100/n_suns)
         self.diffuse_map_t = Diffu.reshape(len(meshgrid.X[:,0]),len(meshgrid.Y[0,:])).transpose()
             
 
-def show_light_map(light_matrix, msh_grid, PV_central):
+def show_light_map(light_matrix, msh_grid, PV_central, bool_Beam):
     
     grid = pyV.StructuredGrid(msh_grid.X, msh_grid.Y, np.ones((len(msh_grid.X[:,0]),len(msh_grid.X[0,:])))*0.05)
 
@@ -269,7 +269,7 @@ def show_light_map(light_matrix, msh_grid, PV_central):
         scalars=test1,
         lighting=False,
         show_edges=True,
-        scalar_bar_args={"title": "Height"},
-        clim=[0, 1])
+        scalar_bar_args={"title": "Rate of residual light [%]"},
+        clim=[0, 100])
 
     plotter.show()

@@ -35,7 +35,7 @@ Direct_light_map = Shade_direct_light(msh_grid, PV_1_3Dconfig.PV_central, Sun_po
 
 Diffuse_light_map = Sky_view_factor(msh_grid, PV_1_3Dconfig.PV_central, 360)
 
-show_light_map(Direct_light_map.direct_map_t[:,:,0], msh_grid, PV_1_3Dconfig.PV_central)
+show_light_map(Direct_light_map.direct_map_t[:,:,2], msh_grid, PV_1_3Dconfig.PV_central)
 
 show_light_map(Diffuse_light_map.diffuse_map_t, msh_grid, PV_1_3Dconfig.PV_central)
 
