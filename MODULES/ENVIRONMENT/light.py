@@ -368,8 +368,8 @@ def show_light_map(light_matrix, msh_grid, PV_central):
         grid,
         scalars=test1,
         lighting=False,
-        show_edges=True,
-        scalar_bar_args={"title": "Height"},
-        clim=[0, 1])
+        show_edges=False,
+        scalar_bar_args={"title": "Rate of residual light [%]"},
+        clim=[0, 100])
 
     plotter.show()
