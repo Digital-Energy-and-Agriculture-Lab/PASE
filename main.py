@@ -56,7 +56,7 @@ print("Direct map differences: " + str(sum(Direct_Diff.flatten())))
 
 
 
-show_light_map(Direct_light_map.direct_map_t[:,:,2], msh_grid, PV_1_3Dconfig.PV_central)
+show_light_map(Direct_light_map.direct_map_t[:,:,3], msh_grid, PV_1_3Dconfig.PV_central)
 
 show_light_map(Diffuse_light_map.diffuse_map_t, msh_grid, PV_1_3Dconfig.PV_central)
 
