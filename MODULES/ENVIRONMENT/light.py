@@ -198,7 +198,7 @@ class Light_shade_scene:
         unique, counts = np.unique(Touched, return_counts=True)
         
         #Creation of the empty matrix of sky view
-        Diffu = np.ones(self.meshgrid.X.shape)
+        Diffu = np.ones(self.meshgrid.X.shape, dtype=np.float16)
 
         #Transformation of the 1D index to 2D indexes
         matrix_index = np.unravel_index(unique.astype("int"),Diffu.shape)
@@ -228,7 +228,7 @@ class Light_shade_scene:
                                                            retry=False)
         
         #Creation of the initial direct map based on the shape of sun_Positions
-        direct_1D_map = np.ones(len(TargetPoints[:,0]))
+        direct_1D_map = np.ones(len(TargetPoints[:,0]), dtype=np.uint16)
         #Transformation of the 1D index to 3D indexes
     
         #Computation of the shade by setting at 0 the locations where rays were intercepted
@@ -275,7 +275,7 @@ class Shade_direct_light:
         
     def shade_matrix_for_each_time(self, id_rays_stp, meshgrid):
         
-        direct_1D_map = np.ones(len(self.TargetPoints[:,0].flatten()))
+        direct_1D_map = np.ones(len(self.TargetPoints[:,0].flatten()), dtype=np.uint16)
     
     
         direct_1D_map[id_rays_stp] = 0
@@ -332,7 +332,7 @@ class Sky_view_factor:
     
     def sky_view_matrix(self, n_suns, sourcesID, ID_rays_Stp, meshgrid):
         
-        Diffu = np.ones(len(meshgrid.X.flatten()))
+        Diffu = np.ones(len(meshgrid.X.flatten()), dtype=np.float16)
 
         Touched = sourcesID[ID_rays_Stp]
         unique, counts = np.unique(Touched, return_counts=True)

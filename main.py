@@ -5,8 +5,7 @@ Created on Tue Jan 17 16:06:55 2023
 
 @author: Roxane Bruhwyler
 """
-
-
+import numpy as np
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.PHOTOVOLTAICS.configurations import PV_Configuration_3D
@@ -31,9 +30,9 @@ msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_I
                                        Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
                                        Loc_1['dX_InterestZone'], Loc_1['dY_InterestZone'])
 
-#Direct_light_map = Shade_direct_light(msh_grid, PV_1_3Dconfig.PV_central, Sun_positions.solar_vector)
+Direct_light_map = Shade_direct_light(msh_grid, PV_1_3Dconfig.PV_central, Sun_positions.solar_vector)
 
-#Diffuse_light_map = Sky_view_factor(msh_grid, PV_1_3Dconfig.PV_central, 360)
+Diffuse_light_map = Sky_view_factor(msh_grid, PV_1_3Dconfig.PV_central, 360)
 
 #New implemtation
 shade_scene = Light_shade_scene(msh_grid,PV_1_3Dconfig.PV_central)
@@ -58,9 +57,7 @@ print("Direct map differences: " + str(sum(Direct_Diff.flatten())))
 
 show_light_map(Direct_light_map.direct_map_t[:,:,3], msh_grid, PV_1_3Dconfig.PV_central)
 
-show_light_map(Diffuse_light_map.diffuse_map_t, msh_grid, PV_1_3Dconfig.PV_central)
-
-
+show_light_map(Diffuse_light_map.diffuse_map_t.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central)
 
 """
 
