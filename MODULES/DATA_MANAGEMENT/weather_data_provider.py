@@ -13,8 +13,6 @@ import json
 import requests
 import time
 
-
-
 from MODULES.user_support_tools import PASE_Logger
 
 
@@ -34,9 +32,11 @@ class Weather_data:
             
     def get_n_years_hourly_WD(self, lat, long, start_year, end_year):
         
-        self.nyears_hourly_WD = {}
+        self.nyears = {}
     
         for year in range(start_year, end_year+1):
+            msg = 'Get hourly weather data for year '+str(year)+' from PvGis'
+            PASE_Logger(msg, 'INFO')
             pvgis = PvGis()
             pvgis.latitude, pvgis.longitude = lat, long
             pvgis.start_date = datetime(year, 1, 1, 00, 00, 00)
@@ -51,11 +51,12 @@ class Weather_data:
                 "TAmb": "T2m", "Ws": 'WS10m'}            
             one_year_dataframe = one_year_dataframe.rename(columns=rename_df)
             
-            self.nyears_hourly_WD[str(year)] = one_year_dataframe
+            self.nyears[str(year)] = one_year_dataframe
         
             
              
 class PvGis:
+# Source : https://github.com/MechatronicsBlog/Weather_data_Python_PVGIS/blob/master/PvGis.py    
 
     # Request API
     API_HOURLY_TIME_SERIES = 'http://re.jrc.ec.europa.eu/pvgis5/seriescalc.php'
@@ -292,6 +293,7 @@ class PvGis:
   
             
 class data_row:
+#Source: https://github.com/MechatronicsBlog/Weather_data_Python_PVGIS/blob/master/PvGis.py
 
     def __init__(self, date_time, ghi, dni, dhi, ta, ws):
         self.date_time = date_time

@@ -33,7 +33,7 @@ SimulationStartingYear:
    Unit: dimensionless [-]
    Definition: Starting year of the simulation
 SimulationEndingYear:
-   Value: 2008
+   Value: 2006
    Type: integer
    Limit: [SimulationStartingYear, 2016]
    Unit: dimensionless [-]

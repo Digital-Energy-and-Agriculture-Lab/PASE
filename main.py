@@ -9,7 +9,7 @@ import numpy as np
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.PHOTOVOLTAICS.configurations import PV_Configuration_3D
-from MODULES.ENVIRONMENT.light import Sun_positions
+from MODULES.ENVIRONMENT.light import Sun_positions_sampled
 from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
 from MODULES.ENVIRONMENT.light import Shade_direct_light, Sky_view_factor, show_light_map, Light_shade_scene
 
@@ -21,10 +21,10 @@ PV_1 = YAML_Inputs_provider(file='PV_central.yaml').i
 
 PV_1_3Dconfig = PV_Configuration_3D(PV_1)
 
-Sun_positions = Sun_positions(Loc_1['Latitude'],
-                              Loc_1['Longitude'],
-                              Loc_1['PrecisionLevelOnSunPosition'],
-                              Loc_1['LocationName'])
+Sun_positions = Sun_positions_sampled(Loc_1['Latitude'],
+                                      Loc_1['Longitude'],
+                                      Loc_1['PrecisionLevelOnSunPosition'],
+                                      Loc_1['LocationName'])
 
 msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_InterestZone'],
                                        Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
