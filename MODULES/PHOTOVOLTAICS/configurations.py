@@ -55,7 +55,7 @@ class PV_Configuration_3D:
         
     def rotation_1st_axis(self):
         
-        self.tilted_PV_block = self.PV_block.rotate_x(self.PV_i['TiltX'])
+        self.tilted_PV_block = self.PV_block.rotate_y(self.PV_i['TiltY'])
         
         
     def create_central(self):

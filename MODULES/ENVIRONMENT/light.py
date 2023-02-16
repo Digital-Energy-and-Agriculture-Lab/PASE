@@ -118,6 +118,90 @@ class Sun_positions:
         
         return solar_hour_angle
     
+    
+class Light:
+
+    def __init__(self, WD, SP):
+        
+        self.data = {}
+       
+        for year in WD.keys():
+            
+            GHI = WD[year]['G(h)'].to_numpy()
+            
+            if int(year)%4 == 0:                
+                rad_top_atm = SP.top_atm_rad_leapY
+            else:
+                rad_top_atm = SP.top_atm_rad_nonleapY
+                
+            kt = self.get_clearness_sky_index(rad_top_atm, GHI)    
+            DHI = self.get_diffuse_horizontal_radiation(kt, GHI)
+            BHI = self.get_beam_horizontal_radiation(GHI, DHI)
+            Ai = self.get_anisotropy_index(rad_top_atm, BHI)
+            f = self.get_modulating_factor(GHI, BHI)
+            
+            df = pd.DataFrame({'GHI': GHI.tolist(),
+                               'BHI': BHI.tolist(),
+                               'DHI': DHI.tolist(),
+                               'rad_top_atm': rad_top_atm.tolist(),
+                               'kt': kt.tolist(),
+                               'Ai': Ai.tolist(),
+                               'f': f.tolist()}, index=WD[year].index)
+            
+            self.data[year] = df            
+                    
+    def get_clearness_sky_index(self, rad_top_atm, GHI):
+            
+        kt = np.zeros(len(rad_top_atm))    
+        kt[rad_top_atm>0] = np.maximum(0.1, np.minimum(GHI[rad_top_atm>0]/rad_top_atm[rad_top_atm>0], 0.9))
+        kt[np.where(rad_top_atm<=0)] = 0.1
+        
+        return kt
+    
+    def get_diffuse_horizontal_radiation(self, kt, GHI):
+        # Erbs et al. correlation (1982), 
+        #source : John A. Duffie, William A. Beckman(auth.)- Solar Engineering of Thermal Processes, 
+        #Fourth Edition (2013), page 76, equation 2.10.1
+        DHI = np.zeros(len(GHI))
+        
+        ind = np.where(kt<=0.8)
+        DHI[ind] = (0.9511*np.ones_like(ind)
+                    - 0.1604*kt[ind]
+                    + 4.388*kt[ind]**2
+                    - 16.638*kt[ind]**3
+                    + 12.336*kt[ind]**4)*GHI[ind]
+        
+        ind = np.where(kt<=0.22)
+        DHI[ind] = (np.ones_like(ind) - 0.09*kt[ind])*GHI[ind]
+
+        ind = np.where(kt>0.8)
+        DHI[ind] = 0.165*GHI[ind]
+        
+        return DHI
+    
+    def get_beam_horizontal_radiation(self, GHI, DHI):
+        
+        BHI = GHI - DHI
+        
+        return BHI
+    
+    def get_anisotropy_index(self, rad_top_atm, BHI):
+        #source : John A. Duffie, William A. Beckman(auth.)- Solar Engineering of Thermal Processes, 
+        #Fourth Edition (2013), page 92, equation 2.16.3
+
+        Ai = np.zeros(len(rad_top_atm))
+        ind = np.where(rad_top_atm!=0)
+        Ai[ind] = BHI[ind]/rad_top_atm[ind]
+        
+        return Ai  
+    
+    def get_modulating_factor(self, GHI, BHI):
+        
+        f = np.zeros(len(GHI))
+        f[GHI>0] = np.sqrt(BHI[GHI>0]/GHI[GHI>0])
+        
+        return f
+    
         
 class Sun_positions_sampled:
     
