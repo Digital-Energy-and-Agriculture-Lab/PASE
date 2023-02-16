@@ -12,10 +12,10 @@ import numpy as np
 
 class PV_Configuration_3D:
     
-    def __init__(self, PV_i):
+    def __init__(self, PV_i,visualization=False):
         
         self.PV_i = PV_i
-        
+        self.visualization = visualization
         fst_panel = self.create_first_panel()
         self.create_block_of_panels(fst_panel)
         self.rotation_1st_axis()
@@ -77,27 +77,28 @@ class PV_Configuration_3D:
         
         #test afficher le sol
         
-        plotter = pyV.Plotter(lighting=None)
-        plotter.add_mesh(self.PV_central, color='black')
-        
-        ground = np.array([[-100, 100, 0],
-                           [100, 100, 0],
-                           [-100, -100, 0],
-                           [100, -100, 0]])
-        
-        ground_m = np.hstack([[3, 0, 1, 2],    
-                              [3, 1, 2, 3],])
-        
-        grnd = pyV.PolyData(ground, ground_m)
-        
-        plotter.add_mesh(grnd, color='green')
-        
-        light = pyV.Light()
-        light.set_direction_angle(30, 45)    
-        plotter.add_light(light)
-        
-        #plotter.set_background(color='#A6D0DE')
-        
-        plotter.show()
+        if self.visualization:
+            plotter = pyV.Plotter(lighting=None)
+            plotter.add_mesh(self.PV_central, color='black')
+            
+            ground = np.array([[-100, 100, 0],
+                               [100, 100, 0],
+                               [-100, -100, 0],
+                               [100, -100, 0]])
+            
+            ground_m = np.hstack([[3, 0, 1, 2],    
+                                  [3, 1, 2, 3],])
+            
+            grnd = pyV.PolyData(ground, ground_m)
+            
+            plotter.add_mesh(grnd, color='green')
+            
+            light = pyV.Light()
+            light.set_direction_angle(30, 45)    
+            plotter.add_light(light)
+            
+            #plotter.set_background(color='#A6D0DE')
+            
+            plotter.show()
         
         

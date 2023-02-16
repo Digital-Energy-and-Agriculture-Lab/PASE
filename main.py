@@ -19,7 +19,7 @@ Loc_1 = YAML_Inputs_provider(file='Wallhausen.yaml').i
 
 PV_1 = YAML_Inputs_provider(file='PV_central.yaml').i
 
-PV_1_3Dconfig = PV_Configuration_3D(PV_1)
+PV_1_3Dconfig = PV_Configuration_3D(PV_1,visualization = False)
 
 Sun_positions = Sun_positions_sampled(Loc_1['Latitude'],
                                       Loc_1['Longitude'],
@@ -40,24 +40,24 @@ Diffu_map = shade_scene.diffuse_map(360)
 Direct_map = shade_scene.direct_map(Sun_positions.solar_vector)
 
 
-#Old implemtation
-Diffuse_light_map = Sky_view_factor(msh_grid, PV_1_3Dconfig.PV_central, 360)
-Direct_light_map = Shade_direct_light(msh_grid, PV_1_3Dconfig.PV_central, Sun_positions.solar_vector)
-Old_Diffu_map = Diffuse_light_map.diffuse_map_t
-Old_Direct_light_map = Direct_light_map.direct_map_t
+# #Old implemtation
+# Diffuse_light_map = Sky_view_factor(msh_grid, PV_1_3Dconfig.PV_central, 360)
+# Direct_light_map = Shade_direct_light(msh_grid, PV_1_3Dconfig.PV_central, Sun_positions.solar_vector)
+# Old_Diffu_map = Diffuse_light_map.diffuse_map_t
+# Old_Direct_light_map = Direct_light_map.direct_map_t
 
 
-Diffu_Diff = Diffu_map - Old_Diffu_map
-print("Diffuse map differences: " + str(sum(Diffu_Diff.flatten())))
+# Diffu_Diff = Diffu_map - Old_Diffu_map
+# print("Diffuse map differences: " + str(sum(Diffu_Diff.flatten())))
 
-Direct_Diff = Direct_map - Old_Direct_light_map
-print("Direct map differences: " + str(sum(Direct_Diff.flatten())))
+# Direct_Diff = Direct_map - Old_Direct_light_map
+# print("Direct map differences: " + str(sum(Direct_Diff.flatten())))
 
 
 
-show_light_map(Direct_light_map.direct_map_t[:,:,3], msh_grid, PV_1_3Dconfig.PV_central)
+# show_light_map(Direct_light_map.direct_map_t[:,:,3], msh_grid, PV_1_3Dconfig.PV_central)
 
-show_light_map(Diffuse_light_map.diffuse_map_t.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central)
+# show_light_map(Diffuse_light_map.diffuse_map_t.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central)
 
 """
 

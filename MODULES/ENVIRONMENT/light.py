@@ -140,21 +140,31 @@ class Sun_positions_sampled:
         solar_position = pvlibSP.get_solarposition(index, lat, long)
         
         solar_position['hour'] = index.hour
-        solar_position['month'] = index.month
+        solar_position['month'] = index.month//(365/12)
         solar_position['week'] = index.dayofyear//7
         solar_position['doy'] = index.dayofyear
         
         
-        if precision_lvl == 1:           
-            SP_month = solar_position.groupby(by=['month','hour']).mean()
+        if precision_lvl == 1:       
+            # Creation of a sampling month variable which is offset by half of 365/12
+            # The first created period is removed by removing negative value
+            solar_position['monthS'] = (index.dayofyear-365/12/2)//30.4
+            solar_position = solar_position.loc[solar_position['monthS']>0,:]
+            SP_month = solar_position.drop_duplicates(subset = ['monthS','hour'],keep = 'first').drop(columns = ["monthS"])
             self.SP = SP_month[SP_month['elevation']>=0]
             self.SP = self.SP.set_index('week', append=True)
-        
+            self.SP = self.SP.set_index('hour', append=True)
+
         elif precision_lvl == 2:  
-            SP_week = solar_position.groupby(by=['week','hour']).mean()
+            # Creation of a sampling week variable which is offset by half of 365/12
+            # The first created period is removed by removing negative value
+            solar_position['weekS'] = (index.dayofyear-3.5)//7
+            solar_position = solar_position.loc[solar_position['weekS']>0,:]
+            SP_week = solar_position.drop_duplicates(subset = ['weekS','hour'],keep = 'first').drop(columns = ["weekS"])
             self.SP = SP_week[SP_week['elevation']>=0]
             self.SP = self.SP.set_index('month', append=True)
-                        
+            self.SP = self.SP.set_index('hour', append=True)
+
         else:
             self.SP = solar_position[solar_position['elevation']>=0]
             self.SP = self.SP.set_index('month', append=True)
