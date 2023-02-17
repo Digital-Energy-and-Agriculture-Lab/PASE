@@ -24,8 +24,16 @@ class PV_system:
         self.panel_efficiency = panel_peak_power/(self.panel_area*1000)
         self.n_panels = (inputs['NumberOfPanelsX']*inputs['NumberOfPanelsY']*
                          inputs['NumberOfPVBlocksX']*inputs['NumberOfPVBlocksY'])
-
-    
+        
+        self.n_rot_axis = inputs['RotationAxisNumber']
+        self.tiltY = inputs['TiltY']
+        
+        #Temporary line
+        self.slope_in_rot_axis_direction = 0
+        self.soil_angle = 0
+        self.GCR_x = (inputs['PanelDimensionX']*inputs['NumberOfPanelsX']/
+                      inputs['RepetitionDistanceOfPVBlocksX'])
+            
     
     def get_electricity_production(self, SP, light, WD):
         
@@ -34,18 +42,18 @@ class PV_system:
             if int(year)%4 == 0:
                 sun_vect = SP.sun_vect_leapY
                 app_zenith = SP.sp_leapY['apparent_zenith'].to_numpy()
-                tilt = self.tilt_leapY
                 
             else:
                 sun_vect = SP.sun_vect_nonleapY
                 app_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
-                tilt = self.tilt_nonleapY
+            
+            self.get_tiltY_along_time(sun_vect)
             
             #Temporary lines
             GHI_reaching_ground = light[year]['GHI'].to_numpy()*0.5
             albedo = 0.25  #should be a vector with the albedo of the crop evolving on the year
             
-            GTI_front, GTI_rear = self.get_GTI(sun_vect, app_zenith, tilt, 
+            GTI_front, GTI_rear = self.get_GTI(sun_vect, app_zenith, 
                                                light[year], GHI_reaching_ground,
                                                albedo)
             
@@ -75,12 +83,11 @@ class PV_system:
                               *self.n_panels*(10**-6))  # MW        
             
                 
-    def get_GTI(self, sun_vect, app_zenith, tilt, light, GHI_reaching_ground,
+    def get_GTI(self, sun_vect, app_zenith, light, GHI_reaching_ground,
                 albedo):
         
         cos_teta = self.get_cos_angle_btw_light_and_panels_normal(sun_vect,
-                                                                  [0,0,1],
-                                                                  tilt)
+                                                                  [0,0,1])
         cos_teta_z = self.get_cos_angle_btw_light_and_zenith(app_zenith)
         
         Rb = self.get_ratio_beam_radiation(cos_teta, cos_teta_z)
@@ -91,13 +98,12 @@ class PV_system:
                                                           light['BHI'].to_numpy(),
                                                           light['DHI'].to_numpy(),
                                                           light['Ai'].to_numpy(),
-                                                          light['f'].to_numpy(),
-                                                          tilt*np.pi/180)
+                                                          light['f'].to_numpy())
         
         if self.bifaciality == 1:
             
             cos_teta_rear = self.get_cos_angle_btw_light_and_panels_normal(
-                sun_vect, [0,0,-1], tilt)
+                sun_vect, [0,0,-1])
             
             Rb_rear = self.get_ratio_beam_radiation(cos_teta_rear, cos_teta_z)
             
@@ -107,8 +113,7 @@ class PV_system:
                                                              light['BHI'].to_numpy(),
                                                              light['DHI'].to_numpy(),
                                                              light['Ai'].to_numpy(),
-                                                             light['f'].to_numpy(),
-                                                             tilt*np.pi/180)
+                                                             light['f'].to_numpy())
             
         else:
             self.GTI_rear = np.zeros(len(sun_vect))
@@ -117,10 +122,12 @@ class PV_system:
             
             
     def compute_global_tilted_irradiance(self, Rb, GHI_ground, albedo, BHI,
-                                         DHI, Ai, f, tilt):
+                                         DHI, Ai, f):
         
         one = np.ones((len(Ai)))
         zero_vector = np.zeros((len(Ai)))
+        
+        tilt = self.tiltY*np.pi/180
         
         #temporaire
         shade_factor_front = zero_vector
@@ -138,13 +145,13 @@ class PV_system:
     
              
     def get_cos_angle_btw_light_and_panels_normal(self, sun_vect, 
-                                                  init_panel_normal, tilt):    
+                                                  init_panel_normal):    
         
         rot_axis_init = np.array([[0,1,0]])*np.ones((len(sun_vect),1))
         panels_normal_init = np.array((init_panel_normal))
         zenith = np.array([[0,0,1]])
         panels_tilt_rad = np.zeros((len(sun_vect[:,0]),1))
-        panels_tilt_rad[:,0] = tilt*np.pi/180
+        panels_tilt_rad[:,0] = self.tiltY*np.pi/180
         rotation_vector1 = panels_tilt_rad*rot_axis_init
         rotation_vector2 = -self.azimut*zenith
         rotation1 = R.from_rotvec(rotation_vector1)
@@ -185,4 +192,74 @@ class PV_system:
         panels_temp = T + 1/U*(alpha*tot_GTI*(1-self.panel_efficiency))
         
         return panels_temp
+    
+    
+    def get_tiltY_along_time(self, sun_vect):
+        
+        one = np.ones((len(sun_vect[:,0])))
+        
+        if self.n_rot_axis == 0:
+            
+            tiltY_along_time = self.tiltY*one
+            
+        elif self.n_rot_axis == 1:
+            
+            sun_vect_central_coord = self.get_sun_vect_in_central_coord(sun_vect)
+            true_tracking_angle = self.get_true_tracking_angle(sun_vect_central_coord)
+            backT_corr_angle = self.get_backT_corr_angle(true_tracking_angle)
+            tiltY_along_time = self.get_corrected_tracking_angle(true_tracking_angle,
+                                                                 backT_corr_angle)
+            
+        self.tiltY = tiltY_along_time*180/np.pi
+            
+    def get_sun_vect_in_central_coord(self, sun_vect):
+        
+        sun_vect_central_coord = np.zeros((len(sun_vect[:,0]),3))
+            
+        sun_vect_central_coord[:,0] = sun_vect[:,0]*np.cos(self.azimut)\
+                                                - sun_vect[:,1]*np.sin(self.azimut)                                               
+                                                     
+        sun_vect_central_coord[:,1] = sun_vect[:,0]*np.sin(self.azimut)*np.cos(self.slope_in_rot_axis_direction)\
+                                         + sun_vect[:,1]*np.cos(self.azimut)*np.cos(self.slope_in_rot_axis_direction)\
+                                         - sun_vect[:,2]*np.sin(self.slope_in_rot_axis_direction)
+                                         
+        self.test1 = sun_vect[:,0]*np.sin(self.azimut)*np.sin(self.slope_in_rot_axis_direction)
+        self.test2 = sun_vect[:,1]*np.cos(self.azimut)*np.sin(self.slope_in_rot_axis_direction)
+        self.test3 = sun_vect[:,2]*np.cos(self.slope_in_rot_axis_direction)
+                                                       
+        sun_vect_central_coord[:,2] = self.test1 + self.test2 + self.test3
+        
+        return sun_vect_central_coord
+    
+    def get_true_tracking_angle(self, sun_v_central_coord):
+                    
+        true_tracking_angle = np.arctan2(sun_v_central_coord[:,0],
+                                         sun_v_central_coord[:,2])
+            
+        return true_tracking_angle
+        
+    def get_backT_corr_angle(self, true_angle):
+        
+        one = np.ones((len(true_angle)))
+        soil_angle = self.soil_angle*one
+        value = np.abs((np.cos(true_angle-self.soil_angle))/
+                                   (self.GCR_x*np.cos(self.soil_angle)))  
+           
+        backT_corr_angle = np.zeros((len(true_angle)))
+        backT_corr_angle[value>=1] = 0
+        backT_corr_angle[value<1] = -np.sign(true_angle[value<1])*np.arccos(
+                                                         (np.abs(np.cos(true_angle[value<1]-soil_angle[value<1])))/
+                                                         (self.GCR_x*np.cos(soil_angle[value<1])))
+            
+        return backT_corr_angle
+    
+    def get_corrected_tracking_angle(self, true_T_angle, backT_corr_angle):
+            
+        corrected_theta_y = true_T_angle + backT_corr_angle
+                    
+        return corrected_theta_y
+            
+            
+            
+            
         
