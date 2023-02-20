@@ -37,6 +37,8 @@ class PV_system:
     
     def get_electricity_production(self, SP, light, WD):
         
+        self.production = {}
+        
         for year in light.keys():
             
             if int(year)%4 == 0:
@@ -64,6 +66,16 @@ class PV_system:
                                                       GTI_front+GTI_rear)
             
             self.get_power_production(panels_temp, GTI_front, GTI_rear)
+            
+            df = pd.DataFrame({'GTI_f': GTI_front.tolist(),
+                               'GTI_r': GTI_rear.tolist(),
+                               'panels_T': panels_temp.tolist(),
+                               'front_P_panel': self.front_power_panel.tolist(),
+                               'rear_P_panel': self.rear_power_panel.tolist(),
+                               'P_central': self.power_central.tolist()}, 
+                               index=WD[year].index)
+            
+            self.production[year] = df 
 
             
     def get_power_production(self, panels_T, GTI_front, GTI_rear, alpha=-0.4, T_std=25):
@@ -86,13 +98,13 @@ class PV_system:
     def get_GTI(self, sun_vect, app_zenith, light, GHI_reaching_ground,
                 albedo):
         
-        cos_teta = self.get_cos_angle_btw_light_and_panels_normal(sun_vect,
+        self.cos_teta = self.get_cos_angle_btw_light_and_panels_normal(sun_vect,
                                                                   [0,0,1])
         cos_teta_z = self.get_cos_angle_btw_light_and_zenith(app_zenith)
         
-        Rb = self.get_ratio_beam_radiation(cos_teta, cos_teta_z)
+        self.Rb = self.get_ratio_beam_radiation(self.cos_teta, cos_teta_z)
         
-        GTI_front = self.compute_global_tilted_irradiance(Rb,
+        GTI_front = self.compute_global_tilted_irradiance(self.Rb,
                                                           GHI_reaching_ground,
                                                           albedo,
                                                           light['BHI'].to_numpy(),
@@ -102,12 +114,12 @@ class PV_system:
         
         if self.bifaciality == 1:
             
-            cos_teta_rear = self.get_cos_angle_btw_light_and_panels_normal(
+            self.cos_teta_rear = self.get_cos_angle_btw_light_and_panels_normal(
                 sun_vect, [0,0,-1])
             
-            Rb_rear = self.get_ratio_beam_radiation(cos_teta_rear, cos_teta_z)
+            self.Rb_rear = self.get_ratio_beam_radiation(self.cos_teta_rear, cos_teta_z)
             
-            GTI_rear = self.compute_global_tilted_irradiance(Rb_rear,
+            GTI_rear = self.compute_global_tilted_irradiance(self.Rb_rear,
                                                              GHI_reaching_ground,
                                                              albedo,
                                                              light['BHI'].to_numpy(),
@@ -201,16 +213,17 @@ class PV_system:
         if self.n_rot_axis == 0:
             
             tiltY_along_time = self.tiltY*one
+            self.tiltY = tiltY_along_time
             
         elif self.n_rot_axis == 1:
             
             sun_vect_central_coord = self.get_sun_vect_in_central_coord(sun_vect)
             true_tracking_angle = self.get_true_tracking_angle(sun_vect_central_coord)
             backT_corr_angle = self.get_backT_corr_angle(true_tracking_angle)
-            tiltY_along_time = self.get_corrected_tracking_angle(true_tracking_angle,
+            tiltY_corrected = self.get_corrected_tracking_angle(true_tracking_angle,
                                                                  backT_corr_angle)
-            
-        self.tiltY = tiltY_along_time*180/np.pi
+            tiltY_limited = self.get_limitated_angle(tiltY_corrected)
+            self.tiltY = tiltY_limited*180/np.pi
             
     def get_sun_vect_in_central_coord(self, sun_vect):
         
@@ -223,11 +236,11 @@ class PV_system:
                                          + sun_vect[:,1]*np.cos(self.azimut)*np.cos(self.slope_in_rot_axis_direction)\
                                          - sun_vect[:,2]*np.sin(self.slope_in_rot_axis_direction)
                                          
-        self.test1 = sun_vect[:,0]*np.sin(self.azimut)*np.sin(self.slope_in_rot_axis_direction)
-        self.test2 = sun_vect[:,1]*np.cos(self.azimut)*np.sin(self.slope_in_rot_axis_direction)
-        self.test3 = sun_vect[:,2]*np.cos(self.slope_in_rot_axis_direction)
+        c1 = sun_vect[:,0]*np.sin(self.azimut)*np.sin(self.slope_in_rot_axis_direction)
+        c2 = sun_vect[:,1]*np.cos(self.azimut)*np.sin(self.slope_in_rot_axis_direction)
+        c3 = sun_vect[:,2]*np.cos(self.slope_in_rot_axis_direction)
                                                        
-        sun_vect_central_coord[:,2] = self.test1 + self.test2 + self.test3
+        sun_vect_central_coord[:,2] = c1 + c2 + c3
         
         return sun_vect_central_coord
     
@@ -258,6 +271,15 @@ class PV_system:
         corrected_theta_y = true_T_angle + backT_corr_angle
                     
         return corrected_theta_y
+    
+    def get_limitated_angle(self, tiltY):
+       
+        ind = np.where(tiltY>np.pi/2)
+        tiltY[ind] = 0
+        ind = np.where(tiltY<-np.pi/2)
+        tiltY[ind] = 0
+               
+        return tiltY
             
             
             
