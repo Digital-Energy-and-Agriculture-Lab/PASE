@@ -31,7 +31,8 @@ class PV_system:
         #Temporary line
         self.slope_in_rot_axis_direction = 0
         self.soil_angle = 0
-        self.GCR_x = (inputs['PanelDimensionX']*inputs['NumberOfPanelsX']/
+        self.panel_dim_x = inputs['PanelDimensionX']
+        self.GCR_x = (self.panel_dim_x*inputs['NumberOfPanelsX']/
                       inputs['RepetitionDistanceOfPVBlocksX'])
             
     
@@ -208,12 +209,11 @@ class PV_system:
     
     def get_tiltY_along_time(self, sun_vect):
         
-        one = np.ones((len(sun_vect[:,0])))
-        
         if self.n_rot_axis == 0:
-            
-            tiltY_along_time = self.tiltY*one
-            self.tiltY = tiltY_along_time
+                         
+            sun_vect_central_coord = self.get_sun_vect_in_central_coord(sun_vect)
+            #SF_front, SF_rear = self.get_shading_factor(sun_vect_central_coord)
+            self.tiltY = self.tiltY*np.ones((len(sun_vect[:,0])))
             
         elif self.n_rot_axis == 1:
             
@@ -224,6 +224,7 @@ class PV_system:
                                                                  backT_corr_angle)
             tiltY_limited = self.get_limitated_angle(tiltY_corrected)
             self.tiltY = tiltY_limited*180/np.pi
+            #SF_front, SF_rear = self.get_shading_factor(sun_vect_central_coord)
             
     def get_sun_vect_in_central_coord(self, sun_vect):
         
@@ -268,9 +269,9 @@ class PV_system:
     
     def get_corrected_tracking_angle(self, true_T_angle, backT_corr_angle):
             
-        corrected_theta_y = true_T_angle + backT_corr_angle
+        corrected_tiltY = true_T_angle + backT_corr_angle
                     
-        return corrected_theta_y
+        return corrected_tiltY
     
     def get_limitated_angle(self, tiltY):
        
@@ -280,8 +281,57 @@ class PV_system:
         tiltY[ind] = 0
                
         return tiltY
+""" 
+    def get_shading_factor(self, sun_vect_cc):
+        
+        # Teta_r is the sun elevation in the plane perpendicular to the rotation axis of the blocks of panels
+        teta_r_front, teta_r_rear = np.arctan(sun_vect_cc[:,2]/
+                                              sun_vect_cc[:,0])
+        teta_r_front[sun_vect_cc[:,2]<0], teta_r_rear[sun_vect_cc[:,2]<0] = 'NaN'
+        
+        teta_r_front[sun_vect_cc[:,0]<0] = 'NaN'
+        teta_r_rear[sun_vect_cc[:,0]>0] = 'NaN'
+        teta_r_rear[sun_vect_cc[:,0]<0] = -teta_r_rear[sun_vect_cc[:,0]<0]
+                       
+        one = np.ones((len(self.tiltY)))
+            
+        delta_H_btw_higher_and_lower_front = (2*np.sin(self.tiltY)*(self.panel_dim_x/2))  #Don't take into account the possibility to have an area with slope perpendicular to the rotation axis
+        delta_L_btw_higher_and_lower_front = (self.space_x*one)-(2*np.cos(self.tiltY)*(self.panel_dim_x/2))
+            
+        delta_H_btw_higher_and_lower_front = (2*np.sin(self.tiltY)*(self.panel_dim_x/2))-(np.sin(self.slope_perp_to_rot_axis)*self.space_x*one)
+        delta_L_btw_higher_and_lower_front = (np.cos(self.slope_perp_to_rot_axis)*self.space_x*one)+(2*np.cos(self.tiltY)*(self.panel_dim_x/2))
+                        
+        sun_elevation_front = np.zeros((len(self.tiltY),2))
+        sun_elevation_front[:,0] = np.arctan(delta_H_btw_higher_and_lower_front/delta_L_btw_higher_and_lower_front)  #shade factor = 0
+            
+        sun_elevation_rear = np.zeros((len(self.tiltY),2))
+        sun_elevation_rear[:,0] = np.arctan(delta_H_btw_higher_and_lower_rear/delta_L_btw_higher_and_lower_rear)  #shade factor = 0
+                              
+        free_panel_when_sun_elev_0 = ((np.sin(self.slope_perp_to_rot_axis)*self.space_x)/
+                                      (np.cos((np.pi/2)*one_vect-self.tiltY)))
+            
+        shade_factor = np.zeros((len(self.tiltY),2))
+        shade_factor[:,1] = one_vect-(free_panel_when_sun_elev_0/self.panel_dim_x)
+            
+        m_front = (-shade_factor[:,1])/(sun_elevation_front[:,0]-sun_elevation_front[:,1])
+            
+        p_front = shade_factor[:,1] - m_front*sun_elevation_front[:,1]
+            
+        self.quarter_H_shade_factor_front = m_front*teta_r_front + p_front   
+            
+        m_rear = (-shade_factor[:,1])/(sun_elevation_rear[:,0]-sun_elevation_rear[:,1])
+            
+        p_rear = shade_factor[:,1] - m_front*sun_elevation_rear[:,1]
+            
+        self.quarter_H_shade_factor_rear = m_rear*teta_r_rear + p_rear
+        
+        self.quarter_H_shade_factor_front[teta_r_front<np.abs(self.slope_perp_to_rot_axis)] = 1
+        self.quarter_H_shade_factor_rear[teta_r_rear<np.abs(self.slope_perp_to_rot_axis)] = 1
+        
+        self.quarter_H_shade_factor_front[np.isnan(teta_r_front)] = 0
+        self.quarter_H_shade_factor_rear[np.isnan(teta_r_rear)] = 0
             
             
             
-            
+"""           
         

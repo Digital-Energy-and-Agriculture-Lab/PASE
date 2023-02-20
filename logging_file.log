@@ -1,13 +1,15 @@
-02:26:50 PM  (INFO)  -  START OF THE SIMULATION
-02:26:50 PM  (INFO)  -  Input values from Wallhausen.yaml have been imported successfully
-02:26:50 PM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
-02:26:50 PM  (DEBUG)  -  locator: <matplotlib.ticker.AutoLocator object at 0x7f2782170610>
-02:26:50 PM  (DEBUG)  -  locator: <matplotlib.ticker.AutoLocator object at 0x7f27825b4eb0>
-02:26:52 PM  (DEBUG)  -  generating face normals
-02:27:02 PM  (DEBUG)  -  intersects_id executed in 11.0072 seconds.
-02:27:03 PM  (DEBUG)  -  generating face normals
-02:27:07 PM  (DEBUG)  -  intersects_id executed in 4.2465 seconds.
-02:27:08 PM  (DEBUG)  -  generating face normals
-02:27:11 PM  (DEBUG)  -  intersects_id executed in 4.2892 seconds.
-02:27:13 PM  (DEBUG)  -  generating face normals
-02:27:24 PM  (DEBUG)  -  intersects_id executed in 12.4593 seconds.
+03:40:21 PM  (INFO)  -  START OF THE SIMULATION
+03:40:21 PM  (INFO)  -  Input values from Wallhausen.yaml have been imported successfully
+03:40:21 PM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
+03:40:21 PM  (INFO)  -  Get hourly weather data for year 2005 from PvGis
+03:40:21 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+03:40:22 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 302 0
+03:40:22 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+03:40:22 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 301 None
+03:40:23 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 200 962492
+03:40:27 PM  (INFO)  -  Get hourly weather data for year 2006 from PvGis
+03:40:27 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+03:40:28 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 302 0
+03:40:28 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+03:40:28 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 301 None
+03:40:29 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 200 962724
