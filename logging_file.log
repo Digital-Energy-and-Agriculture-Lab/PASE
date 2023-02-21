@@ -1,15 +1,15 @@
-03:40:21 PM  (INFO)  -  START OF THE SIMULATION
-03:40:21 PM  (INFO)  -  Input values from Wallhausen.yaml have been imported successfully
-03:40:21 PM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
-03:40:21 PM  (INFO)  -  Get hourly weather data for year 2005 from PvGis
-03:40:21 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-03:40:22 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 302 0
-03:40:22 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-03:40:22 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 301 None
-03:40:23 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 200 962492
-03:40:27 PM  (INFO)  -  Get hourly weather data for year 2006 from PvGis
-03:40:27 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-03:40:28 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 302 0
-03:40:28 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-03:40:28 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 301 None
-03:40:29 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 200 962724
+04:56:43 PM  (INFO)  -  START OF THE SIMULATION
+04:56:43 PM  (INFO)  -  Input values from Wallhausen.yaml have been imported successfully
+04:56:43 PM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
+04:56:43 PM  (INFO)  -  Get hourly weather data for year 2005 from PvGis
+04:56:43 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+04:56:43 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 302 0
+04:56:43 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+04:56:43 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 301 None
+04:56:44 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 200 962492
+04:56:45 PM  (INFO)  -  Get hourly weather data for year 2006 from PvGis
+04:56:45 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+04:56:45 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 302 0
+04:56:45 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+04:56:45 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 301 None
+04:56:46 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=51.458&lon=11.174&raddatabase=PVGIS-SARAH&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 200 962724
