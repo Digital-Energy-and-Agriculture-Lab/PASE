@@ -52,7 +52,7 @@ RepetitionDistanceOfPanelsY:
    Unit: meters [m]
    Definition: Length between the repetition of 2 panels on the y axis of one block of panels
 RotationAxisNumber:
-   Value: 1
+   Value: 0
    Type: integer
    Limit: [0, 1]
    Unit: dimensionless [-]

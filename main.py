@@ -8,10 +8,12 @@ Created on Tue Jan 17 16:06:55 2023
 import numpy as np
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
 from MODULES.PHOTOVOLTAICS.configurations import PV_Configuration_3D
-from MODULES.ENVIRONMENT.light import Sun_positions_sampled
+from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
 from MODULES.ENVIRONMENT.light import Shade_direct_light, Sky_view_factor, show_light_map, Light_shade_scene
+from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
 
 PASE_Logger()
 
@@ -19,17 +21,34 @@ Loc_1 = YAML_Inputs_provider(file='Wallhausen.yaml').i
 
 PV_1 = YAML_Inputs_provider(file='PV_central.yaml').i
 
-Sun_positions = Sun_positions_sampled(Loc_1['Latitude'],
+Sun_positions_samp = Sun_positions_sampled(Loc_1['Latitude'],
                                       Loc_1['Longitude'],
                                       Loc_1['PrecisionLevelOnSunPosition'],
                                       Loc_1['LocationName'])
 
-PV_1_3Dconfig = PV_Configuration_3D(PV_1, Sun_positions.solar_vector,
+PV_1_3Dconfig = PV_Configuration_3D(PV_1, Sun_positions_samp.solar_vector,
                                     visualization=False)
 
 msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_InterestZone'],
                                        Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
                                        Loc_1['dX_InterestZone'], Loc_1['dY_InterestZone'])
+
+WD = Weather_data(Loc_1['Latitude'],
+                  Loc_1['Longitude'],
+                  Loc_1['SimulationStartingYear'],
+                  Loc_1['SimulationEndingYear'],
+                  Loc_1['WeatherDataOption'])
+
+Sun_positions = Sun_positions(Loc_1['Latitude'],
+                              Loc_1['Longitude'],
+                              len(WD.nyears[str(Loc_1['SimulationStartingYear'])]))
+
+Light = Light(WD.nyears, Sun_positions)
+
+PV_central = PV_system(PV_1)
+
+PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
+
 
 
 
@@ -39,7 +58,7 @@ msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_I
 
 #New implemtation
 shade_scene = Light_shade_scene(msh_grid,PV_1_3Dconfig.PV_central)
-shade_scene.get_light_map(72, Sun_positions.solar_vector)
+shade_scene.get_light_map(180, Sun_positions_samp.solar_vector)
 #Diffu_map = shade_scene.diffuse_map(360)
 #Direct_map = shade_scene.direct_map(Sun_positions.solar_vector)
 
@@ -58,10 +77,17 @@ shade_scene.get_light_map(72, Sun_positions.solar_vector)
 # print("Direct map differences: " + str(sum(Direct_Diff.flatten())))
 
 
-
-show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
+show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central)
+#show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
 
 # show_light_map(Diffuse_light_map.diffuse_map_t.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central)
+
+
+
+
+
+
+
 
 """
 

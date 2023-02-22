@@ -51,7 +51,6 @@ class PV_Configuration_3D:
             self.PV_central = []
             self.get_tiltY_along_time(sun_vector, azimut, GCR_x)
             for tilt in self.tiltY_along_time:
-                print(tilt)
                 PV_block_tilted = self.rotation_1st_axis(PV_block, tilt)
                 PV_central = self.create_central(PV_block_tilted, 
                                                  repet_dist_blockX,
@@ -98,8 +97,6 @@ class PV_Configuration_3D:
         
     def rotation_1st_axis(self, PV_block, tilt):
         
-        if tilt < 0:
-            tilt = 360+tilt
         tilted_PV_block = PV_block.rotate_y(tilt)
         
         return tilted_PV_block
