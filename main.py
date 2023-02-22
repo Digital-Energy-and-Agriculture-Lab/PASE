@@ -12,7 +12,7 @@ from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
 from MODULES.PHOTOVOLTAICS.configurations import PV_Configuration_3D
 from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
-from MODULES.ENVIRONMENT.light import Shade_direct_light, Sky_view_factor, show_light_map, Light_shade_scene
+from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
 from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
 
 PASE_Logger()
@@ -50,37 +50,29 @@ PV_central = PV_system(PV_1)
 PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
 
 
-
-
-#Direct_light_map = Shade_direct_light(msh_grid, PV_1_3Dconfig.PV_central, Sun_positions.solar_vector)
-
-#Diffuse_light_map = Sky_view_factor(msh_grid, PV_1_3Dconfig.PV_central, 360)
-
-#New implemtation
 shade_scene = Light_shade_scene(msh_grid,PV_1_3Dconfig.PV_central)
-shade_scene.get_light_map(180, Sun_positions_samp.solar_vector)
-#Diffu_map = shade_scene.diffuse_map(360)
-#Direct_map = shade_scene.direct_map(Sun_positions.solar_vector)
+shade_scene.get_light_map(144, Sun_positions_samp.solar_vector)
 
 
-# #Old implemtation
-# Diffuse_light_map = Sky_view_factor(msh_grid, PV_1_3Dconfig.PV_central, 360)
-# Direct_light_map = Shade_direct_light(msh_grid, PV_1_3Dconfig.PV_central, Sun_positions.solar_vector)
-# Old_Diffu_map = Diffuse_light_map.diffuse_map_t
-# Old_Direct_light_map = Direct_light_map.direct_map_t
-
-
-# Diffu_Diff = Diffu_map - Old_Diffu_map
-# print("Diffuse map differences: " + str(sum(Diffu_Diff.flatten())))
-
-# Direct_Diff = Direct_map - Old_Direct_light_map
-# print("Direct map differences: " + str(sum(Direct_Diff.flatten())))
 
 
 show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central)
+# IF there is one rotation axis
 #show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
 
-# show_light_map(Diffuse_light_map.diffuse_map_t.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central)
+show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

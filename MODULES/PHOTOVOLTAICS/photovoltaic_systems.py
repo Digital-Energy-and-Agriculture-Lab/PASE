@@ -55,7 +55,8 @@ class PV_system:
                 sun_vect = SP.sun_vect_nonleapY
                 app_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
             
-            self.get_tiltY_and_shade_factor_along_time(sun_vect)
+            tiltY, sv_CC = self.get_tiltY_along_time(sun_vect)
+            SF_front, SF_rear = self.get_shading_factor(sv_CC, tiltY)
             
             #Temporary lines !!!!!!!
             GHI_reaching_ground = light[year]['GHI'].to_numpy()*0.5
@@ -63,7 +64,7 @@ class PV_system:
             
             GTI_front, GTI_rear = self.get_GTI(sun_vect, app_zenith, 
                                                light[year], GHI_reaching_ground,
-                                               albedo)
+                                               albedo, SF_front, SF_rear, tiltY)
             
             ws = WD[year]['WS10m'].to_numpy()
             amb_temp = WD[year]['T2m'].to_numpy()
@@ -71,16 +72,17 @@ class PV_system:
             panels_temp = self.get_panels_temperature(ws, amb_temp,
                                                       GTI_front+GTI_rear)
             
-            self.get_power_production(panels_temp, GTI_front, GTI_rear)
+            frontP_panel, rearP_panel, P_central = self.get_power_production(
+                panels_temp, GTI_front, GTI_rear)
             
             df = pd.DataFrame({'GTI_f': GTI_front.tolist(),
                                'GTI_r': GTI_rear.tolist(),
                                'panels_T': panels_temp.tolist(),
-                               'SF_f': self.SF_front.tolist(),
-                               'SF_r': self.SF_rear.tolist(),   
-                               'front_P_panel': self.front_power_panel.tolist(),
-                               'rear_P_panel': self.rear_power_panel.tolist(),
-                               'P_central': self.power_central.tolist()}, 
+                               'SF_f': SF_front.tolist(),
+                               'SF_r': SF_rear.tolist(),   
+                               'front_P_panel': frontP_panel.tolist(),
+                               'rear_P_panel': rearP_panel.tolist(),
+                               'P_central': P_central.tolist()}, 
                                index=WD[year].index)
             
             self.production[year] = df 
@@ -90,21 +92,23 @@ class PV_system:
         
         one = np.ones((len(panels_T)))
         
-        self.front_power_panel = (self.panel_efficiency*GTI_front
+        front_power_panel = (self.panel_efficiency*GTI_front
                                   *(1+((alpha/100)*(panels_T-T_std*one)))
                                   *self.panel_area) # W
         
-        self.rear_power_panel = (self.panel_efficiency*self.bifaciality_factor
+        rear_power_panel = (self.panel_efficiency*self.bifaciality_factor
                                  *GTI_rear
                                  *(1+((alpha/100)*(panels_T-T_std*one)))
                                  *self.panel_area) # W
                                    
-        self.power_central = ((self.front_power_panel + self.rear_power_panel)
-                              *self.n_panels*(10**-6))  # MW        
+        power_central = ((front_power_panel + rear_power_panel)
+                              *self.n_panels*(10**-6))  # MW    
+        
+        return front_power_panel, rear_power_panel, power_central
             
                 
     def get_GTI(self, sun_vect, app_zenith, light, GHI_reaching_ground,
-                albedo):
+                albedo, SF_f, SF_r, tiltY):
         
         self.cos_teta = self.get_cos_angle_btw_light_and_panels_normal(sun_vect,
                                                                   [0,0,1])
@@ -118,7 +122,9 @@ class PV_system:
                                                           light['BHI'].to_numpy(),
                                                           light['DHI'].to_numpy(),
                                                           light['Ai'].to_numpy(),
-                                                          light['f'].to_numpy())
+                                                          light['f'].to_numpy(),
+                                                          SF_f,
+                                                          tiltY)
         
         if self.bifaciality == 1:
             
@@ -133,7 +139,9 @@ class PV_system:
                                                              light['BHI'].to_numpy(),
                                                              light['DHI'].to_numpy(),
                                                              light['Ai'].to_numpy(),
-                                                             light['f'].to_numpy())
+                                                             light['f'].to_numpy(),
+                                                             SF_r,
+                                                             tiltY)
             
         else:
             self.GTI_rear = np.zeros(len(sun_vect))
@@ -142,17 +150,17 @@ class PV_system:
             
             
     def compute_global_tilted_irradiance(self, Rb, GHI_ground, albedo, BHI,
-                                         DHI, Ai, f):
+                                         DHI, Ai, f, SF, tiltY):
         
         one = np.ones((len(Ai)))
         zero_vector = np.zeros((len(Ai)))
         
-        tilt = self.tiltY*np.pi/180
+        tilt = tiltY*np.pi/180
         
         #temporaire
         shade_factor_front = zero_vector
         
-        direct_component = (BHI + DHI*Ai)*Rb*(one - shade_factor_front)
+        direct_component = ((BHI + DHI*Ai)*Rb*(one - shade_factor_front))*SF
         
         diffuse_component = (DHI*(one - Ai)*((one + np.cos(tilt))/2)
                                   *(one + f*(np.sin(tilt/2))**3))    
@@ -214,13 +222,12 @@ class PV_system:
         return panels_temp
     
     
-    def get_tiltY_and_shade_factor_along_time(self, sun_vect):
+    def get_tiltY_along_time(self, sun_vect):
         
         if self.n_rot_axis == 0:
             
-            self.tiltY = self.tiltY*np.ones((len(sun_vect[:,0])))             
+            tiltY = self.tiltY*np.ones((len(sun_vect[:,0])))             
             sun_vect_central_coord = self.get_sun_vect_in_central_coord(sun_vect)
-            self.get_shading_factor(sun_vect_central_coord)
                         
         elif self.n_rot_axis == 1:
             
@@ -230,9 +237,11 @@ class PV_system:
             tiltY_corrected = self.get_corrected_tracking_angle(true_tracking_angle,
                                                                  backT_corr_angle)
             tiltY_limited = self.get_limitated_angle(tiltY_corrected)
-            self.tiltY = tiltY_limited*180/np.pi
-            self.get_shading_factor(sun_vect_central_coord)
+            tiltY = tiltY_limited*180/np.pi
             
+        return tiltY, sun_vect_central_coord
+            
+    
     def get_sun_vect_in_central_coord(self, sun_vect):
         # Do not take into account the slope of the area and the slope of the 
         # rotation axis (see the previous framework to complete)
@@ -286,7 +295,7 @@ class PV_system:
                
         return tiltY
 
-    def get_shading_factor(self, sun_vect_cc):
+    def get_shading_factor(self, sun_vect_cc, tiltY):
         
         # Teta_r is the sun elevation in the plane perpendicular to the 
         # rotation axis of the blocks of panels
@@ -302,12 +311,12 @@ class PV_system:
         teta_r_rear[sun_vect_cc[:,2]<0] = 'NaN'
         teta_r_rear[sun_vect_cc[:,0]>0] = 'NaN'
                        
-        one = np.ones((len(self.tiltY)))
+        one = np.ones((len(tiltY)))
             
-        delta_H_h_l = (np.sin(self.tiltY)*self.block_dim_x)                    # Height difference between highest point of one panel and the lowest point of the panel just next to it
-        delta_L_h_l_front = (self.block_space_x*one)-(np.cos(self.tiltY)*
+        delta_H_h_l = (np.sin(tiltY)*self.block_dim_x)                    # Height difference between highest point of one panel and the lowest point of the panel just next to it
+        delta_L_h_l_front = (self.block_space_x*one)-(np.cos(tiltY)*
                                                       self.block_dim_x)        # Distance between the highest point of one panel and the lowest point of the panel just next to it
-        delta_L_h_l_rear = (self.block_space_x*one)+(np.cos(self.tiltY)*
+        delta_L_h_l_rear = (self.block_space_x*one)+(np.cos(tiltY)*
                                                       self.block_dim_x)
         
         sun_elev_treshold_front = np.arctan(delta_H_h_l/delta_L_h_l_front)     # Sun elevation at which shade factor reaches 0, which is the min value of shade factor
@@ -320,13 +329,15 @@ class PV_system:
             
         p = shade_factor_max                                                   # y-intercept
             
-        self.SF_front = m_front*teta_r_front + p                               # Linear equation
-        self.SF_rear = m_rear*teta_r_rear + p
+        SF_front = m_front*teta_r_front + p                               # Linear equation
+        SF_rear = m_rear*teta_r_rear + p
                 
-        self.SF_front[np.isnan(teta_r_front)] = 1                              # When sun elevation is < 0 or the sun on the other side of the panel face ==> SF = 1
-        self.SF_rear[np.isnan(teta_r_rear)] = 1
+        SF_front[np.isnan(teta_r_front)] = 1                              # When sun elevation is < 0 or the sun on the other side of the panel face ==> SF = 1
+        SF_rear[np.isnan(teta_r_rear)] = 1
         
-        self.SF_front[np.where(teta_r_front>sun_elev_treshold_front)] = 0      # When sun elevation is > treshold, then the SF is nul
-        self.SF_rear[np.where(teta_r_rear>sun_elev_treshold_rear)] = 0  
+        SF_front[np.where(teta_r_front>sun_elev_treshold_front)] = 0      # When sun elevation is > treshold, then the SF is nul
+        SF_rear[np.where(teta_r_rear>sun_elev_treshold_rear)] = 0  
+        
+        return SF_front, SF_rear
          
         
