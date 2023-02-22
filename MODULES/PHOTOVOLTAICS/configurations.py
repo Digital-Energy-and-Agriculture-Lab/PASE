@@ -12,22 +12,63 @@ import numpy as np
 
 class PV_Configuration_3D:
     
-    def __init__(self, PV_i,visualization=False):
+    def __init__(self, PV_i, sun_vector, visualization=False):
         
-        self.PV_i = PV_i
+        panel_dimX = PV_i['PanelDimensionX']
+        panel_dimY = PV_i['PanelDimensionY']
+        repet_dist_panelsX = PV_i['RepetitionDistanceOfPanelsX']
+        repet_dist_panelsY = PV_i['RepetitionDistanceOfPanelsY']
+        n_panelsX = PV_i['NumberOfPanelsX']
+        n_panelsY = PV_i['NumberOfPanelsY']
+        repet_dist_blockX = PV_i['RepetitionDistanceOfPVBlocksX']
+        repet_dist_blockY = PV_i['RepetitionDistanceOfPVBlocksY']
+        n_blocksX = PV_i['NumberOfPVBlocksX']
+        n_blocksY = PV_i['NumberOfPVBlocksY']
+        height = PV_i['Height']
+        azimut = PV_i['CentralAzimut']
+        tilt = PV_i['TiltY']
+        GCR_x = (PV_i['PanelDimensionX']*PV_i['NumberOfPanelsX']/
+                      PV_i['RepetitionDistanceOfPVBlocksX'])
+        
         self.visualization = visualization
-        fst_panel = self.create_first_panel()
-        self.create_block_of_panels(fst_panel)
-        self.rotation_1st_axis()
-        self.create_central()
+        first_panel = self.create_first_panel(panel_dimX, panel_dimY)
+        PV_block = self.create_block_of_panels(repet_dist_panelsX, 
+                                               repet_dist_panelsY,
+                                               n_panelsX,
+                                               n_panelsY,
+                                               first_panel)  
         
-        
-    def create_first_panel(self):
+        if PV_i['RotationAxisNumber'] == 0:        
+            PV_block_tilted = self.rotation_1st_axis(PV_block, tilt)
+            self.PV_central = self.create_central(PV_block_tilted, 
+                                                  repet_dist_blockX,
+                                                  repet_dist_blockY, 
+                                                  n_blocksX, 
+                                                  n_blocksY, 
+                                                  height,
+                                                  azimut)
+        else:
+            self.PV_central = []
+            self.get_tiltY_along_time(sun_vector, azimut, GCR_x)
+            for tilt in self.tiltY_along_time:
+                print(tilt)
+                PV_block_tilted = self.rotation_1st_axis(PV_block, tilt)
+                PV_central = self.create_central(PV_block_tilted, 
+                                                 repet_dist_blockX,
+                                                 repet_dist_blockY, 
+                                                 n_blocksX, 
+                                                 n_blocksY, 
+                                                 height,
+                                                 azimut)
+                self.PV_central.append(PV_central)
+            
                 
-        first_panel_vertices = np.array([[-self.PV_i['PanelDimensionX']/2, self.PV_i['PanelDimensionY']/2, 0],
-                                         [self.PV_i['PanelDimensionX']/2, self.PV_i['PanelDimensionY']/2, 0],
-                                         [-self.PV_i['PanelDimensionX']/2, -self.PV_i['PanelDimensionY']/2, 0],
-                                         [self.PV_i['PanelDimensionX']/2, -self.PV_i['PanelDimensionY']/2, 0]])
+    def create_first_panel(self, panel_dimX, panel_dimY):
+                
+        first_panel_vertices = np.array([[-panel_dimX/2, panel_dimY/2, 0],
+                                         [panel_dimX/2, panel_dimY/2, 0],
+                                         [-panel_dimX/2, -panel_dimY/2, 0],
+                                         [panel_dimX/2, -panel_dimY/2, 0]])
         
         first_panel_meshes = np.hstack([[3, 0, 1, 2],    # first triangular mesh
                                         [3, 1, 2, 3],])  # second triangular mesh
@@ -37,49 +78,56 @@ class PV_Configuration_3D:
         return first_panel
         
     
-    def create_block_of_panels(self, fst_panel):
+    def create_block_of_panels(self, repet_dist_panelsX, repet_dist_panelsY,
+                               n_panelsX, n_panelsY, fst_panel):
         
-        xrng = np.arange(self.PV_i['RepetitionDistanceOfPanelsX']*0.5*(1-self.PV_i['NumberOfPanelsX']), 
-                         self.PV_i['RepetitionDistanceOfPanelsX']*0.5*(self.PV_i['NumberOfPanelsX']+1),
-                         self.PV_i['RepetitionDistanceOfPanelsX'], dtype=np.float32)
-        yrng = np.arange(self.PV_i['RepetitionDistanceOfPanelsY']*0.5*(1-self.PV_i['NumberOfPanelsY']), 
-                         self.PV_i['RepetitionDistanceOfPanelsY']*0.5*(self.PV_i['NumberOfPanelsY']+1),
-                         self.PV_i['RepetitionDistanceOfPanelsY'], dtype=np.float32)
+        xrng = np.arange(repet_dist_panelsX*0.5*(1-n_panelsX), 
+                         repet_dist_panelsX*0.5*(n_panelsX+1),
+                         repet_dist_panelsX, dtype=np.float32)
+        yrng = np.arange(repet_dist_panelsY*0.5*(1-n_panelsY), 
+                         repet_dist_panelsY*0.5*(n_panelsY+1),
+                         repet_dist_panelsY, dtype=np.float32)
         zrng = np.arange(0, 1, 2, dtype=np.float32)
         
         x, y, z = np.meshgrid(xrng, yrng, zrng)    
         
         GlobalMesh = pyV.StructuredGrid(x, y, z)
-        self.PV_block  = GlobalMesh.glyph(geom=fst_panel, factor=1)
+        PV_block  = GlobalMesh.glyph(geom=fst_panel, factor=1)
+        
+        return PV_block
+        
+    def rotation_1st_axis(self, PV_block, tilt):
+        
+        if tilt < 0:
+            tilt = 360+tilt
+        tilted_PV_block = PV_block.rotate_y(tilt)
+        
+        return tilted_PV_block
         
         
-    def rotation_1st_axis(self):
+    def create_central(self, PV_block_tilted, repet_dist_blockX, 
+                       repet_dist_blockY, n_blocksX, n_blocksY, height, azimut):
         
-        self.tilted_PV_block = self.PV_block.rotate_y(self.PV_i['TiltY'])
-        
-        
-    def create_central(self):
-        
-        xrng = np.arange(self.PV_i['RepetitionDistanceOfPVBlocksX']*0.5*(1-self.PV_i['NumberOfPVBlocksX']), 
-                         self.PV_i['RepetitionDistanceOfPVBlocksX']*0.5*(self.PV_i['NumberOfPVBlocksX']+1),
-                         self.PV_i['RepetitionDistanceOfPVBlocksX'], dtype=np.float32)
-        yrng = np.arange(self.PV_i['RepetitionDistanceOfPVBlocksY']*0.5*(1-self.PV_i['NumberOfPVBlocksY']), 
-                         self.PV_i['RepetitionDistanceOfPVBlocksY']*0.5*(self.PV_i['NumberOfPVBlocksY']+1),
-                         self.PV_i['RepetitionDistanceOfPVBlocksY'], dtype=np.float32)
-        zrng = np.arange(self.PV_i['Height'], self.PV_i['Height']*2, self.PV_i['Height'], dtype=np.float32)
+        xrng = np.arange(repet_dist_blockX*0.5*(1-n_blocksX), 
+                         repet_dist_blockX*0.5*(n_blocksX+1),
+                         repet_dist_blockX, dtype=np.float32)
+        yrng = np.arange(repet_dist_blockY*0.5*(1-n_blocksY), 
+                         repet_dist_blockY*0.5*(n_blocksY+1),
+                         repet_dist_blockY, dtype=np.float32)
+        zrng = np.arange(height, height*2, height, dtype=np.float32)
         x, y, z = np.meshgrid(xrng, yrng, zrng)
         
         GlobalMesh = pyV.StructuredGrid(x, y, z)
         
-        PV_central = GlobalMesh.glyph(geom=self.tilted_PV_block, factor=1)
+        PV_central = GlobalMesh.glyph(geom=PV_block_tilted, factor=1)
         
-        self.PV_central = PV_central.rotate_z(self.PV_i['CentralAzimut'])
+        PV_central = PV_central.rotate_z(azimut)
         
         #test afficher le sol
         
         if self.visualization:
             plotter = pyV.Plotter(lighting=None)
-            plotter.add_mesh(self.PV_central, color='black')
+            plotter.add_mesh(PV_central, color='black')
             
             ground = np.array([[-100, 100, 0],
                                [100, 100, 0],
@@ -100,5 +148,67 @@ class PV_Configuration_3D:
             #plotter.set_background(color='#A6D0DE')
             
             plotter.show()
+            
+        return PV_central
+            
+    def get_tiltY_along_time(self, sun_vect, azimut, GCR_x):
+                    
+        sun_vect_central_coord = self.get_sun_vect_in_central_coord(sun_vect, azimut)
+        true_tracking_angle = self.get_true_tracking_angle(sun_vect_central_coord)
+        backT_corr_angle = self.get_backT_corr_angle(true_tracking_angle, GCR_x)
+        tiltY_corrected = self.get_corrected_tracking_angle(true_tracking_angle,
+                                                             backT_corr_angle)
+        tiltY_limited = self.get_limitated_angle(tiltY_corrected)
+        self.tiltY_along_time = tiltY_limited*180/np.pi
+        
+    def get_sun_vect_in_central_coord(self, sun_vect, azimut):
+        # Do not take into account the slope of the area and the slope of the 
+        # rotation axis (see the previous framework to complete)
+        sun_vect_CC = np.zeros((len(sun_vect[:,0]),3))
+            
+        sun_vect_CC[:,0] = sun_vect[:,0]*np.cos(azimut)\
+            - sun_vect[:,1]*np.sin(azimut)                                               
+                                                     
+        sun_vect_CC[:,1] = sun_vect[:,0]*np.sin(azimut)\
+            + sun_vect[:,1]*np.cos(azimut)
+                                                       
+        sun_vect_CC[:,2] = sun_vect[:,2]
+        
+        return sun_vect_CC
+    
+    
+    def get_true_tracking_angle(self, sun_v_central_coord):
+                    
+        true_tracking_angle = np.arctan2(sun_v_central_coord[:,0],
+                                         sun_v_central_coord[:,2])
+            
+        return true_tracking_angle
+        
+    def get_backT_corr_angle(self, true_angle, GCR_x):
+        
+        value = np.abs(np.cos(true_angle)/GCR_x)  
+           
+        backT_corr_angle = np.zeros((len(true_angle)))
+        backT_corr_angle[value>=1] = 0
+        backT_corr_angle[value<1] = (-np.sign(true_angle[value<1])
+                                     *np.arccos((np.abs(np.cos(true_angle[value<1])))/
+                                                         GCR_x))
+            
+        return backT_corr_angle
+    
+    def get_corrected_tracking_angle(self, true_T_angle, backT_corr_angle):
+            
+        corrected_tiltY = true_T_angle + backT_corr_angle
+                    
+        return corrected_tiltY
+    
+    def get_limitated_angle(self, tiltY):
+       
+        ind = np.where(tiltY>np.pi/2)
+        tiltY[ind] = 0
+        ind = np.where(tiltY<-np.pi/2)
+        tiltY[ind] = 0
+               
+        return tiltY
         
         

@@ -57,7 +57,7 @@ class PV_system:
             
             self.get_tiltY_and_shade_factor_along_time(sun_vect)
             
-            #Temporary lines
+            #Temporary lines !!!!!!!
             GHI_reaching_ground = light[year]['GHI'].to_numpy()*0.5
             albedo = 0.25  #should be a vector with the albedo of the crop evolving on the year
             

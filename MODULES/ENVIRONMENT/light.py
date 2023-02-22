@@ -349,8 +349,32 @@ class Light_shade_scene:
     def __init__(self,meshgrid,geometry):
         self.meshgrid = meshgrid
         self.geometry = geometry
+        
+    def get_light_map(self, n_small_suns, sun_P):
+        
+        if type(self.geometry) == list:
+            sv = np.zeros((1,3))
+            self.dir_map = np.zeros((len(self.meshgrid.X[0,:]),
+                                     len(self.meshgrid.X[:,0]),
+                                     len(sun_P[:,0])))
+            self.diff_map = np.zeros((len(self.meshgrid.X[0,:]),
+                                     len(self.meshgrid.X[:,0]),
+                                     len(sun_P[:,0])))
+            
+            for time in range(len(sun_P[:,0])):
+                print(time)
+                geometry = self.geometry[time]
+                diff_map = self.diffuse_map(n_small_suns, geometry)
+                sv[0,:] = sun_P[time,:]
+                dir_map = self.direct_map(geometry, sv)
+                self.dir_map[:,:,time] = dir_map[:,:,0]   
+                self.diff_map[:,:,time] = diff_map
+        else:
+            self.diff_map = self.diffuse_map(n_small_suns, self.geometry)
+            self.dir_map = self.direct_map(self.geometry, sun_P)
+            
     
-    def diffuse_map(self,n_small_suns):
+    def diffuse_map(self, n_small_suns, geometry):
         
         #Get direction of ray to reach the small suns and compute the sky view of each point
         pTarget = fibonacci_half_sphere(n_small_suns)
@@ -367,10 +391,10 @@ class Light_shade_scene:
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        _, id_rays_stopped, _ = self.geometry.multi_ray_trace(SourcePoints,
-                                                           TargetPoints,
-                                                           first_point=True,
-                                                           retry=False)
+        _, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
+                                                         TargetPoints,
+                                                         first_point=True,
+                                                         retry=False)
         
         #Creation of a vector providing the sourceID from which each ray has been shooted
         
@@ -398,23 +422,23 @@ class Light_shade_scene:
         return Diffu.transpose()
 
     
-    def direct_map(self,sun_P):
+    def direct_map(self, geometry, sun_P):
     
         #Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
         SourcePoints = np.repeat(np.column_stack((self.meshgrid.X.flatten(),
                                                   self.meshgrid.Y.flatten(),
                                                   np.zeros(len(self.meshgrid.X.flatten())))),
-                                      len(sun_P),
+                                      len(sun_P[:,0]),
                                       axis=0)
         #Creation of the target points array (Nx3) with N = len(Source) * len(n_small_suns)
         TargetPoints = np.tile(sun_P,[len(self.meshgrid.X.flatten()),1])
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        _, id_rays_stopped, _ = self.geometry.multi_ray_trace(SourcePoints,
-                                                           TargetPoints,
-                                                           first_point=True,
-                                                           retry=False)
+        _, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
+                                                         TargetPoints,
+                                                         first_point=True,
+                                                         retry=False)
         
         #Creation of the initial direct map based on the shape of sun_Positions
         direct_1D_map = np.ones(len(TargetPoints[:,0]), dtype=np.uint16)
@@ -434,7 +458,13 @@ class Light_shade_scene:
     
             
        
+ 
     
+ 
+    
+ 
+    
+ 
         
 class Shade_direct_light:
 
