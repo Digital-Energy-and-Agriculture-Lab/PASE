@@ -12,6 +12,8 @@ import csv
 import json
 import requests
 import time
+import math
+import numpy as np
 
 from MODULES.user_support_tools import PASE_Logger
 
@@ -52,8 +54,66 @@ class Weather_data:
             one_year_dataframe = one_year_dataframe.rename(columns=rename_df)
             
             self.nyears[str(year)] = one_year_dataframe
-        
             
+    def get_n_years_daily_WD(self, freq_deter, csv_file):
+        
+        self.n_years_daily_WD = {}
+        
+        daily_csv = pd.read_csv('DATABASE/'+csv_file+'.csv')
+       
+        if (freq_deter == 8760 or freq_deter == 8784):
+            n = 1
+        elif (freq_deter == 35040 or freq_deter == 35136):
+            n = 4
+        elif (freq_deter == 52560 or freq_deter == 52704):
+            n = 6
+
+        for year in self.n_years.keys():
+            
+            msg = 'Computation of daily weather data for year '+str(year)
+            PASE_Logger(msg, 'INFO')
+                     
+            data_to_resample = self.n_years[year]
+            
+            new_index = pd.date_range("01-01-"+year+" 00:00:00","31-12-"+year+" 00:00:00", freq='D')
+           
+            min_RH = math.nan
+            max_RH = math.nan
+            mean_RH = math.nan
+            daily_rad = ((data_to_resample['G(h)'].resample('D').sum())
+                         *60*(60/n)*10**-6).tolist()                          # Wh/m² to MJ/m²
+            min_temp = data_to_resample['T2m'].resample('D').min().tolist()
+            max_temp = data_to_resample['T2m'].resample('D').max().tolist()
+            mean_temp = data_to_resample['T2m'].resample('D').mean().tolist()
+            mean_CO2 = 5*np.sin(new_index.month*(2*np.pi/12))+(415*np.ones((len(mean_temp))))
+            mean_WS = data_to_resample['WS10m'].resample('D').mean().tolist() 
+            WS_crop = np.zeros((len(mean_WS))).tolist()
+            
+            new_index2 = pd.date_range("01-01-2005 00:00:00","31-12-2015 00:00:00", freq='D')
+            rain_vap_pressure = daily_csv.drop(['id','DAY'], axis=1).set_index(new_index2)
+            
+            mask = ((new_index2>='01-01-'+str(year)+' 00:00:00') & 
+                   (new_index2<'01-01-'+str(year+1)+' 00:00:00'))
+            
+            precipit = rain_vap_pressure['PRECIPITATION'][mask].tolist()
+            vap_press = rain_vap_pressure['VAPOR_PRESSURE'][mask].tolist()
+            
+            daily_weather = pd.DataFrame({'Avg_RH':mean_RH,
+                                          'Min_RH':min_RH,
+                                          'Max_RH':max_RH,
+                                          'Daily_rad':daily_rad,
+                                          'Avg_temp':mean_temp,
+                                          'Min_temp':min_temp,
+                                          'Max_temp':max_temp,
+                                          'CO2':mean_CO2,
+                                          'Avg_WS_10m':mean_WS,
+                                          'Avg_WS_crop':WS_crop,
+                                          'Precipit':precipit,
+                                          'Vap_press':vap_press},
+                                         index=new_index)
+
+            self.n_years_daily_WD[year] = daily_weather
+           
              
 class PvGis:
 # Source : https://github.com/MechatronicsBlog/Weather_data_Python_PVGIS/blob/master/PvGis.py    

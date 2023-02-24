@@ -470,7 +470,9 @@ class Light_shade_scene:
         self.daily_irr_spat = {}
         
         for year in light_data.keys():
-            daily_irradiation_spat = np.zeros((200, 400, int(freq_deter/(24*n))), dtype=np.float32)    
+            daily_irradiation_spat = np.zeros((len(self.meshgrid.X[0,:]), 
+                                               len(self.meshgrid.Y[:,0]),
+                                               int(freq_deter/(24*n))))    
 
             for day in range(0, int(freq_deter/(24*n)), 1):
 
@@ -485,10 +487,17 @@ class Light_shade_scene:
                 
                 print(day)
 
-                irradianceMap_direct = self.dir_map[:,:,indices]*light_data[year]['BHI'].to_numpy()[ind2]
-                daily_diff = np.sum(light_data['2005']['DHI'].to_numpy()[ind2])
-                irradianceMap_diffus = self.diff_map[:,:]*daily_diff      #Wh/m²
-                daily_irradiation = np.sum(irradianceMap_direct,axis = 2)+irradianceMap_diffus #wh/m²
+                irradianceMap_direct = np.round(self.dir_map[:,:,indices]*light_data[year]['BHI'].to_numpy()[ind2]*10**-6*60*60/n, 3) #MJ/m²
+                
+                if type(self.geometry) == list:
+                    irradianceMap_diffus = np.round(self.diff_map[:,:,indices]
+                                                    *light_data[year]['DHI'].to_numpy()[ind2]
+                                                    *(60*60/n), 3)  #J/m²
+                else:
+                    daily_diff = np.sum(light_data['2005']['DHI'].to_numpy()[ind2])
+                    irradianceMap_diffus = np.round(self.diff_map[:,:]*daily_diff*10**-6*60*60/n, 3)   #MJ/m²
+                    
+                daily_irradiation = np.sum(irradianceMap_direct,axis = 2)+irradianceMap_diffus #MJ/m²
                 daily_irradiation_spat[:,:,day] = daily_irradiation
             
             self.daily_irr_spat[year] = daily_irradiation_spat
