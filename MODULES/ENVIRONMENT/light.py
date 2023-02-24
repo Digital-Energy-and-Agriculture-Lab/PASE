@@ -455,9 +455,47 @@ class Light_shade_scene:
         direct_map = np.transpose(direct_map, (1,0,2))
     
         return direct_map
+    
+    def get_daily_irradiation_map(self, SP_sampled, freq_deter, light_data):
+
+        Week = SP_sampled.reset_index()['weekS'].to_numpy()
+        
+        if (freq_deter == 8760 or freq_deter == 8784):
+            n = 1
+        elif (freq_deter == 35040 or freq_deter == 35136):
+            n = 4
+        elif (freq_deter == 52560 or freq_deter == 52704):
+            n = 6
+        
+        self.daily_irr_spat = {}
+        
+        for year in light_data.keys():
+            daily_irradiation_spat = np.zeros((200, 400, int(freq_deter/(24*n))), dtype=np.float32)    
+
+            for day in range(0, int(freq_deter/(24*n)), 1):
+
+                WeekNumber = day//7
+    
+                indices = list(np.where(Week==WeekNumber))[0]
+                    
+                ind = np.where((light_data[year].index.dayofyear==day+1) & 
+                               (light_data[year]['rad_top_atm']>0))
+                first_ind = ind[0][0]
+                ind2 = np.arange(first_ind, first_ind+len(indices), 1)
+                
+                print(day)
+
+                irradianceMap_direct = self.dir_map[:,:,indices]*light_data[year]['BHI'].to_numpy()[ind2]
+                daily_diff = np.sum(light_data['2005']['DHI'].to_numpy()[ind2])
+                irradianceMap_diffus = self.diff_map[:,:]*daily_diff      #Wh/m²
+                daily_irradiation = np.sum(irradianceMap_direct,axis = 2)+irradianceMap_diffus #wh/m²
+                daily_irradiation_spat[:,:,day] = daily_irradiation
+            
+            self.daily_irr_spat[year] = daily_irradiation_spat
 
 
-def show_light_map(light_matrix, msh_grid, PV_central):
+
+def show_light_map(light_matrix, msh_grid, PV_central, lim_min, lim_max):
     
     grid = pyV.StructuredGrid(msh_grid.X, msh_grid.Y, np.ones((len(msh_grid.X[:,0]),len(msh_grid.X[0,:])))*0.05)
 
@@ -485,6 +523,6 @@ def show_light_map(light_matrix, msh_grid, PV_central):
         lighting=False,
         show_edges=False,
         scalar_bar_args={"title": "Rate of residual light [%]"},
-        clim=[0, 1])
+        clim=[lim_min, lim_max])
 
     plotter.show()

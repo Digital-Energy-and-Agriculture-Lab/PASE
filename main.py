@@ -47,50 +47,34 @@ Light = Light(WD.nyears, Sun_positions)
 
 PV_central = PV_system(PV_1)
 
-PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
-
 
 shade_scene = Light_shade_scene(msh_grid,PV_1_3Dconfig.PV_central)
 shade_scene.get_light_map(144, Sun_positions_samp.solar_vector)
 
+shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
+                                      len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+                                      Light.data)
 
 
 
-show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central)
+PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
+
+
+
+### VISUALISATION (temporary)
+
+show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central, 0, 1)
 # IF there is one rotation axis
 #show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
 
-show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central)
+show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central, 0, 1)
 
-
-
-Week = Sun_positions_samp.SP.reset_index()['weekS'].to_numpy()
-daily_irradiation_spat = np.zeros((200, 400, 365), dtype=np.float32)    
-
-for day in range(0,365,1):
-
-    WeekNumber = day//7
-
-    indices = list(np.where(Week==WeekNumber))[0]
-        
-    ind = np.where((Light.data['2005'].index.dayofyear==day+1) & 
-                   (Light.data['2005']['rad_top_atm']>0))
-    first_ind = ind[0][0]
-    ind2 = np.arange(first_ind, first_ind+len(indices), 1)
-    
-    print(day)
-    irradianceMap_direct = shade_scene.dir_map[:,:,indices]*Light.data['2005']['BHI'].to_numpy()[ind2]
-    daily_diff = np.sum(Light.data['2005']['DHI'].to_numpy()[ind2])
-    irradianceMap_diffus = shade_scene.diff_map[:,:]*daily_diff      #Wh/m²
-    daily_irradiation = np.sum(irradianceMap_direct,axis = 2)+irradianceMap_diffus #wh/m²
-    daily_irradiation_spat[:,:,day] = daily_irradiation
-
-
-
-
-
-
-
+j=181
+show_light_map(shade_scene.daily_irr_spat['2005'][:,:,j],
+               msh_grid,
+               PV_1_3Dconfig.PV_central,
+               shade_scene.daily_irr_spat['2005'][:,:,j].min(),
+               shade_scene.daily_irr_spat['2005'][:,:,j].max())
 
 
 
