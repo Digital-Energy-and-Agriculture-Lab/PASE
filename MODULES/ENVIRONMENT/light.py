@@ -243,8 +243,9 @@ class Sun_positions_sampled:
             # Creation of a sampling week variable which is offset by half of 365/12
             # The first created period is removed by removing negative value
             solar_position['weekS'] = (index.dayofyear-3.5)//7
-            solar_position = solar_position.loc[solar_position['weekS']>0,:]
-            SP_week = solar_position.drop_duplicates(subset = ['weekS','hour'],keep = 'first').drop(columns = ["weekS"])
+            solar_position.weekS[solar_position.weekS==-1] = 52
+            #solar_position = solar_position.loc[solar_position['weekS']>0,:]
+            SP_week = solar_position.drop_duplicates(subset = ['weekS','hour'],keep = 'first') #.drop(columns = ["weekS"])
             self.SP = SP_week[SP_week['elevation']>=0]
             self.SP = self.SP.set_index('month', append=True)
             self.SP = self.SP.set_index('hour', append=True)
