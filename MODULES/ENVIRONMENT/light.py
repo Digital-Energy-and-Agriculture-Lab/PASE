@@ -494,7 +494,7 @@ class Light_shade_scene:
                                                     *light_data[year]['DHI'].to_numpy()[ind2]
                                                     *(60*60/n), 3)  #J/m²
                 else:
-                    daily_diff = np.sum(light_data['2005']['DHI'].to_numpy()[ind2])
+                    daily_diff = np.sum(light_data[year]['DHI'].to_numpy()[ind2])
                     irradianceMap_diffus = np.round(self.diff_map[:,:]*daily_diff*10**-6*60*60/n, 3)   #MJ/m²
                     
                 daily_irradiation = np.sum(irradianceMap_direct,axis = 2)+irradianceMap_diffus #MJ/m²

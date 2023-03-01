@@ -6,6 +6,7 @@ Created on Tue Jan 17 16:06:55 2023
 @author: Roxane Bruhwyler
 """
 import numpy as np
+import pandas as pd
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
@@ -37,7 +38,8 @@ WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['Longitude'],
                   Loc_1['SimulationStartingYear'],
                   Loc_1['SimulationEndingYear'],
-                  Loc_1['WeatherDataOption'])
+                  Loc_1['WeatherDataOption'],
+                  'Chili_WD')
 
 Sun_positions = Sun_positions(Loc_1['Latitude'],
                               Loc_1['Longitude'],
@@ -72,18 +74,35 @@ show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central, 0
 
 show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central, 0, 1)
 
+
+#temporary lines
 j=300
-show_light_map(shade_scene.daily_irr_spat['2005'][:,:,j],
+show_light_map(shade_scene.daily_irr_spat['2021'][:,:,j],
                msh_grid,
                PV_1_3Dconfig.PV_central,
-               shade_scene.daily_irr_spat['2005'][:,:,j].min(),
-               shade_scene.daily_irr_spat['2005'][:,:,j].max())
-
-
+               shade_scene.daily_irr_spat['2021'][:,:,j].min(),
+               shade_scene.daily_irr_spat['2021'][:,:,j].max())
 
 
 """
+from datetime import datetime
+test = pd.read_csv('DATABASE/METEO/Chili_WD.csv', ';')
+test['date'] = pd.to_datetime(test['date'])
+test['date'] = pd.to_datetime(test['date'], format='%d-%m-%Y %H:%M:%S')
+test = test.set_index(test['date'])
+mask = ((test['date']>='01-01-2021 00:00:00') & 
+       (test['date']<'01-01-2022 00:00:00'))
 
+test = test.set_index(test['date'])
+test = test.drop(['date'], axis=1)
+test.index = pd.to_datetime(test.index)
+test.index = test.index.strftime('%d-%m-%Y %H:%M:%S')
+test2 = test.loc[test.index.year == 2021]
+mask = ((test.index>='01-01-2021 00:00:00') & 
+       (test.index<'01-01-2022 00:00:00'))
+"""
+
+"""
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd

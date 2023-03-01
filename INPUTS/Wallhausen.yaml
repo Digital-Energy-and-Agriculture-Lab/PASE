@@ -21,21 +21,21 @@ Altitude:
    Unit: meters [m]
    Definition: Altitude of the location
 WeatherDataOption:
-   Value: 1
+   Value: 2
    Type: integer
    Limit: [1, 2]
    Unit: dimensionless [-]
    Definition: Option 1 means get the meteo data from PvGis and option 2 means get the meteo data from a file in DATABASE
 SimulationStartingYear:
-   Value: 2005
+   Value: 2021
    Type: integer
-   Limit: [2005, SimulationEndingYear]
+   Limit: [1900, SimulationEndingYear]
    Unit: dimensionless [-]
-   Definition: Starting year of the simulation
+   Definition: Starting year of the simulation, PvGis has data from 2005 to 2016 comprise
 SimulationEndingYear:
-   Value: 2006
+   Value: 2021
    Type: integer
-   Limit: [SimulationStartingYear, 2016]
+   Limit: [SimulationStartingYear, 2022]
    Unit: dimensionless [-]
    Definition: Ending year of the simulation (included in the simulation)
 PrecisionLevelOnSunPosition:
