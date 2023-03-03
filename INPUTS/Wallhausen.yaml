@@ -26,6 +26,14 @@ WeatherDataOption:
    Limit: [1, 2]
    Unit: dimensionless [-]
    Definition: Option 1 means get the meteo data from PvGis and option 2 means get the meteo data from a file in DATABASE
+WeatherFileName:
+   Value: Chanco_Chile_WD
+   Type: string
+   Definition: Name of the hourly or more precise (10 min or 15 min) weather data csv file (pay attention to the format it should have) if WeatherDataOption is 2
+DailyWeatherFileName:
+   Value: PRECIP_VP_Loc1
+   Type: string
+   Definition: Name of the daily weather data csv file with precipitation and vapour pressure (pay attention to the format it should have) if WeatherDataOption is 1 (PVGis used)
 SimulationStartingYear:
    Value: 2021
    Type: integer

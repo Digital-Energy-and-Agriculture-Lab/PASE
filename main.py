@@ -16,6 +16,7 @@ from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
 from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
 from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
 
+
 PASE_Logger()
 
 Loc_1 = YAML_Inputs_provider(file='Wallhausen.yaml').i
@@ -39,7 +40,8 @@ WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['SimulationStartingYear'],
                   Loc_1['SimulationEndingYear'],
                   Loc_1['WeatherDataOption'],
-                  'Chili_WD')
+                  Loc_1['WeatherFileName'],
+                  Loc_1['DailyWeatherFileName'])
 
 Sun_positions = Sun_positions(Loc_1['Latitude'],
                               Loc_1['Longitude'],
@@ -60,10 +62,6 @@ shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
 
 
 PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
-
-
-WD.get_n_years_daily_WD(len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
-                        'WATER')
 
 
 ### VISUALISATION (temporary)

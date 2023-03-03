@@ -22,16 +22,21 @@ from MODULES.user_support_tools import PASE_Logger
 class Weather_data:
     
     def __init__(self, latitude, longitude, sim_starting_year, sim_ending_year, 
-                 WD_option, file=None):
+                 WD_option, file=None, daily_file=None):
         
         if WD_option == 2:
             self.get_n_years_WD_from_csvfile(sim_starting_year,
                                              sim_ending_year,
                                              file)
+            self.get_n_years_daily_WD(len(self.nyears[str(sim_starting_year)]))
             
         else:
             self.get_n_years_hourly_WD_PVGis(latitude, longitude,
                                              sim_starting_year, sim_ending_year)
+            self.get_n_years_daily_WD(len(self.nyears[str(sim_starting_year)]), 
+                                      daily_file)
+            
+        
             
     def get_n_years_hourly_WD_PVGis(self, lat, long, start_year, end_year):
         
@@ -60,7 +65,7 @@ class Weather_data:
     def get_n_years_WD_from_csvfile(self, start_year, end_year, file):
         
         self.nyears = {}
-        WD = pd.read_csv('DATABASE/METEO/' + file + '.csv', ';')
+        WD = pd.read_csv('DATABASE/METEO/' + file + '.csv', ',')
         WD['date'] = pd.to_datetime(WD['date'])
         WD['date'] = pd.to_datetime(WD['date'], format='%d-%m-%Y %H:%M:%S')
         WD = WD.set_index(WD['date'])
@@ -77,14 +82,17 @@ class Weather_data:
             
             
             
-    def get_n_years_daily_WD(self, freq_deter, csv_file):
+    def get_n_years_daily_WD(self, freq_deter, csv_file=None):
         
         self.nyears_daily_WD = {}
         
-        print(os.getcwd())
-        
-        daily_csv = pd.read_csv('DATABASE/METEO/'+csv_file+'.csv')
-       
+        if csv_file is not None:
+            daily_csv = pd.read_csv('DATABASE/METEO/'+csv_file+'.csv')
+            
+            new_index2 = pd.date_range("01-01-2005 00:00:00","31-12-2015 00:00:00", freq='D')
+            rain_vap_pressure = daily_csv.drop(['id','DAY'], axis=1).set_index(new_index2)
+            
+                   
         if (freq_deter == 8760 or freq_deter == 8784):
             n = 1
         elif (freq_deter == 35040 or freq_deter == 35136):
@@ -96,16 +104,23 @@ class Weather_data:
             
             msg = 'Computation of daily weather data for year '+str(year)
             PASE_Logger(msg, 'INFO')
-                     
+            
+            if csv_file is not None:
+                mask = ((new_index2>='01-01-'+year+' 00:00:00') & 
+                       (new_index2<'01-01-'+str(int(year)+1)+' 00:00:00'))
+                
+                daily_rain = rain_vap_pressure['PRECIPITATION'][mask].tolist()
+                vap_press = rain_vap_pressure['VAPOR_PRESSURE'][mask].tolist()
+                min_RH = math.nan
+                max_RH = math.nan
+                mean_RH = math.nan
+            
             data_to_resample = self.nyears[year]
             
             new_index = pd.date_range("01-01-"+year+" 00:00:00","31-12-"+year+" 00:00:00", freq='D')
            
-            min_RH = math.nan
-            max_RH = math.nan
-            mean_RH = math.nan
             daily_rad = ((data_to_resample['G(h)'].resample('D').sum())
-                         *60*(60/n)*10**-6).tolist()                          # W/m² to MJ/m²
+                         *60*(60/n)*10**-6).tolist()                          # W/m² to MJ/m²            
             min_temp = data_to_resample['T2m'].resample('D').min().tolist()
             max_temp = data_to_resample['T2m'].resample('D').max().tolist()
             mean_temp = data_to_resample['T2m'].resample('D').mean().tolist()
@@ -113,15 +128,13 @@ class Weather_data:
             mean_WS = data_to_resample['WS10m'].resample('D').mean().tolist() 
             WS_crop = np.zeros((len(mean_WS))).tolist()
             
-            #new_index2 = pd.date_range("01-01-2005 00:00:00","31-12-2015 00:00:00", freq='D')
-            #rain_vap_pressure = daily_csv.drop(['id','DAY'], axis=1).set_index(new_index2)
-            
-            #mask = ((new_index2>='01-01-'+year+' 00:00:00') & 
-            #       (new_index2<'01-01-'+str(int(year)+1)+' 00:00:00'))
-            
-            #precipit = rain_vap_pressure['PRECIPITATION'][mask].tolist()
-            #vap_press = rain_vap_pressure['VAPOR_PRESSURE'][mask].tolist()
-            
+            if csv_file is None:
+                min_RH = data_to_resample['RH2m'].resample('D').min().tolist()
+                max_RH = data_to_resample['RH2m'].resample('D').max().tolist()
+                mean_RH = data_to_resample['RH2m'].resample('D').mean().tolist()
+                daily_rain = data_to_resample['PRECIP'].resample('D').sum()
+                vap_press = math.nan
+                        
             daily_weather = pd.DataFrame({'Avg_RH':mean_RH,
                                           'Min_RH':min_RH,
                                           'Max_RH':max_RH,
@@ -130,7 +143,9 @@ class Weather_data:
                                           'Min_temp':min_temp,
                                           'Max_temp':max_temp,
                                           'CO2':mean_CO2,
-                                          'Avg_WS_10m':mean_WS},
+                                          'Rain':daily_rain,
+                                          'Avg_WS_10m':mean_WS,
+                                          'Vap_press':vap_press},
                                          index=new_index)
 
             self.nyears_daily_WD[year] = daily_weather
