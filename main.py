@@ -19,7 +19,7 @@ from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
 
 PASE_Logger()
 
-Loc_1 = YAML_Inputs_provider(file='Wallhausen.yaml').i
+Loc_1 = YAML_Inputs_provider(file='Chanco.yaml').i
 
 PV_1 = YAML_Inputs_provider(file='PV_central.yaml').i
 

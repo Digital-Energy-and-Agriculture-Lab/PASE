@@ -3,19 +3,19 @@ LocationName:
    Type: string
    Definition: Name of the location
 Latitude:
-   Value: 51.458
+   Value: -35.735
    Type: float
    Limit: [-90, 90]
    Unit: degrés décimaux [-]
    Definition: Latitude of the location
 Longitude:
-   Value: 11.174
+   Value: -72.518
    Type: float
    Limit: [-180, 180]
    Unit: degrés décimaux [-]
    Definition: Longitude of the location
 Altitude:
-   Value: 40
+   Value: 127.21
    Type: float
    Limit: [0, 3000]
    Unit: meters [m]
@@ -53,13 +53,13 @@ PrecisionLevelOnSunPosition:
    Unit: dimensionless [-]
    Definition: Level 1 means the same average solar position during each days of a month, level 2 means the same average solar position during each days of a week and level 3 means solar position is computed for each day
 Xmin_InterestZone:
-   Value: -10
+   Value: -14
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Minimal x coordinates of the zone of interest for the light and crop modelling
 Xmax_InterestZone:
-   Value: 10
+   Value: 14
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
@@ -71,13 +71,13 @@ dX_InterestZone:
    Unit: meters [m]
    Definition: Increment in the x coordinates of the zone of interest for the light and crop modelling
 Ymin_InterestZone:
-   Value: -20
+   Value: -16.4
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Minimal y coordinates of the zone of interest for the light and crop modelling
 Ymax_InterestZone:
-   Value: 20
+   Value: 16.4
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]

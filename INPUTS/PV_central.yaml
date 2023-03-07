@@ -1,11 +1,11 @@
 PanelDimensionX: 
-   Value: 1
+   Value: 1.134
    Type: float
    Limit: [0.1,5]
    Unit: meters [m]
    Definition: Panel dimension on the x axis which would be the second potential axis of rotation
 PanelDimensionY:
-   Value: 2
+   Value: 1.724
    Type: float
    Limit: [0.1,5]
    Unit: meters [m]
@@ -34,19 +34,19 @@ NumberOfPanelsX:
    Unit: dimensionless [-]
    Definition: Number of panels on the x axis in one block of panels (x axis being the second potential axis of rotation of the block of panels)
 NumberOfPanelsY:
-   Value: 10
+   Value: 19
    Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
    Definition: Number of panels on the y axis in one block of panels
 RepetitionDistanceOfPanelsX:
-   Value: 1.1
+   Value: 1.134
    Type: float
    Limit: [PanelDimensionX, 100]
    Unit: meters [m]
    Definition: Length between the repetition of 2 panels on the x axis of one block of panels
 RepetitionDistanceOfPanelsY:
-   Value: 2.2
+   Value: 1.724
    Type: float
    Limit: [PanelDimensionY, 100]
    Unit: meters [m]
@@ -64,13 +64,13 @@ TiltY:
    Unit: degree [°]
    Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation
 Height:
-   Value: 1.95
+   Value: 2.034
    Type: float
    Limit: [0.1, 20]
    Unit: meters [m]
    Definition: Height from the ground to the main axis of the block of panels
 NumberOfPVBlocksX:
-   Value: 10
+   Value: 4
    Type: integer
    Limit: [0, 1000]
    Unit: dimensionless [-]
@@ -82,13 +82,13 @@ NumberOfPVBlocksY:
    Unit: dimensionless [-]
    Definition: Number of blocks on the y axis of the photovoltaic central (y axis being the potential main rotation axis of the block of panels)
 RepetitionDistanceOfPVBlocksX:
-   Value: 10
+   Value: 14
    Type: float
    Limit: [NumberOfPanelsX*RepetitionDistanceOfPanelsX,1000]
    Unit: meters [m]
    Definition: Length between the repetition of 2 blocks of panels on the x axis of the photovoltaic central
 RepetitionDistanceOfPVBlocksY:
-   Value: 25
+   Value: 35
    Type: float
    Limit: [NumberOfPanelsY*RepetitionDistanceOfPanelsY, 1000]
    Unit: meters [m]
