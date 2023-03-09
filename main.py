@@ -23,18 +23,6 @@ Loc_1 = YAML_Inputs_provider(file='Chanco.yaml').i
 
 PV_1 = YAML_Inputs_provider(file='PV_central.yaml').i
 
-Sun_positions_samp = Sun_positions_sampled(Loc_1['Latitude'],
-                                      Loc_1['Longitude'],
-                                      Loc_1['PrecisionLevelOnSunPosition'],
-                                      Loc_1['LocationName'])
-
-PV_1_3Dconfig = PV_Configuration_3D(PV_1, Sun_positions_samp.solar_vector,
-                                    visualization=False)                        # !!!! Problem with rotation angle that are negative
-
-msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_InterestZone'],
-                                       Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
-                                       Loc_1['dX_InterestZone'], Loc_1['dY_InterestZone'])
-
 WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['Longitude'],
                   Loc_1['SimulationStartingYear'],
@@ -43,9 +31,28 @@ WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['WeatherFileName'],
                   Loc_1['DailyWeatherFileName'])
 
+Sun_positions_samp = Sun_positions_sampled(Loc_1['Latitude'],
+                                      Loc_1['Longitude'],
+                                      Loc_1['PrecisionLevelOnSunPosition'],
+                                      Loc_1['LocationName'],
+                                      len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+                                      Loc_1['TimeZone'])
+
+
+
+PV_1_3Dconfig = PV_Configuration_3D(PV_1, Sun_positions_samp.solar_vector,
+                                    visualization=False)                        # !!!! Problem with rotation angle that are negative
+
+msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_InterestZone'],
+                                       Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
+                                       Loc_1['dX_InterestZone'], Loc_1['dY_InterestZone'])
+
+
+
 Sun_positions = Sun_positions(Loc_1['Latitude'],
                               Loc_1['Longitude'],
-                              len(WD.nyears[str(Loc_1['SimulationStartingYear'])]))
+                              len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+                              Loc_1['TimeZone'])
 
 Light = Light(WD.nyears, Sun_positions)
 
@@ -66,7 +73,7 @@ PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
 
 ### VISUALISATION (temporary)
 
-show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central, 0, 1)
+show_light_map(shade_scene.dir_map[:,:,40], msh_grid, PV_1_3Dconfig.PV_central, 0, 1)
 # IF there is one rotation axis
 #show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
 
@@ -74,7 +81,7 @@ show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.
 
 
 #temporary lines
-j=300
+j=1
 show_light_map(shade_scene.daily_irr_spat['2021'][:,:,j],
                msh_grid,
                PV_1_3Dconfig.PV_central,

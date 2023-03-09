@@ -26,13 +26,13 @@ def fibonacci_half_sphere( samples=18):
 
 class Sun_positions:
     
-    def __init__(self, lat, long, freq_deter):
+    def __init__(self, lat, long, freq_deter, TZ):
         
         self.lat = lat
         self.long = long
-        self.get_solar_positions(freq_deter)
+        self.get_solar_positions(freq_deter, TZ)
         
-    def get_solar_positions(self, freq_deter):
+    def get_solar_positions(self, freq_deter, TZ):
         
         if (freq_deter == 8760 or freq_deter == 8784):
             frq = '1H'
@@ -44,13 +44,13 @@ class Sun_positions:
             frq = '10min'
             n = 6
             
-        self.SD_leap_year(frq, n)
-        self.SD_nonleap_year(frq, n)
+        self.SD_leap_year(frq, n, TZ)
+        self.SD_nonleap_year(frq, n, TZ)
             
-    def SD_leap_year(self, frq, n):
+    def SD_leap_year(self, frq, n, TZ):
             
         index_leap_year = pd.date_range(start='2008-01-01 00:00', freq=frq, 
-                                       periods=366*24*n)        
+                                       periods=366*24*n, tz=TZ)        
         self.sp_leapY = pvlibSP.get_solarposition(index_leap_year, 
                                                   self.lat, 
                                                   self.long)
@@ -61,10 +61,10 @@ class Sun_positions:
         self.top_atm_rad_leapY = self.get_top_of_atm_radiation(index_leap_year,
                                                                n)
         
-    def SD_nonleap_year(self, frq, n):
+    def SD_nonleap_year(self, frq, n, TZ):
         
         index_com_year = pd.date_range(start='2005-01-01 00:00', freq=frq, 
-                                       periods=365*24*n)       
+                                       periods=365*24*n, tz=TZ)       
         self.sp_nonleapY = pvlibSP.get_solarposition(index_com_year, 
                                                      self.lat, 
                                                      self.long)
@@ -205,24 +205,36 @@ class Light:
         
 class Sun_positions_sampled:
     
-    def __init__(self, lat, long, precision_lvl, loc_name):
+    def __init__(self, lat, long, precision_lvl, loc_name, freq_deter, TZ):
         
         self.lat = lat
         self.long = long
         self.loc_name = loc_name
-        self.get_solar_positions_sampled(lat, long, precision_lvl)
+        self.get_solar_positions_sampled(lat, long, precision_lvl, freq_deter, TZ)
         self.get_sun_vector(self.SP['elevation'], self.SP['azimuth'])
-        self.get_sun_path_diagram()
-        self.get_PVSyst_Plot()
+        #self.get_sun_path_diagram()
+        #self.get_PVSyst_Plot()
         
     
-    def get_solar_positions_sampled(self, lat, long, precision_lvl):
+    def get_solar_positions_sampled(self, lat, long, precision_lvl, freq_deter, TZ):
         
-        index = pd.date_range(start='2005-01-01 00:00', freq='1H', 
-                              periods=365*24)
+        if (freq_deter == 8760 or freq_deter == 8784):
+            frq = '1H'
+            n = 1
+            mark = 'hour'
+        elif (freq_deter == 35040 or freq_deter == 35136):
+            frq = '15min'
+            n = 4
+            mark = 'H:M'
+                
+        index = pd.date_range(start='2005-01-01 00:00', freq=frq, 
+                              periods=365*24*n, tz=TZ)
+        
         
         solar_position = pvlibSP.get_solarposition(index, lat, long)
         
+        solar_position['H:M'] = index
+        solar_position['H:M'] = pd.to_datetime(solar_position['H:M']).dt.strftime("%H:%M")
         solar_position['hour'] = index.hour
         solar_position['month'] = index.month//(365/12)
         solar_position['week'] = index.dayofyear//7
@@ -234,7 +246,8 @@ class Sun_positions_sampled:
             # The first created period is removed by removing negative value
             solar_position['monthS'] = (index.dayofyear-365/12/2)//30.4
             solar_position = solar_position.loc[solar_position['monthS']>0,:]
-            SP_month = solar_position.drop_duplicates(subset = ['monthS','hour'],keep = 'first').drop(columns = ["monthS"])
+            SP_month = solar_position.drop_duplicates(subset = ['monthS', mark], 
+                                                      keep = 'first').drop(columns = ["monthS"])
             self.SP = SP_month[SP_month['elevation']>=0]
             self.SP = self.SP.set_index('week', append=True)
             self.SP = self.SP.set_index('hour', append=True)
@@ -245,7 +258,8 @@ class Sun_positions_sampled:
             solar_position['weekS'] = (index.dayofyear-3.5)//7
             solar_position.weekS[solar_position.weekS==-1] = 52
             #solar_position = solar_position.loc[solar_position['weekS']>0,:]
-            SP_week = solar_position.drop_duplicates(subset = ['weekS','hour'],keep = 'first') #.drop(columns = ["weekS"])
+            SP_week = solar_position.drop_duplicates(subset = ['weekS', mark], 
+                                                     keep = 'first') #.drop(columns = ["weekS"])
             self.SP = SP_week[SP_week['elevation']>=0]
             self.SP = self.SP.set_index('month', append=True)
             self.SP = self.SP.set_index('hour', append=True)
