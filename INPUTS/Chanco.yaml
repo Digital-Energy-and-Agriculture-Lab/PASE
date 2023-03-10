@@ -75,19 +75,19 @@ dX_InterestZone:
    Unit: meters [m]
    Definition: Increment in the x coordinates of the zone of interest for the light and crop modelling
 Ymin_InterestZone:
-   Value: -16
+   Value: -16.4
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Minimal y coordinates of the zone of interest for the light and crop modelling
 Ymax_InterestZone:
-   Value: 16
+   Value: 16.4
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Maximal y coordinates of the zone of interest for the light and crop modelling
 dY_InterestZone:
-   Value: 0.5
+   Value: 0.4
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]

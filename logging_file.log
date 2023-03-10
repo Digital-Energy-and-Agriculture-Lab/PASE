@@ -1,9 +1,13 @@
-05:25:11 PM  (INFO)  -  START OF THE SIMULATION
-05:25:11 PM  (INFO)  -  Input values from Chanco.yaml have been imported successfully
-05:25:11 PM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
-05:25:13 PM  (INFO)  -  Get hourly or finer resolution weather data for year 2021
-05:25:13 PM  (INFO)  -  Computation of daily weather data for year 2021
-05:25:14 PM  (DEBUG)  -  generating face normals
-05:25:15 PM  (DEBUG)  -  intersects_id executed in 0.3213 seconds.
-05:25:16 PM  (DEBUG)  -  generating face normals
-05:25:22 PM  (DEBUG)  -  intersects_id executed in 6.8550 seconds.
+10:59:34 AM  (INFO)  -  START OF THE SIMULATION
+10:59:34 AM  (INFO)  -  Input values from Chanco.yaml have been imported successfully
+10:59:34 AM  (INFO)  -  Input values from PV_central.yaml have been imported successfully
+10:59:37 AM  (INFO)  -  Get hourly or finer resolution weather data for year 2021
+10:59:37 AM  (INFO)  -  Computation of daily weather data for year 2021
+10:59:38 AM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
+10:59:38 AM  (DEBUG)  -  Trying `CDLL(libc.so.6)`
+10:59:38 AM  (DEBUG)  -  Library path: 'libc.so.6'
+10:59:38 AM  (DEBUG)  -  DLL: <CDLL 'libc.so.6', handle 7f44eb0e3410 at 0x7f448a32ffd0>
+10:59:38 AM  (DEBUG)  -  generating face normals
+10:59:38 AM  (DEBUG)  -  intersects_id executed in 0.4455 seconds.
+10:59:40 AM  (DEBUG)  -  generating face normals
+10:59:47 AM  (DEBUG)  -  intersects_id executed in 8.6535 seconds.

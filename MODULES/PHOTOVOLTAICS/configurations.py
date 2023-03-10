@@ -31,7 +31,7 @@ class PV_Configuration_3D:
                       PV_i['RepetitionDistanceOfPVBlocksX'])
         
         self.visualization = visualization
-        first_panel = self.create_first_panel(panel_dimX, panel_dimY)
+        first_panel = self.create_first_panel_3D(panel_dimX, panel_dimY, 0.15)
         PV_block = self.create_block_of_panels(repet_dist_panelsX, 
                                                repet_dist_panelsY,
                                                n_panelsX,
@@ -75,6 +75,36 @@ class PV_Configuration_3D:
         first_panel = pyV.PolyData(first_panel_vertices, first_panel_meshes)
         
         return first_panel
+    
+    
+    def create_first_panel_3D(self, panel_dimX, panel_dimY,panel_dimZ):
+                 
+         first_panel_vertices = np.array([
+                                          [-panel_dimX/2, panel_dimY/2, panel_dimZ/2],
+                                          [panel_dimX/2, panel_dimY/2, panel_dimZ/2],
+                                          [-panel_dimX/2, -panel_dimY/2, panel_dimZ/2],
+                                          [panel_dimX/2, -panel_dimY/2, panel_dimZ/2],
+                                          
+                                          [-panel_dimX/2, panel_dimY/2, -panel_dimZ/2],
+                                          [panel_dimX/2, panel_dimY/2, -panel_dimZ/2],
+                                          [-panel_dimX/2, -panel_dimY/2, -panel_dimZ/2],
+                                          [panel_dimX/2, -panel_dimY/2, -panel_dimZ/2],
+
+                                          ])
+         
+         first_panel_meshes = np.hstack([
+                                         [3, 0, 1, 2],    # first triangular mesh
+                                         [3, 1, 2, 3],
+                                         [3, 4, 5, 6],    # first triangular mesh
+                                         [3, 5, 6, 7],
+                                         [3, 1, 3, 7],    # first triangular mesh
+                                         [3, 1, 5, 7],
+                                         
+                                         ])  # second triangular mesh
+         
+         first_panel = pyV.PolyData(first_panel_vertices, first_panel_meshes)
+         
+         return first_panel
         
     
     def create_block_of_panels(self, repet_dist_panelsX, repet_dist_panelsY,
