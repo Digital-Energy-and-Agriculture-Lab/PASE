@@ -56,7 +56,7 @@ def ET0_FAO56_PM(altitude, latitude, daily_WD, daily_rad_in, ws_crop):
     latent_heat_vaporization = 2.45  # [MJ.kg-1]
     ratio_molecul_weight_watervap_dryair = 0.622  # [-]
     solar_constant = 0.0820 # [MJ.m-2min-1]
-    stefan_boltzmann_constant = 4.903*10**-9
+    stefan_boltzmann_constant = 4.903*10**-9  # [MJ.K-4.m-2.day-1]
     soil_heat_flux_density = 0                # negligable for daily calculations (see Woli et al, 2012, chap 3)
 
     #if self.cropLAI < 3:
@@ -66,28 +66,28 @@ def ET0_FAO56_PM(altitude, latitude, daily_WD, daily_rad_in, ws_crop):
     
     albedo = 0.23
     
-    avg_T = daily_WD['Avg_temp'].to_numpy().reshape(356,1)
-    min_temp = daily_WD['Min_temp'].to_numpy().reshape(356,1)
-    max_temp = daily_WD['Max_temp'].to_numpy().reshape(356,1)
-    min_RH = daily_WD['Min_RH'].to_numpy().reshape(356,1)
-    max_RH = daily_WD['Max_RH'].to_numpy().reshape(356,1)
-    vap_press = daily_WD['Vap_press'].to_numpy().reshape(356,1)
+    n_days_in_year = len(daily_WD['Avg_temp'])
+        
+    avg_T = daily_WD['Avg_temp'].to_numpy().reshape(n_days_in_year,1)
+    min_temp = daily_WD['Min_temp'].to_numpy().reshape(n_days_in_year,1)
+    max_temp = daily_WD['Max_temp'].to_numpy().reshape(n_days_in_year,1)
+    min_RH = daily_WD['Min_RH'].to_numpy().reshape(n_days_in_year,1)
+    max_RH = daily_WD['Max_RH'].to_numpy().reshape(n_days_in_year,1)
+    vap_press = daily_WD['Vap_press'].to_numpy().reshape(n_days_in_year,1)
        
-    one = np.ones((365,1))
+    one = np.ones((n_days_in_year,1))
     
-    day_of_the_year = np.arange(0,365,1).reshape(356,1)+one
-    n_days_in_year = len(day_of_the_year)
+    day_of_the_year = np.arange(0,n_days_in_year,1).reshape(n_days_in_year,1)+one
     
-    if min_RH[0,0] is not 'nan':
+    
+    if min_RH[0,0] != 'nan':
         actual_vap_pressure = ((0.6108*np.exp((17.27*min_temp)/(min_temp+237.3*one))
                                 *(max_RH/100))
                                +(0.6108*np.exp((17.27*max_temp)/(max_temp+237.3*one))
                                  *(min_RH/100)))/2
     else:
         actual_vap_pressure = vap_press/10
-    
 
-    avg_T_K = avg_T+273.16*one
     max_temp_K = max_temp+273.16*one
     min_temp_K = min_temp+273.16*one
 
@@ -118,22 +118,74 @@ def ET0_FAO56_PM(altitude, latitude, daily_WD, daily_rad_in, ws_crop):
 
     clear_sky_solar_radiation = (0.75 + 2*10**-5*altitude)*extraterre_radiation
     
-    ## RESTART HERE !!!!
+###    #1D to 3D matrix
+    clear_sky_solar_rad = clear_sky_solar_radiation.reshape(1,1,len(avg_T))
+    clear_sky_solar_rad = np.repeat(np.repeat(clear_sky_solar_rad,
+                                              len(daily_rad_in[:,0,0]),
+                                              axis=0),
+                                    len(daily_rad_in[0,:,0]),
+                                    axis=1)
+    max_temp_K = max_temp_K.reshape(1,1,len(avg_T))
+    max_temp_K_3D = np.repeat(np.repeat(max_temp_K,
+                                        len(daily_rad_in[:,0,0]),
+                                        axis=0),
+                              len(daily_rad_in[0,:,0]),
+                              axis=1)
+    min_temp_K = min_temp_K.reshape(1,1,len(avg_T))
+    min_temp_K_3D = np.repeat(np.repeat(min_temp_K,
+                                        len(daily_rad_in[:,0,0]),
+                                        axis=0),
+                              len(daily_rad_in[0,:,0]),
+                              axis=1)
+    actual_vap_pressure = actual_vap_pressure.reshape(1,1,len(avg_T))
+    actual_vap_pressure_3D = np.repeat(np.repeat(actual_vap_pressure,
+                                                 len(daily_rad_in[:,0,0]),
+                                                 axis=0),
+                                       len(daily_rad_in[0,:,0]),
+                                       axis=1)
+    one = one.reshape(1,1,len(avg_T))
+    one_3D = np.repeat(np.repeat(one,
+                                 len(daily_rad_in[:,0,0]),
+                                 axis=0),
+                       len(daily_rad_in[0,:,0]),
+                       axis=1)
+    slope_vap_pressure_curve = slope_vap_pressure_curve.reshape(1,1,len(avg_T))
+    slope_vap_press_curve_3D = np.repeat(np.repeat(slope_vap_pressure_curve,
+                                                   len(daily_rad_in[:,0,0]),
+                                                   axis=0),
+                                         len(daily_rad_in[0,:,0]),
+                                         axis=1)
+    avg_T = avg_T.reshape(1,1,len(avg_T))
+    avg_T_3D = np.repeat(np.repeat(avg_T,
+                                   len(daily_rad_in[:,0,0]),
+                                   axis=0),
+                         len(daily_rad_in[0,:,0]),
+                         axis=1)
+    diff_vap_press = diff_vap_press.reshape(1,1,len(min_RH))
+    diff_vap_press_3D = np.repeat(np.repeat(diff_vap_press,
+                                            len(daily_rad_in[:,0,0]),
+                                            axis=0),
+                                  len(daily_rad_in[0,:,0]),
+                                  axis=1)
     
-    relative_shortwave_radiation = self.resid_GHI_2D/clear_sky_solar_radiation
+    
+    
+    
+    relative_shortwave_radiation = daily_rad_in/clear_sky_solar_rad
 
-    net_longwave_radiation_out = stefan_boltzmann_constant*(((max_temp_K**4)+(min_temp_K**4))/2)*(0.34-0.14*math.sqrt(actual_vap_pressure))*(1.35*relative_shortwave_radiation)
-    net_shortwave_radiation_in = (1-albedo)*self.resid_GHI_2D
+    net_longwave_radiation_out = (stefan_boltzmann_constant
+                                  *((max_temp_K_3D**4+min_temp_K_3D**4)/2)
+                                  *(0.34*one_3D-0.14*np.sqrt(actual_vap_pressure_3D))
+                                  *(1.35*relative_shortwave_radiation-0.35*one_3D))
+    
+    
+    net_shortwave_radiation_in = (1-albedo)*daily_rad_in
     net_radiation_in = net_shortwave_radiation_in-net_longwave_radiation_out
-    
-    self.one_matrix = np.ones((len(self.resid_GHI_2D[:,0]),len(self.resid_GHI_2D[0,:])))
-    self.zero_matrix = np.zeros((len(self.resid_GHI_2D[:,0]),len(self.resid_GHI_2D[0,:])))
 
-    # Computation of reference evapotranspiration (ETo)
-    ET0 = ((0.408*slope_vap_pressure_curve*(net_radiation_in-self.zero_matrix))/
-             (slope_vap_pressure_curve+(psychometric_constant*(1+0.34*self.ws_crop))))\
-          +(((psychometric_constant*(900/avg_T_K)*self.ws_crop*(diff_vap_press))/
-             (slope_vap_pressure_curve+(psychometric_constant*(1+0.34*self.ws_crop))))*self.one_matrix)    
+    # Computation of reference evapotranspiration (ET0)
+    ET0 = ((0.408*slope_vap_press_curve_3D*net_radiation_in
+           +psychometric_constant*(900/(avg_T_3D+273*one_3D))*ws_crop*diff_vap_press_3D)/
+           (slope_vap_press_curve_3D+psychometric_constant*(one_3D+0.34*ws_crop)))
     
     ind = np.where(ET0<0)
     ET0[ind] = 0     # if net_radiation_in is negative or first term of Penman < second term

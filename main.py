@@ -15,6 +15,7 @@ from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Ligh
 from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
 from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
 from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
+from MODULES.CROP.evapotranspiration import ET0_FAO56_PM
 
 
 PASE_Logger()
@@ -81,12 +82,21 @@ show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.
 
 
 #temporary lines
-j=1
+j=180
 show_light_map(shade_scene.daily_irr_spat['2021'][:,:,j],
                msh_grid,
                PV_1_3Dconfig.PV_central,
                shade_scene.daily_irr_spat['2021'][:,:,j].min(),
                shade_scene.daily_irr_spat['2021'][:,:,j].max())
+
+
+
+
+ET0_2D = ET0_FAO56_PM(Loc_1['Altitude'], Loc_1['Latitude'], 
+                      WD.nyears_daily_WD['2021'], 
+                      shade_scene.daily_irr_spat['2021'],
+                      np.ones((140, 82, 365 )))
+
 
 
 """

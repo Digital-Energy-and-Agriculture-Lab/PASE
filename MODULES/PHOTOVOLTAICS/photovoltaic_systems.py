@@ -18,7 +18,7 @@ class PV_system:
         self.bifaciality_factor = inputs['Bifaciality_factor']
         self.tilt_nonleapY = np.ones(8760)*inputs['TiltY']
         self.tilt_leapY = np.ones(8784)*inputs['TiltY']
-        self.azimut = inputs['CentralAzimut']
+        self.azimut = inputs['CentralAzimut']*np.pi/180
         panel_peak_power = inputs['Panel_Peak_Power']
         self.panel_area = inputs['PanelDimensionX']*inputs['PanelDimensionY']
         self.panel_efficiency = panel_peak_power/(self.panel_area*1000)
@@ -111,7 +111,8 @@ class PV_system:
                 albedo, SF_f, SF_r, tiltY):
         
         self.cos_teta = self.get_cos_angle_btw_light_and_panels_normal(sun_vect,
-                                                                  [0,0,1])
+                                                                       [0,0,1],
+                                                                       tiltY)
         cos_teta_z = self.get_cos_angle_btw_light_and_zenith(app_zenith)
         
         self.Rb = self.get_ratio_beam_radiation(self.cos_teta, cos_teta_z)
@@ -129,7 +130,7 @@ class PV_system:
         if self.bifaciality == 1:
             
             self.cos_teta_rear = self.get_cos_angle_btw_light_and_panels_normal(
-                sun_vect, [0,0,-1])
+                sun_vect, [0,0,-1], tiltY)
             
             self.Rb_rear = self.get_ratio_beam_radiation(self.cos_teta_rear, cos_teta_z)
             
@@ -157,10 +158,7 @@ class PV_system:
         
         tilt = tiltY*np.pi/180
         
-        #temporaire
-        shade_factor_front = zero_vector
-        
-        direct_component = ((BHI + DHI*Ai)*Rb*(one - shade_factor_front))*SF
+        direct_component = (BHI + DHI*Ai)*Rb*(one - SF)
         
         diffuse_component = (DHI*(one - Ai)*((one + np.cos(tilt))/2)
                                   *(one + f*(np.sin(tilt/2))**3))    
@@ -173,13 +171,14 @@ class PV_system:
     
              
     def get_cos_angle_btw_light_and_panels_normal(self, sun_vect, 
-                                                  init_panel_normal):    
+                                                  init_panel_normal,
+                                                  tiltY):    
         
         rot_axis_init = np.array([[0,1,0]])*np.ones((len(sun_vect),1))
         panels_normal_init = np.array((init_panel_normal))
         zenith = np.array([[0,0,1]])
         panels_tilt_rad = np.zeros((len(sun_vect[:,0]),1))
-        panels_tilt_rad[:,0] = self.tiltY*np.pi/180
+        panels_tilt_rad[:,0] = tiltY*np.pi/180
         rotation_vector1 = panels_tilt_rad*rot_axis_init
         rotation_vector2 = -self.azimut*zenith
         rotation1 = R.from_rotvec(rotation_vector1)
