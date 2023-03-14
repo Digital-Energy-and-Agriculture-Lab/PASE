@@ -7,6 +7,9 @@ Created on Tue Jan 17 16:06:55 2023
 """
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
+from windrose import WindroseAxes 
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
@@ -62,7 +65,7 @@ PV_central = PV_system(PV_1)
 
 
 shade_scene = Light_shade_scene(msh_grid,PV_1_3Dconfig.PV_central)
-shade_scene.get_light_map(144, Sun_positions_samp.solar_vector)
+shade_scene.get_light_map(360, Sun_positions_samp.solar_vector)
 
 shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
                                       len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
@@ -83,7 +86,7 @@ show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.
 
 
 #temporary lines
-j=180
+j=2
 show_light_map(shade_scene.daily_irr_spat['2021'][:,:,j],
                msh_grid,
                PV_1_3Dconfig.PV_central,
@@ -91,18 +94,10 @@ show_light_map(shade_scene.daily_irr_spat['2021'][:,:,j],
                shade_scene.daily_irr_spat['2021'][:,:,j].max())
 
 
-
-
-ET0_2D = ET0_FAO56_PM(Loc_1['Altitude'], Loc_1['Latitude'], 
-                      WD.nyears_daily_WD['2021'], 
-                      shade_scene.daily_irr_spat['2021'],
-                      np.ones((140, 82, 365 )))
-
-
 porosity = 0.284
 #X & Y MESHES
 DH = np.arange(-14,14,0.2)
-nY = len(np.arange(-16.4,16.4,0.2))
+nY = len(np.arange(-16.4,16.4,0.4))
 
 #Reading of the meteo DB
 DB = pd.read_csv(r"DATABASE/METEO/Chanco_Chile_WD.csv").drop(columns=['date','G(h)', 'T2m', 'RH2m',  'PRECIP', 'Gb(n)','Gd(h)'])
@@ -120,16 +115,62 @@ DH_2D = np.tile(DH,(96,365,1)).transpose()
 WindMap_2D = Windbreak2D.get_ru_Chanco(WindAngle,porosity,DH_2D,WindSpeed,yrep=nY)
 
 
-#Visualization of the results
+#Visualization of the results : mean on the year
 import matplotlib.pyplot as plt
 plt.imshow(np.mean(WindMap_2D,2).transpose())
 ax = plt.gca();
-
 plt.colorbar()
 ax.plot()
 print('average windspeed at 2m: ' + str(np.mean(WindSpeed)))
 print('average windspeed at 2m with the windbreaks :'  + str(np.mean(WindMap_2D)))
 
+
+
+# Computation of ET0 for the whole year
+ET0_2D = ET0_FAO56_PM(Loc_1['Altitude'], Loc_1['Latitude'], 
+                      WD.nyears_daily_WD['2021'], 
+                      shade_scene.daily_irr_spat['2021'],
+                      WindMap_2D)
+
+
+# SHOW the ET0 map for a specified julian day
+show_light_map(ET0_2D[:,:,j],
+               msh_grid,
+               PV_1_3Dconfig.PV_central,
+               ET0_2D[:,:,j].min(),
+               ET0_2D[:,:,j].max())
+
+
+
+#### WINDROSE wind direction with wind speed  ####
+wind_QH = DB['WD10m'].to_numpy()
+ind = np.where(wind_QH>180)
+wind_QH = wind_QH+180
+wind_QH[ind] = wind_QH[ind]-360
+
+fig = plt.figure()
+ax = WindroseAxes.from_ax()
+ax.bar(wind_QH, DB['WS10m'], normed=True, opening=1, edgecolor="black", bins=[0, 2, 4, 5, 6, 8, 10])
+ax.set_legend(loc='lower left', title='Wind speed (m/s)', fontsize=22)
+ax.set_xticklabels(['E', 'NE','N', 'NW', 'W', 'SW', 'S', 'SE'])
+ax.set_yticklabels(['4.6 %', '9.2 %','13.8 %', '18.4 %', '23.0 %'])
+plt.savefig('OUTPUTS/GRAPHS/windrose.png')
+
+
+
+# Windrose with wind direction in function of the month
+"""
+new_index = pd.date_range(f"01-01-2021 00:00:00",
+                          f"31-12-2021 23:45:00",
+                          freq='15Min')
+M = new_index.month
+
+ax = WindroseAxes.from_ax()
+ax.bar(wind_QH, M, normed=True, opening=0.9, edgecolor="white", bins=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+ax.set_legend(loc='lower left', title='Month ID')
+ax.set_xticklabels(['E', 'NE','N', 'NW', 'W', 'SW', 'S', 'SE'])
+plt.savefig('windrose_month.png')
+"""
 
 
 """

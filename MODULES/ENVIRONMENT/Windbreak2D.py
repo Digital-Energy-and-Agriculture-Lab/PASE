@@ -29,7 +29,7 @@ def Get_u(porosity,DH,relative_wind_angle=0):
     #Sur le cercle trigonometrique le pare-vent est l'axe Y donc on doit separer
     # les angles du 1 & 4eme quadrant et ceux du 2 et 3eme. Le signe du cos
     # permet de realiser cela. 
-    indSwitch = (np.cos(WindAngle*np.pi/180)>0).astype(int)  ### NE DEVRAIT-CE PAS ETRE SINUS ????
+    indSwitch = (np.sin(WindAngle*np.pi/180)<0).astype(int)  ### NE DEVRAIT-CE PAS ETRE SINUS ????
     indSwitch[indSwitch==0] = -1
     
     DH = DH*indSwitch
@@ -70,7 +70,7 @@ def get_ru_Chanco(WindAngle,porosity,DH,WindSpeed,yrep=15,PanelSpace=14,multiply
     ru1 = Get_Ru(porosity,DH-PanelSpace/2,WindAngle)
     ru2 = Get_Ru(porosity,DH-PanelSpace*3/2,WindAngle)
     ru3 = Get_Ru(porosity,DH+PanelSpace/2,WindAngle)
-    ru4 = Get_Ru(porosity,DH+PanelSpace*3/2,WindAngle)
+    ru4 = Get_Ru(porosity,DH+PanelSpace*3/2,WindAngle)     # Ce sont les définitions du maillage central dans le repère des différentes rangées de panneaux
 
     if multiply == True:
         ru = ru1*ru2*ru3*ru4
