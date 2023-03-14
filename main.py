@@ -16,6 +16,7 @@ from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
 from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
 from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
 from MODULES.CROP.evapotranspiration import ET0_FAO56_PM
+from MODULES.ENVIRONMENT import Windbreak2D
 
 
 PASE_Logger()
@@ -96,6 +97,38 @@ ET0_2D = ET0_FAO56_PM(Loc_1['Altitude'], Loc_1['Latitude'],
                       WD.nyears_daily_WD['2021'], 
                       shade_scene.daily_irr_spat['2021'],
                       np.ones((140, 82, 365 )))
+
+
+porosity = 0.284
+#X & Y MESHES
+DH = np.arange(-14,14,0.2)
+nY = len(np.arange(-16.4,16.4,0.2))
+
+#Reading of the meteo DB
+DB = pd.read_csv(r"DATABASE/METEO/Chanco_Chile_WD.csv").drop(columns=['date','G(h)', 'T2m', 'RH2m',  'PRECIP', 'Gb(n)','Gd(h)'])
+WindAngle = np.tile(DB['WD10m'].to_numpy(),(len(DH),1)).reshape((len(DH),365,96))
+WindSpeed = np.tile(DB['WS10m'].to_numpy(),(len(DH),1)).reshape((len(DH),365,96))
+#WindAngle(DH,day,quarter/hour)
+
+#Projection of the windspeed at 2m
+WindSpeed = Windbreak2D.get_wind_speed(WindSpeed)
+
+#Creation of the 2D vector of DH
+DH_2D = np.tile(DH,(96,365,1)).transpose()
+
+#Computation of the 2D map of windspeed
+WindMap_2D = Windbreak2D.get_ru_Chanco(WindAngle,porosity,DH_2D,WindSpeed,yrep=nY)
+
+
+#Visualization of the results
+import matplotlib.pyplot as plt
+plt.imshow(np.mean(WindMap_2D,2).transpose())
+ax = plt.gca();
+
+plt.colorbar()
+ax.plot()
+print('average windspeed at 2m: ' + str(np.mean(WindSpeed)))
+print('average windspeed at 2m with the windbreaks :'  + str(np.mean(WindMap_2D)))
 
 
 
