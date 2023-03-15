@@ -96,8 +96,8 @@ show_light_map(shade_scene.daily_irr_spat['2021'][:,:,j],
 
 porosity = 0.284
 #X & Y MESHES
-DH = np.arange(-14,14,0.2)
-nY = len(np.arange(-16.4,16.4,0.4))
+DH = np.arange(Loc_1['Xmin_InterestZone'],Loc_1['Xmax_InterestZone'], Loc_1['dX_InterestZone'])
+nY = len(np.arange(Loc_1['Ymin_InterestZone'],Loc_1['Ymax_InterestZone'], Loc_1['dY_InterestZone']))
 
 #Reading of the meteo DB
 DB = pd.read_csv(r"DATABASE/METEO/Chanco_Chile_WD.csv").drop(columns=['date','G(h)', 'T2m', 'RH2m',  'PRECIP', 'Gb(n)','Gd(h)'])
@@ -132,6 +132,9 @@ ET0_2D = ET0_FAO56_PM(Loc_1['Altitude'], Loc_1['Latitude'],
                       shade_scene.daily_irr_spat['2021'],
                       WindMap_2D)
 
+pixel_size = Loc_1['dX_InterestZone']*Loc_1['dY_InterestZone']
+
+ET0_2D = ET0_2D*pixel_size #transfo de mm ou L/m² à L sur chaque pixel
 
 # SHOW the ET0 map for a specified julian day
 show_light_map(ET0_2D[:,:,j],
@@ -140,6 +143,18 @@ show_light_map(ET0_2D[:,:,j],
                ET0_2D[:,:,j].min(),
                ET0_2D[:,:,j].max())
 
+annual_ET0_2D = np.sum(ET0_2D, 2)
+show_light_map(annual_ET0_2D,
+               msh_grid,
+               PV_1_3Dconfig.PV_central,
+               annual_ET0_2D.min(),
+               annual_ET0_2D.max())
+relative_annual_ET0_2D = annual_ET0_2D/annual_ET0_2D.max()
+show_light_map(relative_annual_ET0_2D,
+               msh_grid,
+               PV_1_3Dconfig.PV_central,
+               relative_annual_ET0_2D.min(),
+               relative_annual_ET0_2D.max())
 
 
 #### WINDROSE wind direction with wind speed  ####
@@ -151,9 +166,10 @@ wind_QH[ind] = wind_QH[ind]-360
 fig = plt.figure()
 ax = WindroseAxes.from_ax()
 ax.bar(wind_QH, DB['WS10m'], normed=True, opening=1, edgecolor="black", bins=[0, 2, 4, 5, 6, 8, 10])
-ax.set_legend(loc='lower left', title='Wind speed (m/s)', fontsize=22)
-ax.set_xticklabels(['E', 'NE','N', 'NW', 'W', 'SW', 'S', 'SE'])
-ax.set_yticklabels(['4.6 %', '9.2 %','13.8 %', '18.4 %', '23.0 %'])
+ax.set_legend(loc='lower left', title='Wind speed (m/s)', title_fontsize=20, labelspacing=0.8, handleheight=2.5, handlelength=4.5)
+plt.setp(plt.gca().get_legend().get_texts(), fontsize='18')
+ax.set_xticklabels(['E', 'NE','N', 'NW', 'W', 'SW', 'S', 'SE'], fontsize=18)
+ax.set_yticklabels(['4.6 %', '9.2 %','13.8 %', '18.4 %', '23.0 %'], fontsize=18, verticalalignment='bottom', horizontalalignment='right')
 plt.savefig('OUTPUTS/GRAPHS/windrose.png')
 
 
