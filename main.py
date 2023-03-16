@@ -20,6 +20,7 @@ from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
 from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
 from MODULES.CROP.evapotranspiration import ET0_FAO56_PM
 from MODULES.ENVIRONMENT import Windbreak2D
+from MODULES.DATA_MANAGEMENT import graphs
 
 
 PASE_Logger()
@@ -65,7 +66,7 @@ PV_central = PV_system(PV_1)
 
 
 shade_scene = Light_shade_scene(msh_grid,PV_1_3Dconfig.PV_central)
-shade_scene.get_light_map(360, Sun_positions_samp.solar_vector)
+shade_scene.get_light_map(2160, Sun_positions_samp.solar_vector)
 
 shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
                                       len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
@@ -78,11 +79,11 @@ PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
 
 ### VISUALISATION (temporary)
 
-show_light_map(shade_scene.dir_map[:,:,40], msh_grid, PV_1_3Dconfig.PV_central, 0, 1)
+show_light_map(shade_scene.dir_map[:,:,40], msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Relative direct light reaching the ground [-]")
 # IF there is one rotation axis
 #show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
 
-show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central, 0, 1)
+show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Sky visibility factor [-]")
 
 
 #temporary lines
@@ -91,8 +92,10 @@ show_light_map(shade_scene.daily_irr_spat['2021'][:,:,j],
                msh_grid,
                PV_1_3Dconfig.PV_central,
                shade_scene.daily_irr_spat['2021'][:,:,j].min(),
-               shade_scene.daily_irr_spat['2021'][:,:,j].max())
+               shade_scene.daily_irr_spat['2021'][:,:,j].max(),
+               "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
 
+###### LINES FOR THE PAPER !!!! ##### 
 
 porosity = 0.284
 #X & Y MESHES
@@ -141,20 +144,55 @@ show_light_map(ET0_2D[:,:,j],
                msh_grid,
                PV_1_3Dconfig.PV_central,
                ET0_2D[:,:,j].min(),
-               ET0_2D[:,:,j].max())
+               ET0_2D[:,:,j].max(), "")
 
 annual_ET0_2D = np.sum(ET0_2D, 2)
 show_light_map(annual_ET0_2D,
                msh_grid,
                PV_1_3Dconfig.PV_central,
                annual_ET0_2D.min(),
-               annual_ET0_2D.max())
+               annual_ET0_2D.max(), " ")
 relative_annual_ET0_2D = annual_ET0_2D/annual_ET0_2D.max()
 show_light_map(relative_annual_ET0_2D,
                msh_grid,
                PV_1_3Dconfig.PV_central,
                relative_annual_ET0_2D.min(),
-               relative_annual_ET0_2D.max())
+               relative_annual_ET0_2D.max(),
+               "Relative annual evapotranspiration against control zone [-]")
+
+
+#### Graph of annual residual irradiance (direct, diffus and total) on the transect
+tsct_daily_dir_irr = shade_scene.daily_dir_irr_spat['2021'][35:105, 49, :]    #34:104
+tsct_annual_dir_irr = np.sum(tsct_daily_dir_irr, 1)
+tsct_daily_diff_irr = shade_scene.daily_diff_irr_spat['2021'][35:105, 49, :]
+tsct_annual_diff_irr = np.sum(tsct_daily_diff_irr, 1)
+tsct_daily_tot_irr = shade_scene.daily_irr_spat['2021'][35:105, 49, :]
+tsct_annual_tot_irr = np.sum(tsct_daily_tot_irr, 1)
+
+control_annual_dir_irr = np.sum(Light.data['2021']['BHI'])*10**-6*60*60/4
+control_annual_diff_irr = np.sum(Light.data['2021']['DHI'])*10**-6*60*60/4
+control_annual_tot_irr = np.sum(Light.data['2021']['GHI'])*10**-6*60*60/4
+
+tsct_annual_rel_dir_irr = tsct_annual_dir_irr/control_annual_dir_irr
+tsct_annual_rel_diff_irr = tsct_annual_diff_irr/control_annual_diff_irr
+tsct_annual_rel_tot_irr = tsct_annual_tot_irr/control_annual_tot_irr
+
+d = np.arange(0,14,0.2)
+h = PV_1['Height']+PV_1['PanelDimensionX']
+d_h = d/h
+
+graphs.graph_1_Yaxis(d_h, tsct_annual_rel_dir_irr, tsct_annual_rel_diff_irr,
+                     tsct_annual_rel_tot_irr, data_x_name='D/H', 
+                     data1_name='Relative annual direct irradiation', 
+                     data2_name='Relative annual diffuse irradiation',
+                     data3_name='Relative annual total irradiation',
+                     ax1_name='Relative irradiation compared with control zone (-)',
+                     graph_name='Rel_irradiation_on_tsct')
+
+
+
+
+
 
 
 #### WINDROSE wind direction with wind speed  ####

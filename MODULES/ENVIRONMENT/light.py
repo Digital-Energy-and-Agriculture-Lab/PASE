@@ -482,11 +482,21 @@ class Light_shade_scene:
             n = 6
         
         self.daily_irr_spat = {}
+        self.daily_dir_irr_spat = {}
+        self.daily_diff_irr_spat = {}
         
         for year in light_data.keys():
             daily_irradiation_spat = np.zeros((len(self.meshgrid.X[0,:]), 
                                                len(self.meshgrid.Y[:,0]),
-                                               int(freq_deter/(24*n))))    
+                                               int(freq_deter/(24*n))))
+            
+            daily_irradiation_dir_spat = np.zeros((len(self.meshgrid.X[0,:]), 
+                                               len(self.meshgrid.Y[:,0]),
+                                               int(freq_deter/(24*n))))  
+            
+            daily_irradiation_diff_spat = np.zeros((len(self.meshgrid.X[0,:]), 
+                                               len(self.meshgrid.Y[:,0]),
+                                               int(freq_deter/(24*n))))  
 
             for day in range(0, int(freq_deter/(24*n)), 1):
 
@@ -501,7 +511,7 @@ class Light_shade_scene:
                 
                 print(day)
 
-                irradianceMap_direct = np.round(self.dir_map[:,:,indices]*light_data[year]['BHI'].to_numpy()[ind2]*10**-6*60*60/n, 3) #MJ/m²
+                irradianceMap_direct = np.round(self.dir_map[:,:,indices]*light_data[year]['BHI'].to_numpy()[ind2]*10**-6*60*60/n, 3) #W/m² to MJ/m²
                 
                 if type(self.geometry) == list:
                     irradianceMap_diffus = np.round(self.diff_map[:,:,indices]
@@ -509,16 +519,19 @@ class Light_shade_scene:
                                                     *(60*60/n), 3)  #J/m²
                 else:
                     daily_diff = np.sum(light_data[year]['DHI'].to_numpy()[ind2])
-                    irradianceMap_diffus = np.round(self.diff_map[:,:]*daily_diff*10**-6*60*60/n, 3)   #MJ/m²
+                    irradianceMap_diffus = np.round(self.diff_map[:,:]*daily_diff*10**-6*60*60/n, 3)   #W/m² to MJ/m²
                     
                 daily_irradiation = np.sum(irradianceMap_direct,axis = 2)+irradianceMap_diffus #MJ/m²
                 daily_irradiation_spat[:,:,day] = daily_irradiation
+                daily_irradiation_dir_spat[:,:,day] = np.sum(irradianceMap_direct,axis = 2)
+                daily_irradiation_diff_spat[:,:,day] = irradianceMap_diffus
             
             self.daily_irr_spat[year] = daily_irradiation_spat
+            self.daily_dir_irr_spat[year] = daily_irradiation_dir_spat
+            self.daily_diff_irr_spat[year] = daily_irradiation_diff_spat
 
 
-
-def show_light_map(light_matrix, msh_grid, PV_central, lim_min, lim_max):
+def show_light_map(light_matrix, msh_grid, PV_central, lim_min, lim_max, lgd_title):
     
     grid = pyV.StructuredGrid(msh_grid.X, msh_grid.Y, np.ones((len(msh_grid.X[:,0]),len(msh_grid.X[0,:])))*0.05)
 
@@ -545,7 +558,10 @@ def show_light_map(light_matrix, msh_grid, PV_central, lim_min, lim_max):
         scalars=test1,
         lighting=False,
         show_edges=False,
-        scalar_bar_args={"title": "Rate of residual light [%]"},
+        scalar_bar_args={"title": lgd_title},
         clim=[lim_min, lim_max])
+    
+    plotter.camera.position = (30, 60, 40)
+    plotter.camera.focal_point = (0,10,0)
 
     plotter.show()
