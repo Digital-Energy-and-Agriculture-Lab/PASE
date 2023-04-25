@@ -66,18 +66,21 @@ class Weather_data:
         
         self.nyears = {}
         WD = pd.read_csv('DATABASE/METEO/' + file + '.csv', ',')
-        WD['date'] = pd.to_datetime(WD['date'])
-        WD['date'] = pd.to_datetime(WD['date'], format='%d-%m-%Y %H:%M:%S')
-        WD = WD.set_index(WD['date'])
+        new_index = pd.date_range("01-01-2021 00:00:00", "31-12-2021 23:45:00",
+                                  freq='15Min')
+        WD = WD.set_index(new_index)
+        #WD['date'] = pd.to_datetime(WD['date'])
+        #WD['date'] = pd.to_datetime(WD['date'], format='%m-%d-%Y %H:%M:%S')
+        #WD = WD.set_index(WD['date'])        
         
         for year in range(start_year, end_year+1):
-            msg = 'Get hourly or finer resolution weather data for year '+str(year)
-            PASE_Logger(msg, 'INFO')
+        #    msg = 'Get hourly or finer resolution weather data for year '+str(year)
+        #    PASE_Logger(msg, 'INFO')
                       
-            mask = ((WD['date']>='01-01-'+str(year)+' 00:00:00') & 
-                   (WD['date']<'01-01-'+str(year+1)+' 00:00:00'))            
-            one_year_df = WD[mask]
-            
+        #    mask = ((WD['date']>='01-01-'+str(year)+' 00:00:00') & 
+        #           (WD['date']<'01-01-'+str(year+1)+' 00:00:00'))            
+        #    one_year_df = WD[mask]
+            one_year_df = WD
             self.nyears[str(year)] = one_year_df
             
             

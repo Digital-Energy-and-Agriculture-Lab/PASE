@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def get_wind_speed(windSpeed10m=10, height=2, roughness=0.2):    
+def get_wind_speed(windSpeed10m=10, height=2, roughness=0.25):    
     wind_speed = windSpeed10m*(np.log(height/roughness)/np.log(10/roughness))  
     return wind_speed
 
@@ -76,8 +76,10 @@ def get_ru_Chanco(WindAngle,porosity,DH,WindSpeed,yrep=15,PanelSpace=14,multiply
         ru = ru1*ru2*ru3*ru4
     else:
         ru = np.min(np.array([ru1,ru2,ru3,ru4]),0)
+    Reduction_coeff = np.mean(ru,axis=2)    
     WindMap = np.mean(WindSpeed*ru,axis=2)
-    return np.tile(WindMap, reps=(yrep,1,1)).transpose(1,0,2)
+    WindMap = np.tile(WindMap, reps=(yrep,1,1)).transpose(1,0,2)
+    return WindMap
 
 
 
