@@ -145,7 +145,7 @@ class PV_system:
                                                              tiltY)
             
         else:
-            self.GTI_rear = np.zeros(len(sun_vect))
+            GTI_rear = np.zeros(len(sun_vect))
             
         return GTI_front, GTI_rear
             

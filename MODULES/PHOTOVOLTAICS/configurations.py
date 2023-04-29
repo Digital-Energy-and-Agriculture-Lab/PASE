@@ -16,6 +16,7 @@ class PV_Configuration_3D:
         
         panel_dimX = PV_i['PanelDimensionX']
         panel_dimY = PV_i['PanelDimensionY']
+        panel_thickness = PV_i['PanelThickness']
         repet_dist_panelsX = PV_i['RepetitionDistanceOfPanelsX']
         repet_dist_panelsY = PV_i['RepetitionDistanceOfPanelsY']
         n_panelsX = PV_i['NumberOfPanelsX']
@@ -30,8 +31,15 @@ class PV_Configuration_3D:
         GCR_x = (PV_i['PanelDimensionX']*PV_i['NumberOfPanelsX']/
                       PV_i['RepetitionDistanceOfPVBlocksX'])
         
+        two_facets_rel_position = PV_i['TwoFacetsRelativePosition']
+        
         self.visualization = visualization
-        first_panel = self.create_first_panel_3D(panel_dimX, panel_dimY, 0.15)
+        
+        if panel_thickness is True:
+            first_panel = self.create_first_panel_3D(panel_dimX, panel_dimY, 0.1)
+        else:
+            first_panel = self.create_first_panel(panel_dimX, panel_dimY)
+            
         PV_block = self.create_block_of_panels(repet_dist_panelsX, 
                                                repet_dist_panelsY,
                                                n_panelsX,
@@ -46,7 +54,8 @@ class PV_Configuration_3D:
                                                   n_blocksX, 
                                                   n_blocksY, 
                                                   height,
-                                                  azimut)
+                                                  azimut,
+                                                  two_facets_rel_position)
         else:
             self.PV_central = []
             self.get_tiltY_along_time(sun_vector, azimut, GCR_x)
@@ -58,7 +67,8 @@ class PV_Configuration_3D:
                                                  n_blocksX, 
                                                  n_blocksY, 
                                                  height,
-                                                 azimut)
+                                                 azimut,
+                                                 two_facets_rel_position=0)
                 self.PV_central.append(PV_central)
             
                 
@@ -95,11 +105,16 @@ class PV_Configuration_3D:
          first_panel_meshes = np.hstack([
                                          [3, 0, 1, 2],    # first triangular mesh
                                          [3, 1, 2, 3],
-                                         [3, 4, 5, 6],    # first triangular mesh
+                                         [3, 4, 5, 6],    
                                          [3, 5, 6, 7],
-                                         [3, 1, 3, 7],    # first triangular mesh
+                                         [3, 1, 3, 7],    
                                          [3, 1, 5, 7],
-                                         
+                                         [3, 0, 2, 6],
+                                         [3, 0, 4, 6],
+                                         [3, 2, 3, 7],
+                                         [3, 2, 6, 7],
+                                         [3, 0, 1, 5],
+                                         [3, 0, 4, 5]
                                          ])  # second triangular mesh
          
          first_panel = pyV.PolyData(first_panel_vertices, first_panel_meshes)
@@ -133,16 +148,18 @@ class PV_Configuration_3D:
         
         
     def create_central(self, PV_block_tilted, repet_dist_blockX, 
-                       repet_dist_blockY, n_blocksX, n_blocksY, height, azimut):
+                       repet_dist_blockY, n_blocksX, n_blocksY, height, azimut,
+                       two_facets_rel_position):
         
-        xrng = np.arange(repet_dist_blockX*0.5*(1-n_blocksX), 
-                         repet_dist_blockX*0.5*(n_blocksX+1),
+        xrng = np.arange(repet_dist_blockX*0.5*(1-n_blocksX)+two_facets_rel_position, 
+                         repet_dist_blockX*0.5*(n_blocksX+1)+two_facets_rel_position,
                          repet_dist_blockX, dtype=np.float32)
         yrng = np.arange(repet_dist_blockY*0.5*(1-n_blocksY), 
                          repet_dist_blockY*0.5*(n_blocksY+1),
                          repet_dist_blockY, dtype=np.float32)
         zrng = np.arange(height, height*2, height, dtype=np.float32)
         x, y, z = np.meshgrid(xrng, yrng, zrng)
+        self.x = x
         
         GlobalMesh = pyV.StructuredGrid(x, y, z)
         

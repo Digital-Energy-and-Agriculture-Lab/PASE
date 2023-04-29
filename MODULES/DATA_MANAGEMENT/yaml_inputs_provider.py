@@ -153,7 +153,7 @@ class YAML_Inputs_provider:
                     PASE_Logger(self.msg, 'ERROR', 'value')
                 else:
                     self.i[key] = data['Value']
-
+                
         else:
             if ((data['Value'] > float(data['Limit'][1])) or (data['Value'] < float(data['Limit'][0]))):
                 self.error_message(key, None, data['Limit'])

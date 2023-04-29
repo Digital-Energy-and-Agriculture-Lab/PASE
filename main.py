@@ -27,7 +27,8 @@ PASE_Logger()
 
 Loc_1 = YAML_Inputs_provider(file='Chanco.yaml').i
 
-PV_1 = YAML_Inputs_provider(file='PV_central.yaml').i
+PV_1 = YAML_Inputs_provider(file='PV_central_east.yaml').i
+PV_2 = YAML_Inputs_provider(file='PV_central_west.yaml').i
 
 WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['Longitude'],
@@ -47,7 +48,20 @@ Sun_positions_samp = Sun_positions_sampled(Loc_1['Latitude'],
 
 
 PV_1_3Dconfig = PV_Configuration_3D(PV_1, Sun_positions_samp.solar_vector,
-                                    visualization=False)                        # !!!! Problem with rotation angle that are negative
+                                    visualization=True)                        # !!!! Problem with rotation angle that are negative
+
+PV_2_3Dconfig = PV_Configuration_3D(PV_2, Sun_positions_samp.solar_vector,
+                                    visualization=True) 
+
+merged = PV_1_3Dconfig.PV_central.merge(PV_2_3Dconfig.PV_central)
+merged.plot(style='wireframe', color='tan')
+
+import pyvista
+pl = pyvista.Plotter()
+pl.add_mesh(PV_1_3Dconfig.PV_central)
+pl.add_mesh(PV_2_3Dconfig.PV_central)
+pl.show()
+
 
 msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_InterestZone'],
                                        Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
@@ -65,7 +79,7 @@ Light = Light(WD.nyears, Sun_positions)
 PV_central = PV_system(PV_1)
 
 
-shade_scene = Light_shade_scene(msh_grid,PV_1_3Dconfig.PV_central)
+shade_scene = Light_shade_scene(msh_grid,merged)
 shade_scene.get_light_map(2160, Sun_positions_samp.solar_vector)
 
 shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
@@ -79,19 +93,18 @@ PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
 
 ### VISUALISATION (temporary)
 
-show_light_map(shade_scene.dir_map[:,:,40], msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Relative direct light reaching the ground [-]")
+show_light_map(shade_scene.dir_map[:,:,35], msh_grid, merged, 0, 1, "Relative direct light reaching the ground [-]")
 # IF there is one rotation axis
 #show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
 
-show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Sky visibility factor [-]")
+show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, merged, 0, 1, "Sky visibility factor [-]")
 
 
 #temporary lines
 j=2
 show_light_map(shade_scene.daily_irr_spat['2021'][:,:,j],
                msh_grid,
-               PV_1_3Dconfig.PV_central,
+               merged,
                shade_scene.daily_irr_spat['2021'][:,:,j].min(),
                shade_scene.daily_irr_spat['2021'][:,:,j].max(),
                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
-
