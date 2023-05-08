@@ -53,15 +53,25 @@ PV_1_3Dconfig = PV_Configuration_3D(PV_1, Sun_positions_samp.solar_vector,
 PV_2_3Dconfig = PV_Configuration_3D(PV_2, Sun_positions_samp.solar_vector,
                                     visualization=True) 
 
-merged = PV_1_3Dconfig.PV_central.merge(PV_2_3Dconfig.PV_central)
-merged.plot(style='wireframe', color='tan')
-
+#### TEMPORARY: EXAMPLE OF a .OBJ importation and merging with the PV panels and merge of the 2 PV polydata
 import pyvista
-pl = pyvista.Plotter()
-pl.add_mesh(PV_1_3Dconfig.PV_central)
-pl.add_mesh(PV_2_3Dconfig.PV_central)
-pl.show()
+reader = pyvista.get_reader('DATABASE/OBJ/atc030006.obj')
+barriere = reader.read()
+xrng = np.arange(0, 
+                 24,
+                 4, dtype=np.float32)
+yrng = np.arange(0, 
+                 1,
+                 2, dtype=np.float32)
+zrng = np.arange(0, 1, 2, dtype=np.float32)
+x, y, z = np.meshgrid(xrng, yrng, zrng)    
+GlobalMesh = pyvista.StructuredGrid(x, y, z)
+barrieres = GlobalMesh.glyph(geom=barriere, factor=0.001)
 
+merged = PV_1_3Dconfig.PV_central.merge(PV_2_3Dconfig.PV_central)
+merged2 = merged.merge(barrieres)
+merged2.plot(style='wireframe', color='tan')
+####
 
 msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_InterestZone'],
                                        Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
@@ -79,7 +89,7 @@ Light = Light(WD.nyears, Sun_positions)
 PV_central = PV_system(PV_1)
 
 
-shade_scene = Light_shade_scene(msh_grid,merged)
+shade_scene = Light_shade_scene(msh_grid, merged2)
 shade_scene.get_light_map(2160, Sun_positions_samp.solar_vector)
 
 shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
@@ -93,18 +103,21 @@ PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
 
 ### VISUALISATION (temporary)
 
-show_light_map(shade_scene.dir_map[:,:,35], msh_grid, merged, 0, 1, "Relative direct light reaching the ground [-]")
+show_light_map(shade_scene.dir_map[:,:,7], msh_grid, merged2, 0, 1, "Relative direct light reaching the ground [-]")
 # IF there is one rotation axis
 #show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
 
-show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, merged, 0, 1, "Sky visibility factor [-]")
+show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, merged2, 0, 1, "Sky visibility factor [-]")
 
 
 #temporary lines
 j=2
 show_light_map(shade_scene.daily_irr_spat['2021'][:,:,j],
                msh_grid,
-               merged,
+               merged2,
                shade_scene.daily_irr_spat['2021'][:,:,j].min(),
                shade_scene.daily_irr_spat['2021'][:,:,j].max(),
                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
+
+
+
