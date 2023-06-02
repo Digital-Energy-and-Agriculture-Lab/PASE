@@ -65,7 +65,7 @@ class Weather_data:
     def get_n_years_WD_from_csvfile(self, start_year, end_year, file):
         
         self.nyears = {}
-        WD = pd.read_csv('DATABASE/METEO/' + file + '.csv', ',')
+        WD = pd.read_csv('DATABASE/METEO/' + file + '.csv', delimiter = ',')
         new_index = pd.date_range("01-01-2021 00:00:00", "31-12-2021 23:45:00",
                                   freq='15Min')
         WD = WD.set_index(new_index)
