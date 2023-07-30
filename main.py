@@ -25,7 +25,7 @@ from MODULES.DATA_MANAGEMENT import graphs
 
 PASE_Logger()
 
-Loc_1 = YAML_Inputs_provider(file='Chanco.yaml').i
+Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml').i
 
 PV_1 = YAML_Inputs_provider(file='PV_central_east.yaml').i
 PV_2 = YAML_Inputs_provider(file='PV_central_west.yaml').i
@@ -90,7 +90,7 @@ PV_central = PV_system(PV_1)
 
 
 shade_scene = Light_shade_scene(msh_grid, merged2)
-shade_scene.get_light_map(2160, Sun_positions_samp.solar_vector)
+shade_scene.get_light_map(360, Sun_positions_samp.solar_vector)
 
 shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
                                       len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
@@ -112,11 +112,11 @@ show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, merged2, 0, 1,
 
 #temporary lines
 j=2
-show_light_map(shade_scene.daily_irr_spat['2021'][:,:,j],
+show_light_map(shade_scene.daily_irr_spat['2005'][:,:,j],
                msh_grid,
                merged2,
-               shade_scene.daily_irr_spat['2021'][:,:,j].min(),
-               shade_scene.daily_irr_spat['2021'][:,:,j].max(),
+               shade_scene.daily_irr_spat['2005'][:,:,j].min(),
+               shade_scene.daily_irr_spat['2005'][:,:,j].max(),
                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
 
 
