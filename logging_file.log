@@ -1,19 +1,20 @@
-02:13:47   (INFO)  -  START OF THE SIMULATION
-02:13:47   (INFO)  -  Input values from Siguesol_loc.yaml have been imported successfully
-02:13:47   (INFO)  -  Input values from AV_siguesol.yaml have been imported successfully
-02:13:47   (INFO)  -  Input values from PV_module_SigueSOL.yaml have been imported successfully
-02:13:47   (INFO)  -  Get hourly weather data for year 2005 from PvGis
-02:13:47   (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-02:13:47   (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 302 0
-02:13:47   (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-02:13:47   (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 301 None
-02:13:48   (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 200 961521
-02:13:48   (INFO)  -  Computation of daily weather data for year 2005
-02:13:50   (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
-02:13:50   (DEBUG)  -  Trying `CDLL(libc.so.6)`
-02:13:50   (DEBUG)  -  Library path: 'libc.so.6'
-02:13:50   (DEBUG)  -  DLL: <CDLL 'libc.so.6', handle 7fd47882f410 at 0x7fd46984eee0>
-02:13:51   (DEBUG)  -  generating face normals
-02:13:51   (DEBUG)  -  intersects_id executed in 0.5734 seconds.
-02:13:51   (DEBUG)  -  generating face normals
-02:13:52   (DEBUG)  -  intersects_id executed in 1.0766 seconds.
+02:02:32 PM  (INFO)  -  START OF THE SIMULATION
+02:02:32 PM  (INFO)  -  Input values from Siguesol_loc.yaml have been imported successfully
+02:02:32 PM  (INFO)  -  Input values from PV_central_siguesol.yaml have been imported successfully
+02:02:32 PM  (INFO)  -  Get hourly weather data for year 2005 from PvGis
+02:02:32 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+02:02:32 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 302 0
+02:02:32 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+02:02:32 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 301 None
+02:02:33 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 200 961521
+02:02:35 PM  (INFO)  -  Computation of daily weather data for year 2005
+02:02:37 PM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
+02:02:37 PM  (DEBUG)  -  Trying `CDLL(libc.so.6)`
+02:02:37 PM  (DEBUG)  -  Library path: 'libc.so.6'
+02:02:37 PM  (DEBUG)  -  DLL: <CDLL 'libc.so.6', handle 7f87c2e73410 at 0x7f874ab19f10>
+02:02:37 PM  (DEBUG)  -  generating face normals
+02:02:38 PM  (DEBUG)  -  intersects_id executed in 0.8278 seconds.
+02:02:38 PM  (DEBUG)  -  generating face normals
+02:02:39 PM  (DEBUG)  -  intersects_id executed in 1.3975 seconds.
+02:15:21 PM  (ERROR)  -  Task was destroyed but it is pending!
+task: <Task pending name='Task-1' coro=<Kernel.poll_control_queue() running at /home/roxane/anaconda3/envs/naldeo/lib/python3.8/site-packages/ipykernel/kernelbase.py:227> wait_for=<Future finished result=<Future at 0x...state=pending>> cb=[_chain_future.<locals>._call_set_state() at /home/roxane/anaconda3/envs/naldeo/lib/python3.8/asyncio/futures.py:367]>
