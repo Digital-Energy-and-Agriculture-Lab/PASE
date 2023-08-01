@@ -165,7 +165,7 @@ class PV_Configuration_3D:
         
         PV_central = GlobalMesh.glyph(geom=PV_block_tilted, factor=1)
         
-        PV_central = PV_central.rotate_z(azimut)
+        PV_central = PV_central.rotate_z(-azimut)
         
         #test afficher le sol
         

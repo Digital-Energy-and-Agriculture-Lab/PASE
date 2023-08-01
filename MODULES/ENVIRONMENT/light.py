@@ -536,7 +536,9 @@ def show_light_map(light_matrix, msh_grid, PV_central, lim_min, lim_max, lgd_tit
     grid = pyV.StructuredGrid(msh_grid.X, msh_grid.Y, np.ones((len(msh_grid.X[:,0]),len(msh_grid.X[0,:])))*0.05)
 
     test1 = light_matrix.ravel()
-
+    
+    labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)', ylabel='Y (NORTH)')
+    
     plotter = pyV.Plotter()
 
     plotter.add_mesh(PV_central, color='black')
@@ -551,7 +553,8 @@ def show_light_map(light_matrix, msh_grid, PV_central, lim_min, lim_max, lgd_tit
     grnd = pyV.PolyData(ground, ground_m)
 
     plotter.add_mesh(grnd, color='green')
-    plotter.show_axes()
+    #plotter.show_axes()
+    plotter.add_axes(**labels)
 
     plotter.add_mesh(
         grid,
