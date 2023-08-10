@@ -6,17 +6,22 @@ Created on Mon Jan 16 11:49:51 2023
 @author: Roxane Bruhwyler
 """
 
-import yaml
 import os
+import yaml
+
 from MODULES.user_support_tools import PASE_Logger
 
 
 class YAML_Inputs_provider:
     
-    def __init__(self, file=None, path='INPUTS/'):
-        
-        with open (path+file, 'r') as inputs_file:
-            
+    def __init__(self, file=None, path='INPUTS', subpath=None):
+        if subpath is not None:
+            fname = os.path.join(path, subpath, file)
+        else:
+            fname = os.path.join(path, file)
+
+        with open (fname, 'r') as inputs_file:
+
             inputs = yaml.load(inputs_file, Loader=yaml.FullLoader)
             
         self.i = {}
@@ -162,6 +167,33 @@ class YAML_Inputs_provider:
                 self.i[key] = data['Value']
 
 
+class inputs_aggregator:
 
-    
+    def __init__(self, inputs):
+        self.aggregated_inputs = dict()
 
+        self.aggregate_inputs(inputs)
+
+        self.inputs_sanity_check()  # check validity of input parameters
+
+
+    def aggregate_inputs(self, inputs):
+
+        for input in inputs:
+            self.aggregated_inputs.update(input)
+
+
+    def inputs_sanity_check(self):
+
+        # check if RepetitionDistanceOfPanelsX >= PanelDimensionX
+        if self.aggregated_inputs['RepetitionDistanceOfPanelsX'] < \
+                self.aggregated_inputs['PanelDimensionX']:
+            raise ValueError(
+                "Repetition distance between panels in axis X is too short, "
+                "panels are clipping into eachother. Fix it in yaml config file.")
+
+        if self.aggregated_inputs['RepetitionDistanceOfPanelsY'] < \
+                self.aggregated_inputs['PanelDimensionY']:
+            raise ValueError(
+                "Repetition distance between panels in axis Y is too short, "
+                "panels are clipping into eachother. Fix it in yaml config file.")

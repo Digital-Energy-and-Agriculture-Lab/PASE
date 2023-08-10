@@ -6,8 +6,9 @@ Created on Mon Mar  6 16:18:54 2023
 @author: roxane
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import os
 
 def graph_1_Yaxis(data_x=None, data1=None, data2=None, data3=None, data4=None, 
                   data_x_name=None, data1_name=None, data2_name=None, data3_name=None, 
@@ -38,7 +39,8 @@ def graph_1_Yaxis(data_x=None, data1=None, data2=None, data3=None, data4=None,
     ax1.grid(color=gd_color, linestyle='-')
     plt.show()
 
-    path = 'OUTPUTS/GRAPHS/'+graph_name+'.svg'
+    path = os.path.join('OUTPUTS', 'GRAPHS', graph_name+'.svg')
+
     fig.savefig(path, format='svg')
     
     
@@ -77,11 +79,10 @@ def graph_2_Yaxis(data_x=None, data1=None, data2=None, data3=None, data4=None,
     ax1.grid(color='#CBCBCB')
     plt.show()
 
-    path = "OUTPUTS/GRAPHS/" + graph_name + ".png"
-    fig.savefig(path, format='png')    
-    
+    path = os.path.join('OUTPUTS', 'GRAPHS', graph_name + '.png')
 
-    
+    fig.savefig(path, format='png')
+
     
 def histogram_3or4_series(x_label, data_s1, data_s2, data_s3, label_s1,
                           label_s2, label_s3, y_label, graph_title,
@@ -101,5 +102,5 @@ def histogram_3or4_series(x_label, data_s1, data_s2, data_s3, label_s1,
     plt.ylabel(y_label, fontweight='bold')
     plt.legend(loc='best')
     plt.grid()
-    plt.savefig('OUTPUTS/GRAPHS/'+graph_title+'.svg')
+    plt.savefig(os.path.join('OUTPUTS', 'GRAPHS', graph_title + '.svg'))
     plt.show()
