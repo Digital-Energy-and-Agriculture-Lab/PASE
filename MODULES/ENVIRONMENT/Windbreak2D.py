@@ -7,6 +7,7 @@ Created on Tue Feb 28 08:26:50 2023
 
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 import pandas as pd
 
 
@@ -90,7 +91,7 @@ DH = np.arange(-14,14,0.2)
 nY = len(np.arange(-16.4,16.4,0.2))
 
 #Reading of the meteo DB
-DB = pd.read_csv(r"DATABASE/METEO/Chanco_Chile_WD.csv").drop(columns=['date','G(h)', 'T2m', 'RH2m',  'PRECIP', 'Gb(n)','Gd(h)'])
+DB = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', 'Chanco_Chile_WD.csv')).drop(columns=['date','G(h)', 'T2m', 'RH2m',  'PRECIP', 'Gb(n)','Gd(h)'])
 WindAngle = np.tile(DB['WD10m'].to_numpy(),(len(DH),1)).reshape((len(DH),365,96))
 WindSpeed = np.tile(DB['WS10m'].to_numpy(),(len(DH),1)).reshape((len(DH),365,96))
 #WindAngle(DH,quarter/hour,day)

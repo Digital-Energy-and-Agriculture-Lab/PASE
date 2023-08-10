@@ -9,29 +9,33 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
+import os
 from windrose import WindroseAxes 
 from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
 from MODULES.PHOTOVOLTAICS.configurations import PV_Configuration_3D
 from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
 from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
 from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
-from MODULES.CROP.evapotranspiration import ET0_FAO56_PM, get_ETo_0D
+from MODULES.CROPS.evapotranspiration import ET0_FAO56_PM, get_ETo_0D
 from MODULES.ENVIRONMENT import Windbreak2D
 from MODULES.DATA_MANAGEMENT import graphs
 
 
 PASE_Logger()
 
-Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml').i
+Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').i
 
-PV_1 = YAML_Inputs_provider(file='PV_central_siguesol.yaml').i
+AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').i
+PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).i
+
+PV_params_dict = inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
 """
-PV_1 = YAML_Inputs_provider(file='PV_central_east.yaml').i
-PV_2 = YAML_Inputs_provider(file='PV_central_west.yaml').i
+PV_1 = YAML_Inputs_provider(file='PV_central_east.yaml', subpath='AV_CENTRAL').i
+PV_2 = YAML_Inputs_provider(file='PV_central_west.yaml', subpath='AV_CENTRAL').i
 """
 
 WD = Weather_data(Loc_1['Latitude'],
@@ -49,9 +53,7 @@ Sun_positions_samp = Sun_positions_sampled(Loc_1['Latitude'],
                                       len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
                                       Loc_1['TimeZone'])
 
-
-
-PV_1_3Dconfig = PV_Configuration_3D(PV_1, Sun_positions_samp.solar_vector,
+PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict, Sun_positions_samp.solar_vector,
                                     visualization=True)                        # !!!! Problem with rotation angle that are negative
 
 #Example of a way to combine multiple configurations of PV rows and integration of a barrier 
@@ -62,7 +64,7 @@ PV_2_3Dconfig = PV_Configuration_3D(PV_2, Sun_positions_samp.solar_vector,
 
 #### TEMPORARY: EXAMPLE OF a .OBJ importation and merging with the PV panels and merge of the 2 PV polydata
 import pyvista
-reader = pyvista.get_reader('DATABASE/OBJ/atc030006.obj')
+reader = pyvista.get_reader('INPUTS/HARDWARE/STRUCTURES/atc030006.obj')
 barriere = reader.read()
 xrng = np.arange(0, 
                  24,
@@ -85,8 +87,6 @@ msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_I
                                        Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
                                        Loc_1['dX_InterestZone'], Loc_1['dY_InterestZone'])
 
-
-
 Sun_positions = Sun_positions(Loc_1['Latitude'],
                               Loc_1['Longitude'],
                               len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
@@ -94,8 +94,7 @@ Sun_positions = Sun_positions(Loc_1['Latitude'],
 
 Light = Light(WD.nyears, Sun_positions)
 
-PV_central = PV_system(PV_1)
-
+PV_central = PV_system(PV_params_dict)
 
 shade_scene = Light_shade_scene(msh_grid, PV_1_3Dconfig.PV_central)
 shade_scene.get_light_map(360, Sun_positions_samp.solar_vector)
@@ -104,28 +103,22 @@ shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
                                       len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
                                       Light.data)
 
-
-
 PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
-
 
 ### VISUALISATION (temporary)
 
-show_light_map(shade_scene.dir_map[:,:,1], msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Relative direct light reaching the ground [-]")
+j=150
+show_light_map(shade_scene.dir_map[:,:,j], msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Relative direct light reaching the ground [-]")
 # IF there is one rotation axis
 #show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
 
 show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Sky visibility factor [-]")
 
-
 #temporary lines
-j=2
+
 show_light_map(shade_scene.daily_irr_spat['2005'][:,:,j],
                msh_grid,
                PV_1_3Dconfig.PV_central,
                shade_scene.daily_irr_spat['2005'][:,:,j].min(),
                shade_scene.daily_irr_spat['2005'][:,:,j].max(),
                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
-
-
-

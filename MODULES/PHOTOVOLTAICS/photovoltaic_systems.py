@@ -154,7 +154,7 @@ class PV_system:
                                          DHI, Ai, f, SF, tiltY):
         
         one = np.ones((len(Ai)))
-        zero_vector = np.zeros((len(Ai)))
+        zero_vector = np.zeros((len(Ai)))  # TODO   remove ? this is unused
         
         tilt = tiltY*np.pi/180
         

@@ -321,8 +321,8 @@ class Sun_positions_sampled:
         ax.set_theta_direction(-1)
         ax.set_rmax(90)
 
-        fig.savefig('OUTPUTS/GRAPHS/SunPathDiagram_'+self.loc_name+'.svg')
-        
+        fig.savefig(os.path.join('OUTPUTS', 'GRAPHS', 'SunPathDiagram_'+self.loc_name+'.svg'))
+
     def get_PVSyst_Plot(self):
         
         fig, ax = plt.subplots()
@@ -353,8 +353,8 @@ class Sun_positions_sampled:
         ax.set_ylabel('Solar Elevation (degrees)')
 
         plt.show()
-        fig.savefig('OUTPUTS/GRAPHS/PVSystDiagram_'+self.loc_name+'.svg')
-        
+        fig.savefig(os.path.join('OUTPUTS', 'GRAPHS', 'PVSystDiagram_'+self.loc_name+'.svg'))
+
 
 
 

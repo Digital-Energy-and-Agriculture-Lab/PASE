@@ -65,7 +65,7 @@ class Weather_data:
     def get_n_years_WD_from_csvfile(self, start_year, end_year, file):
         
         self.nyears = {}
-        WD = pd.read_csv('DATABASE/METEO/' + file + '.csv', delimiter = ',')
+        WD = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', file + '.csv'), delimiter = ',')
         new_index = pd.date_range("01-01-2021 00:00:00", "31-12-2021 23:45:00",
                                   freq='15Min')
         WD = WD.set_index(new_index)
@@ -90,8 +90,8 @@ class Weather_data:
         self.nyears_daily_WD = {}
         
         if csv_file is not None:
-            daily_csv = pd.read_csv('DATABASE/METEO/'+csv_file+'.csv')
-            
+            daily_csv = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', csv_file + '.csv'))
+
             new_index2 = pd.date_range("01-01-2005 00:00:00","31-12-2015 00:00:00", freq='D')
             rain_vap_pressure = daily_csv.drop(['id','DAY'], axis=1).set_index(new_index2)
             
