@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Aug  7 15:38:21 2023
+
+@author: roxane
+"""
+
+import numpy as np
+from MODULES.user_support_tools import PASE_Logger
+from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from MODULES.PHOTOVOLTAICS.configurations import PV_Configuration_3D
+from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
+from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
+from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
+from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
+from MODULES.DATA_MANAGEMENT.xml_stics_inputs_provider import XML_STICS_Inputs_Provider
+
+PASE_Logger()
+
+Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml').i
+
+PV_1 = YAML_Inputs_provider(file='PV_central_siguesol.yaml').i
+
+
+cropdata = XML_STICS_Inputs_Provider("wheat_plt.xml")
+agromanagement = XML_STICS_Inputs_Provider("Ble_tec.xml")
+soildata = XML_STICS_Inputs_Provider("sols.xml", 'solcanne')
+init_data = XML_STICS_Inputs_Provider("ble_ini.xml")
+station_data = XML_STICS_Inputs_Provider("climblej_sta.xml")
+general_data = XML_STICS_Inputs_Provider('param_gen.xml')
+
+
+WD = Weather_data(Loc_1['Latitude'],
+                  Loc_1['Longitude'],
+                  Loc_1['SimulationStartingYear'],
+                  Loc_1['SimulationEndingYear'],
+                  Loc_1['WeatherDataOption'],
+                  Loc_1['WeatherFileName'],
+                  Loc_1['DailyWeatherFileName'])
+
+Sun_positions_samp = Sun_positions_sampled(Loc_1['Latitude'],
+                                      Loc_1['Longitude'],
+                                      Loc_1['PrecisionLevelOnSunPosition'],
+                                      Loc_1['LocationName'],
+                                      len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+                                      Loc_1['TimeZone'])
+
+
+
+PV_1_3Dconfig = PV_Configuration_3D(PV_1, Sun_positions_samp.solar_vector,
+                                    visualization=True)      # !!!! Problem with rotation angle that are negative
+
+msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_InterestZone'],
+                                       Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
+                                       Loc_1['dX_InterestZone'], Loc_1['dY_InterestZone'])
+
+
+
+All_sun_positions = Sun_positions(Loc_1['Latitude'],
+                                  Loc_1['Longitude'],
+                                  len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+                                  Loc_1['TimeZone'])
+
+Sun_light = Light(WD.nyears, All_sun_positions)
+
+PV_central = PV_system(PV_1)
+
+
+shade_scene = Light_shade_scene(msh_grid, PV_1_3Dconfig.PV_central)
+shade_scene.get_light_map(360, Sun_positions_samp.solar_vector)
+
+shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
+                                      len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+                                      Sun_light.data)
+
+
+
+PV_central.get_electricity_production(All_sun_positions, Sun_light.data, WD.nyears)
+
+
+### VISUALISATION (temporary)
+show_light_map(shade_scene.dir_map[:,:,1], msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Relative direct light reaching the ground [-]")
+# IF there is one rotation axis
+#show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
+show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Sky visibility factor [-]")
+j=2
+show_light_map(shade_scene.daily_irr_spat['2005'][:,:,j],
+               msh_grid,
+               PV_1_3Dconfig.PV_central,
+               shade_scene.daily_irr_spat['2005'][:,:,j].min(),
+               shade_scene.daily_irr_spat['2005'][:,:,j].max(),
+               "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
+
+
+
+### CROP MODEL
+
+
+
+
+
