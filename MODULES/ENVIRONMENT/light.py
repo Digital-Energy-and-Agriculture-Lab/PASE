@@ -11,6 +11,7 @@ import pandas as pd
 import pyvista as pyV
 import pvlib.solarposition as pvlibSP
 import matplotlib.pyplot as plt
+import os
 
 def fibonacci_half_sphere( samples=18):
     
@@ -357,16 +358,95 @@ class Sun_positions_sampled:
 
 
 
+'''
+Class Light_shade_scene
 
-class Light_shade_scene:
+This class compute the diffuse and direct light using ray casting.
+The ray casting requires point sources from which the ray are casted and direction  
+towards the ray are casted. The point sources are provided by the "Mesh" class.
+For diffuse light, the directions are compute within the class, whilst for direct light
+the directions require the position of the sun which is an input of the class.
+  
     
-    #The class light shade scene init with a geometry (pyvista.polydata) and a meshgrid instance
-    def __init__(self,meshgrid,geometry):
-        self.meshgrid = meshgrid
+    
+'''
+class Light_shade_scene:
+
+    #The class light shade scene init with a geometry (pyvista.polydata) and a mesh instance
+    def __init__(self,mesh,geometry):
+        self.mesh = mesh.Get_SourcePoints()
         self.geometry = geometry
+        self.sourceLength = self.mesh.shape[0]
+        self.SourcesDict = mesh.Get_SourcesDict
+
+
+    #Private method, used to discard auto-intercept 
+    def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped,tol = 0.01):
+        delta = np.linalg.norm(intercept_points - SourcePoints[id_rays_stopped,:], axis=1)
+        return id_rays_stopped[delta>tol]
         
+    '''
+    Compute the diffuse light at the point sources defined in the input mesh using
+    the approximation of a isotropic half sphere sky
+    '''
+ 
+    def diffuse_map(self, n_small_suns=180):
+    
+        #Get direction of ray to reach the small suns and compute the sky view of each point
+        pTarget = fibonacci_half_sphere(n_small_suns)
+        
+        
+        #Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
+        SourcePoints = np.repeat(np.column_stack((
+                                                  self.mesh[:,0],
+                                                  self.mesh[:,1],
+                                                  self.mesh[:,2]
+                                                 )),
+                                      n_small_suns,
+                                      axis=0)
+        
+        #Creation of the target points array (Nx3) with N = len(Source) * len(n_small_suns)
+        TargetPoints = np.tile(pTarget,[self.sourceLength,1])
+        
+        #Computation of the ray interception of the N rays
+        #id_rays_stopped provided the index of the ray which has been intercepted
+        intercept_points, id_rays_stopped, _ = self.geometry.multi_ray_trace(SourcePoints,
+                                                         TargetPoints,
+                                                         first_point=False,
+                                                         retry=False)
+        
+        id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
+        
+        
+        #Creation of a vector providing the sourceID from which each ray has been shooted
+        
+        SourceID = np.repeat(np.linspace(0,
+                                         self.sourceLength-1,
+                                         self.sourceLength),
+                             n_small_suns,
+                             axis=0)
+        
+        #Touched provide a list with the sourceID of the intercept ray
+        #Then the number of time a ray from a position has been intercepted is count
+        # and given in the counts variable
+        Touched = SourceID[id_rays_stopped_filtred]
+        unique, counts = np.unique(Touched, return_counts=True)
+        
+        #Creation of the empty matrix of sky view
+        Diffu = np.ones(self.sourceLength, dtype=np.float16)
+        
+        #Transformation of the 1D index to 2D indexes
+        #matrix_index = np.unravel_index(unique.astype("int"),Diffu.shape)
+        
+        #Computation of the sky view by removing the fraction of intercepted ray at each location
+        Diffu[unique.astype("int")] = 1 - counts/n_small_suns
+        
+        return Diffu
+    
+            
+  
     def get_light_map(self, n_small_suns, sun_P):
-        
+    
         if type(self.geometry) == list:
             sv = np.zeros((1,3))
             self.dir_map = np.zeros((len(self.meshgrid.X[0,:]),
@@ -379,100 +459,66 @@ class Light_shade_scene:
             for time in range(len(sun_P[:,0])):
                 print(time)
                 geometry = self.geometry[time]
-                diff_map = self.diffuse_map(n_small_suns, geometry)
+                diff_map = self.diffuse_map(n_small_suns)
                 sv[0,:] = sun_P[time,:]
                 dir_map = self.direct_map(geometry, sv)
                 self.dir_map[:,:,time] = dir_map[:,:,0]   
                 self.diff_map[:,:,time] = diff_map
         else:
-            self.diff_map = self.diffuse_map(n_small_suns, self.geometry)
-            self.dir_map = self.direct_map(self.geometry, sun_P)
+            self.diff_map = self.diffuse_map(n_small_suns)
+            self.dir_map = self.direct_map(sun_P)
             
-    
-    def diffuse_map(self, n_small_suns, geometry):
         
-        #Get direction of ray to reach the small suns and compute the sky view of each point
-        pTarget = fibonacci_half_sphere(n_small_suns)
-            
-        #Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
-        SourcePoints = np.repeat(np.column_stack((self.meshgrid.X.flatten(),
-                                                  self.meshgrid.Y.flatten(),
-                                                  np.zeros(len(self.meshgrid.X.flatten())))),
-                                      n_small_suns,
-                                      axis=0)
-        
-        #Creation of the target points array (Nx3) with N = len(Source) * len(n_small_suns)
-        TargetPoints = np.tile(pTarget,[len(self.meshgrid.X.flatten()),1])
-        
-        #Computation of the ray interception of the N rays
-        #id_rays_stopped provided the index of the ray which has been intercepted
-        _, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
-                                                         TargetPoints,
-                                                         first_point=True,
-                                                         retry=False)
-        
-        #Creation of a vector providing the sourceID from which each ray has been shooted
-        
-        SourceID = np.repeat(np.linspace(0,
-                                         len(self.meshgrid.X.flatten())-1,
-                                         len(self.meshgrid.X.flatten())),
-                             n_small_suns,
-                             axis=0)
-
-        #Touched provide a list with the sourceID of the intercept ray
-        #Then the number of time a ray from a position has been intercepted is count
-        # and given in the counts variable
-        Touched = SourceID[id_rays_stopped]
-        unique, counts = np.unique(Touched, return_counts=True)
-        
-        #Creation of the empty matrix of sky view
-        Diffu = np.ones(self.meshgrid.X.shape, dtype=np.float16)
-
-        #Transformation of the 1D index to 2D indexes
-        matrix_index = np.unravel_index(unique.astype("int"),Diffu.shape)
-
-        #Computation of the sky view by removing the fraction of intercepted ray at each location
-        Diffu[matrix_index] = 1 - counts/n_small_suns
-    
-        return Diffu.transpose()
 
     
-    def direct_map(self, geometry, sun_P):
+    '''
+    Computation of the direct
     
-        #Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
-        SourcePoints = np.repeat(np.column_stack((self.meshgrid.X.flatten(),
-                                                  self.meshgrid.Y.flatten(),
-                                                  np.zeros(len(self.meshgrid.X.flatten())))),
+    '''
+    def direct_map(self, sun_P):
+    
+        #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
+        SourcePoints = np.repeat(np.column_stack((
+                                                  self.mesh[:,0],
+                                                  self.mesh[:,1],
+                                                  self.mesh[:,2]
+                                                 )),
                                       len(sun_P[:,0]),
                                       axis=0)
-        #Creation of the target points array (Nx3) with N = len(Source) * len(n_small_suns)
-        TargetPoints = np.tile(sun_P,[len(self.meshgrid.X.flatten()),1])
+        
+        
+        #Creation of the target points array (Nx3) with N = len(Source) * len(sun_positions)
+        TargetPoints = np.tile(sun_P,[self.sourceLength,1])
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        _, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
+        intercept_points, id_rays_stopped, _ = self.geometry.multi_ray_trace(SourcePoints,
                                                          TargetPoints,
-                                                         first_point=True,
+                                                         first_point=False,
                                                          retry=False)
+        
+        id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
+
         
         #Creation of the initial direct map based on the shape of sun_Positions
         direct_1D_map = np.ones(len(TargetPoints[:,0]), dtype=np.uint16)
         #Transformation of the 1D index to 3D indexes
     
         #Computation of the shade by setting at 0 the locations where rays were intercepted
-        direct_1D_map[id_rays_stopped] = 0
+        direct_1D_map[id_rays_stopped_filtred] = 0
     
-        #Reshape of direct map to get a X,Y,t map
-        direct_map =  direct_1D_map.reshape(len(self.meshgrid.Y[:,0]),
-                                            len(self.meshgrid.X[0,:]),
-                                            len(sun_P[:,0]))  
-        direct_map = np.transpose(direct_map, (1,0,2))
+        #Reshape of direct map to get a ID,t map
+        direct_ID_t_map =  direct_1D_map.reshape(self.sourceLength,
+                                             len(sun_P[:,0]))  
     
-        return direct_map
+        return direct_ID_t_map
+    
+    
+ 
     
     def get_daily_irradiation_map(self, SP_sampled, freq_deter, light_data):
 
-        Week = SP_sampled.reset_index()['weekS'].to_numpy()
+        Week = SP_sampled.reset_index()['week'].to_numpy()
         
         if (freq_deter == 8760 or freq_deter == 8784):
             n = 1
@@ -486,16 +532,13 @@ class Light_shade_scene:
         self.daily_diff_irr_spat = {}
         
         for year in light_data.keys():
-            daily_irradiation_spat = np.zeros((len(self.meshgrid.X[0,:]), 
-                                               len(self.meshgrid.Y[:,0]),
+            daily_irradiation_spat = np.zeros((self.sourceLength,
                                                int(freq_deter/(24*n))))
             
-            daily_irradiation_dir_spat = np.zeros((len(self.meshgrid.X[0,:]), 
-                                               len(self.meshgrid.Y[:,0]),
+            daily_irradiation_dir_spat = np.zeros((self.sourceLength,
                                                int(freq_deter/(24*n))))  
             
-            daily_irradiation_diff_spat = np.zeros((len(self.meshgrid.X[0,:]), 
-                                               len(self.meshgrid.Y[:,0]),
+            daily_irradiation_diff_spat = np.zeros((self.sourceLength,
                                                int(freq_deter/(24*n))))  
 
             for day in range(0, int(freq_deter/(24*n)), 1):
@@ -511,25 +554,26 @@ class Light_shade_scene:
                 
                 print(day)
 
-                irradianceMap_direct = np.round(self.dir_map[:,:,indices]*light_data[year]['BHI'].to_numpy()[ind2]*10**-6*60*60/n, 3) #W/m² to MJ/m²
+                irradianceMap_direct = np.round(self.dir_map[:,indices]*light_data[year]['BHI'].to_numpy()[ind2]*10**-6*60*60/n, 3) #W/m² to MJ/m²
                 
                 if type(self.geometry) == list:
-                    irradianceMap_diffus = np.round(self.diff_map[:,:,indices]
+                    irradianceMap_diffus = np.round(self.diff_map[:,indices]
                                                     *light_data[year]['DHI'].to_numpy()[ind2]
                                                     *(60*60/n), 3)  #J/m²
                 else:
                     daily_diff = np.sum(light_data[year]['DHI'].to_numpy()[ind2])
-                    irradianceMap_diffus = np.round(self.diff_map[:,:]*daily_diff*10**-6*60*60/n, 3)   #W/m² to MJ/m²
+                    irradianceMap_diffus = np.round(self.diff_map*daily_diff*10**-6*60*60/n, 3)   #W/m² to MJ/m²
                     
-                daily_irradiation = np.sum(irradianceMap_direct,axis = 2)+irradianceMap_diffus #MJ/m²
-                daily_irradiation_spat[:,:,day] = daily_irradiation
-                daily_irradiation_dir_spat[:,:,day] = np.sum(irradianceMap_direct,axis = 2)
-                daily_irradiation_diff_spat[:,:,day] = irradianceMap_diffus
+                daily_irradiation = np.sum(irradianceMap_direct,axis = 1)+irradianceMap_diffus #MJ/m²
+                daily_irradiation_spat[:,day] = daily_irradiation
+                daily_irradiation_dir_spat[:,day] = np.sum(irradianceMap_direct,axis = 1)
+                daily_irradiation_diff_spat[:,day] = irradianceMap_diffus
             
             self.daily_irr_spat[year] = daily_irradiation_spat
             self.daily_dir_irr_spat[year] = daily_irradiation_dir_spat
-            self.daily_diff_irr_spat[year] = daily_irradiation_diff_spat
-
+            self.daily_diff_irr_spat[year] = daily_irradiation_diff_spat                    
+ 
+    
 
 def show_light_map(light_matrix, msh_grid, PV_central, lim_min, lim_max, lgd_title):
     
