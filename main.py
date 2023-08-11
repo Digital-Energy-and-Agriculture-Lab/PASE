@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 import os
-from windrose import WindroseAxes 
+from windrose import WindroseAxes
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
@@ -21,7 +21,6 @@ from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
 from MODULES.ENVIRONMENT.mesh import Mesh
 from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
 from MODULES.CROPS.run_crop_simulations import run_crop_simu
-
 
 PASE_Logger()
 
