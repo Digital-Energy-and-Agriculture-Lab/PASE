@@ -358,20 +358,20 @@ class Sun_positions_sampled:
 
 
 
-'''
-Class Light_shade_scene
 
-This class compute the diffuse and direct light using ray casting.
-The ray casting requires point sources from which the ray are casted and direction  
-towards the ray are casted. The point sources are provided by the "Mesh" class.
-For diffuse light, the directions are compute within the class, whilst for direct light
-the directions require the position of the sun which is an input of the class.
-  
-    
-    
-'''
 class Light_shade_scene:
-
+    '''
+    Class Light_shade_scene
+    
+    This class compute the diffuse and direct light using ray casting.
+    The ray casting requires point sources from which the ray are casted and direction  
+    towards the ray are casted. The point sources are provided by the "Mesh" class.
+    For diffuse light, the directions are compute within the class, whilst for direct light
+    the directions require the position of the sun which is an input of the class.
+    
+    
+    The class is initiate with a mesh containing the source points and a geometry
+    '''
     #The class light shade scene init with a geometry (pyvista.polydata) and a mesh instance
     def __init__(self,mesh,geometry):
         self.mesh = mesh.Get_SourcePoints()
@@ -380,17 +380,42 @@ class Light_shade_scene:
         self.SourcesDict = mesh.Get_SourcesDict
 
 
-    #Private method, used to discard auto-intercept 
     def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped,tol = 0.01):
+        """
+        Private method, used to discard auto-intercept of rays. This can happend when a mesh has been
+        done on a geometry (e.g. on a top of a PV). The ray can be intercept nearly at his starting position
+        
+        Parameters:
+            SourcePoints (np.ndarray n x 3): Coordinates of the source points
+            intercept_points (np.ndarray n x 3): Coordinates of the interception points
+            id_rays_stopped  (list of int): List containing the mapping 
+                                            between the source points and the interception points
+            tol (float): maximal distance below which an interception is discarded
+
+        Returns:
+           cleaned id_rays_stopped list where the auto-interception have been removed
+        """
+        
+        
         delta = np.linalg.norm(intercept_points - SourcePoints[id_rays_stopped,:], axis=1)
         return id_rays_stopped[delta>tol]
         
-    '''
-    Compute the diffuse light at the point sources defined in the input mesh using
-    the approximation of a isotropic half sphere sky
-    '''
  
     def diffuse_map(self, n_small_suns=180):
+        """
+        Public method, compute the diffuse light at the point sources defined in the input mesh using
+         the approximation of a isotropic half sphere sky. 
+         The method uses the mesh and the geometry set at the initialization of the instance
+        
+        Parameters:
+            n_small_suns (int): number of sources consider in the sky for the diffuse light computation
+            higher number will provide a better accuracy but heavier computation
+
+        Returns:
+           Diffu (np.array 1 x n):  Providing a vector with the fraction ([0-1]) of diffuse light 
+                                   for each of the "n" source points defined in the mesh
+        """
+      
     
         #Get direction of ray to reach the small suns and compute the sky view of each point
         pTarget = fibonacci_half_sphere(n_small_suns)
@@ -469,14 +494,28 @@ class Light_shade_scene:
             self.dir_map = self.direct_map(sun_P)
             
         
-
+    def Get_direct_map_byFlag(self,Flags):
+        Index = self.mesh.Get_SourcePointsIndex(Flags)
+        return self.dir_map[:,Index]
     
-    '''
-    Computation of the direct
+    def Get_diffuse_map_byFlag(self,Flags):
+        Index = self.mesh.Get_SourcePointsIndex(Flags)
+        return self.diff_map[:,Index]
     
-    '''
     def direct_map(self, sun_P):
-    
+        """
+        Public method, compute the direct light at the point sources defined in the input mesh for
+         the positions provide in the sun_P input.
+         The method uses the mesh and the geometry set at the initialization of the instance
+        
+        
+        Parameters:
+            sun_P (int): sun positions
+
+        Returns:
+           direct_ID_t_map (np.array t x n):  Providing a matrix of boolean (0/1) for each source points (n) and each
+                                           sun positions (t). If the point does not directly see the sun a value of 0 is given.
+        """
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
         SourcePoints = np.repeat(np.column_stack((
                                                   self.mesh[:,0],
