@@ -18,6 +18,7 @@ from MODULES.PHOTOVOLTAICS.configurations import PV_Configuration_3D
 from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
 from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
+from MODULES.ENVIRONMENT.mesh import Mesh
 from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
 from MODULES.CROPS.evapotranspiration import ET0_FAO56_PM, get_ETo_0D
 from MODULES.ENVIRONMENT import Windbreak2D
@@ -53,8 +54,71 @@ Sun_positions_samp = Sun_positions_sampled(Loc_1['Latitude'],
                                       len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
                                       Loc_1['TimeZone'])
 
+Sun_positionsInstance = Sun_positions(Loc_1['Latitude'],
+                              Loc_1['Longitude'],
+                              len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+                              Loc_1['TimeZone'])
+
 PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict, Sun_positions_samp.solar_vector,
-                                    visualization=True)                        # !!!! Problem with rotation angle that are negative
+                                    visualization=False)                        # !!!! Problem with rotation angle that are negative
+
+PV_params_dictBis = PV_params_dict.copy()
+PV_params_dictBis['PanelThickness'] = False
+PV_1_3DconfigMeshTop = PV_Configuration_3D(PV_params_dictBis, Sun_positions_samp.solar_vector,
+                                    visualization=False)
+
+PV_params_dictBis["PanelDimensionZ"] = -0.1
+PV_1_3DconfigMeshBot = PV_Configuration_3D(PV_params_dictBis, Sun_positions_samp.solar_vector,
+                                    visualization=False)
+M = Mesh()
+M.Add_PV_Mesh(PV_1_3DconfigMeshTop.PV_central,flag = "TopPV", radius = 0.5)
+M.Add_PV_Mesh(PV_1_3DconfigMeshBot.PV_central, flag = "BotPV", radius = 0.5)
+M.Add_Plane_Ground_regular_meshes(0,1,0,3,0.1,1,flag="corn")
+M.Add_Plane_Ground_regular_meshes(1,2,0,3,0.1,1,flag="wheat")
+
+TopPoints = M.Get_SourcePoints_ByFlag('TopPV')
+BotPoints = M.Get_SourcePoints_ByFlag('BotPV')
+TopPointsBis = M.Get_SourcePoints(FlagId=[0])
+BotPointsBis = M.Get_SourcePoints(FlagId=[1])
+FlagIdTop = M.Get_FlagId_ByFlag("BotPV")
+print("The Bottom of the PV have the FlagID = " + str(FlagIdTop))
+
+import pyvista
+P = pyvista.Plotter()
+P.add_mesh(PV_1_3Dconfig.PV_central)
+P.add_mesh(pyvista.PolyData(TopPoints[:,:-1]),color="blue")
+P.add_mesh(pyvista.PolyData(BotPoints[:,:-1]),color="red")
+P.show()
+
+Light_instance = Light(WD.nyears, Sun_positionsInstance)
+
+L = Light_shade_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central)
+L.get_light_map(180,Sun_positions_samp.solar_vector)
+L.get_daily_irradiation_map(Sun_positions_samp.SP,
+                                      len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+                                      Light_instance.data)
+DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
+DirectGround = L.Get_direct_map_byFlag(Flags=["wheat","corn"])
+
+import pyvista
+P = pyvista.Plotter()
+P.add_mesh(PV_1_3Dconfig.PV_central)
+P.add_mesh(pyvista.PolyData(TopPoints[:,:-1]),color="blue")
+P.add_mesh(pyvista.PolyData(BotPoints[:,:-1]),color="red")
+P.show()
+
+# L = Light_shade_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central)
+
+# import time
+# start = time.time()
+# L.diffuse_map(180)
+# time1 = time.time() - start
+# print(time1)
+
+# start = time.time()
+# L.direct_map(Sun_positions_samp.solar_vector)
+# time2 = time.time() - start
+# print(time2)
 
 #Example of a way to combine multiple configurations of PV rows and integration of a barrier 
 #(Nicolas started to integrate the combination of mutpliple PV_central files in functions in the MaiBis.py)
@@ -83,9 +147,9 @@ merged2.plot(style='wireframe', color='tan')
 ####
 """
 
-msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_InterestZone'],
-                                       Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
-                                       Loc_1['dX_InterestZone'], Loc_1['dY_InterestZone'])
+# msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_InterestZone'],
+                                       # Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
+                                       # Loc_1['dX_InterestZone'], Loc_1['dY_InterestZone'])
 
 Sun_positions = Sun_positions(Loc_1['Latitude'],
                               Loc_1['Longitude'],

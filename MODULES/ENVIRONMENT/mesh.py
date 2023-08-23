@@ -197,7 +197,7 @@ class Mesh:
     
     
 # =============================================================================
-#     PRIVATE METHODs
+#     PRIVATE METHODS
 # =============================================================================
     
     def Get_SourcePointsIndex(self,Flags):
@@ -205,7 +205,7 @@ class Mesh:
         Private methods providing the pointsource index based on a list of flags
         
         Parameters:
-              
+            Flags (list of str): Flag name(s) from which the index want to be retrieved
         Returns:
             Index (list of int): Index of the point sources for which the flags are in the input Flags  
         """   

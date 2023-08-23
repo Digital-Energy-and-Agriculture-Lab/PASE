@@ -374,10 +374,11 @@ class Light_shade_scene:
     '''
     #The class light shade scene init with a geometry (pyvista.polydata) and a mesh instance
     def __init__(self,mesh,geometry):
-        self.mesh = mesh.Get_SourcePoints()
+        self.mesh = mesh
+        self.sourcePoints = self.mesh.Get_SourcePoints()
         self.geometry = geometry
-        self.sourceLength = self.mesh.shape[0]
-        self.SourcesDict = mesh.Get_SourcesDict
+        self.sourceLength = self.sourcePoints.shape[0]
+        self.SourcesDict = mesh.Get_SourceDict()
 
 
     def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped,tol = 0.01):
@@ -423,9 +424,9 @@ class Light_shade_scene:
         
         #Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
         SourcePoints = np.repeat(np.column_stack((
-                                                  self.mesh[:,0],
-                                                  self.mesh[:,1],
-                                                  self.mesh[:,2]
+                                                  self.sourcePoints[:,0],
+                                                  self.sourcePoints[:,1],
+                                                  self.sourcePoints[:,2]
                                                  )),
                                       n_small_suns,
                                       axis=0)
@@ -495,12 +496,52 @@ class Light_shade_scene:
             
         
     def Get_direct_map_byFlag(self,Flags):
+        """
+        Public method, filter the computed Direct_Map based on flags
+        
+        Parameters:
+            Flags (list of str): flag used to filter the direct_map
+    
+        Returns:
+           direct_t_map (np.array t x n):  Providing a matrix of boolean (0/1) for each source points (n) and each
+                                           sun positions (t). If the point does not directly see the sun a value of 0 is given.
+        """
+
         Index = self.mesh.Get_SourcePointsIndex(Flags)
         return self.dir_map[:,Index]
     
     def Get_diffuse_map_byFlag(self,Flags):
+        """
+        Public method, filter the computed Diffuse_Map based on flags
+        
+        
+        Parameters:
+            Flags (list of str): flag used to filter the diffuse_map
+
+        Returns:
+           Diffu (np.array 1 x n):  Providing a vector with the fraction ([0-1]) of diffuse light 
+                                   for each of the "n" source points defined in the mesh
+        """
+        
         Index = self.mesh.Get_SourcePointsIndex(Flags)
-        return self.diff_map[:,Index]
+        return self.diff_map[Index]
+    
+    
+    def Get_irradiation_map_byFlag(self,Flags):
+        """
+        Public method, filter the computed Diffuse_Map based on flags
+        
+        
+        Parameters:
+            Flags (list of str): flag used to filter the diffuse_map
+
+        Returns:
+            Diffu (np.array 1 x n):  Providing a vector with the fraction ([0-1]) of diffuse light 
+                                    for each of the "n" source points defined in the mesh
+        """
+        
+        Index = self.mesh.Get_SourcePointsIndex(Flags)
+        return {y:self.daily_irr_spat[y][:,Index] for y in self.daily_irr_spat}
     
     def direct_map(self, sun_P):
         """
@@ -518,13 +559,12 @@ class Light_shade_scene:
         """
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
         SourcePoints = np.repeat(np.column_stack((
-                                                  self.mesh[:,0],
-                                                  self.mesh[:,1],
-                                                  self.mesh[:,2]
+                                                  self.sourcePoints[:,0],
+                                                  self.sourcePoints[:,1],
+                                                  self.sourcePoints[:,2]
                                                  )),
                                       len(sun_P[:,0]),
                                       axis=0)
-        
         
         #Creation of the target points array (Nx3) with N = len(Source) * len(sun_positions)
         TargetPoints = np.tile(sun_P,[self.sourceLength,1])
@@ -535,7 +575,6 @@ class Light_shade_scene:
                                                          TargetPoints,
                                                          first_point=False,
                                                          retry=False)
-        
         id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
 
         
