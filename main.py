@@ -192,5 +192,5 @@ crop_model = 1 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
 
 Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_WD, 
-                                     L.daily_irr_spat, #Test 
+                                     shade_scene.daily_irr_spat,
                                      Loc_1['Latitude'], Loc_1['Altitude'])
