@@ -19,9 +19,7 @@ from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Ligh
 from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
 from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
 from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
-from MODULES.CROPS.evapotranspiration import ET0_FAO56_PM, get_ETo_0D
-from MODULES.ENVIRONMENT import Windbreak2D
-from MODULES.DATA_MANAGEMENT import graphs
+from MODULES.CROPS.run_crop_simulations import run_crop_simu
 
 
 PASE_Logger()
@@ -122,3 +120,14 @@ show_light_map(shade_scene.daily_irr_spat['2005'][:,:,j],
                shade_scene.daily_irr_spat['2005'][:,:,j].min(),
                shade_scene.daily_irr_spat['2005'][:,:,j].max(),
                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
+
+
+
+
+#Temporary, those 2 parameters should be in SCENARIOS input files
+crop_model = 1 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour STICS python (à mettre dans le SCENARIOS input file)
+option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
+
+Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_WD, 
+                                     shade_scene.daily_irr_spat,
+                                     Loc_1['Latitude'], Loc_1['Altitude'])
