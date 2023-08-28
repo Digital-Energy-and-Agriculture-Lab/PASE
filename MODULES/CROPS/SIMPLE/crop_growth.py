@@ -20,12 +20,8 @@ class Crop:
         
         self.P = crop_par
         self.I = crop_init
-        self.LAI = crop_init['InitialLAI']
-        self.cum_T = crop_init['InitialCumTemp']
-        self.biomass = crop_init['InitialBiomass']
-        
+        self.init_crop()       
         self.nyears_data = {}
-        self.initiate_one_year_data_dictionaries()
         
     def initiate_one_year_data_dictionaries(self):
         
@@ -48,6 +44,12 @@ class Crop:
         self.data_dict['Height'] = self.dict_height
         
         self.nyears_data[year] = self.data_dict
+        
+    def init_crop(self):
+        
+        self.LAI = self.I['InitialLAI']
+        self.cum_T = self.I['InitialCumTemp']
+        self.biomass = self.I['InitialBiomass']
         
     def growth(self, avg_T, max_T, CO2, irrad, ET0, transpi, day_index):
         

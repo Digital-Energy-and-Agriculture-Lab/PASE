@@ -19,14 +19,18 @@ def simple_model(option_2D, WD, daily_irr, lat, alt):
     Crop_init = YAML_Inputs_provider(file = 'CROPS/SIMPLE/crop_init.yaml').i
     Crop_param = pd.read_csv('INPUTS/CROPS/SIMPLE/crops_parameters.csv', skiprows=int(Crop_init['CropID'])-1, nrows=1).to_dict('records')[0]
     Soil_param = YAML_Inputs_provider(file = 'CROPS/SIMPLE/soil_init.yaml').i
-        
+    
+    Soil_plot = water_balance.Soil(Soil_param)
+    Crop_plot = crop_growth.Crop(Crop_param, 
+                            Crop_init)
     
     for year in WD.keys():  
-
-        Soil_plot = water_balance.Soil(Soil_param)
-        Crop_plot = crop_growth.Crop(Crop_param, 
-                                Crop_init)
         
+        Crop_plot.initiate_one_year_data_dictionaries()
+        Soil_plot.initiate_one_year_data_dictionaries()
+        Crop_plot.init_crop()
+        Soil_plot.init_soil()
+               
         for day in WD[year].index:
             
             if option_2D==1:
@@ -35,7 +39,7 @@ def simple_model(option_2D, WD, daily_irr, lat, alt):
             ET0 = get_ET0(WD[year]['Avg_temp'][day],
                           WD[year]['Min_temp'][day],
                           WD[year]['Max_temp'][day],
-                          WD[year]['Avg_WS_10m'][day],
+                          WD[year]['Avg_WS_2m'][day],
                           WD[year]['Vap_press'][day],
                           irradiation,
                           Crop_plot.LAI,
@@ -50,13 +54,16 @@ def simple_model(option_2D, WD, daily_irr, lat, alt):
                                      0,
                                      day)
             
-            Crop_plot.growth(WD[year]['Avg_temp'][day],
-                             WD[year]['Max_temp'][day],
-                             WD[year]['CO2'][day],
-                             irradiation, 
-                             ET0,
-                             Soil_plot.dict_transpi[str(day)],
-                             day)
+            if (day.day_of_year >= Crop_init['StartDayCropModel'] 
+                and day.day_of_year <= Crop_init['EndDayCropModel']):
+            
+                Crop_plot.growth(WD[year]['Avg_temp'][day],
+                                 WD[year]['Max_temp'][day],
+                                 WD[year]['CO2'][day],
+                                 irradiation, 
+                                 ET0,
+                                 Soil_plot.dict_transpi[str(day)],
+                                 day)
             
         Soil_plot.fill_nyears_data_dict(year)
         Crop_plot.fill_nyears_data_dict(year)

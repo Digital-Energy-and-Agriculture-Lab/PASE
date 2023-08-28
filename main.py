@@ -187,10 +187,16 @@ merged2.plot(style='wireframe', color='tan')
 
 
 
-#Temporary, those 2 parameters should be in SCENARIOS input files
-crop_model = 1 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour STICS python (à mettre dans le SCENARIOS input file)
+#Temporary lines, those 2 parameters (crop_model and option_2D) should be in SCENARIOS input files
+crop_model = 1 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour STICS python
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
+# (à discuter avec Nicolas et Arnaud, parfois on voudra la map au sol et parfois avoir juste des points d'intérêt suffira)
+
+test = np.ones((3, 365))*5
+test_dict = {}             # Je mets ceci tant que les résultats du modèle de lumière sont mappés en 2D, à termes ce sera juste une liste 1D des points d'intérêt
+test_dict['2005'] = test
+test_dict['2006'] = test  
 
 Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_WD, 
-                                     shade_scene.daily_irr_spat,
-                                     Loc_1['Latitude'], Loc_1['Altitude'])
+                                     test_dict, #shade_scene.daily_irr_spat  (à remettre pour crop_model = 1)
+                                     Loc_1)

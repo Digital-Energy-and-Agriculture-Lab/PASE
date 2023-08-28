@@ -7,12 +7,12 @@ StartDayCropModel:
    Value: 90
    Type: integer
    Limit: [1, 365]
-   Definition: Julian day at which the crop growth simulation start either starting from sowing or from another stage of development
+   Definition: Julian day at which the crop growth simulation starts either starting from sowing or from another stage of development (hydric balance starts anyway on the first day of year)
 EndDayCropModel:
    Value: 300
    Type: integer
    Limit: [2, 365]
-   Definition: Julian day at which the crop growth simulation end
+   Definition: Julian day at which the crop growth simulation ends
 InitialBiomass:
    Value: 0
    Type: float

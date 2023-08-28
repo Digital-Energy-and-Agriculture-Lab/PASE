@@ -19,7 +19,6 @@ Ingram, Keith T. and Fraisse, Clyde W, 2012, Agronomy journal.
 
 """
 # importation of public packages
-import math
 import numpy as np
 
 class Soil:
@@ -27,9 +26,8 @@ class Soil:
     def __init__(self, soil_par=None):
         
         self.P = soil_par
-        self.available_water_RZ_previousday = soil_par['InitialAmountOfAvailableWater']
+        self.init_soil()
         self.nyears_data = {}
-        self.initiate_one_year_data_dictionaries()
         
     def initiate_one_year_data_dictionaries(self):
         
@@ -52,6 +50,10 @@ class Soil:
         self.data_dict['Avlbl_water'] = self.dict_avlbl_water
         
         self.nyears_data[year] = self.data_dict
+        
+    def init_soil(self):
+        
+        self.available_water_RZ_previousday = self.P['InitialAmountOfAvailableWater']
             
     def hydric_balance(self, rain, ET0, irrigation, day_index):
         

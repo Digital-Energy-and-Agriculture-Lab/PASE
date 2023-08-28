@@ -7,13 +7,24 @@ Created on Wed Aug 23 12:26:28 2023
 """
 
 from MODULES.CROPS.SIMPLE.simple import simple_model
+from MODULES.CROPS.STICS.JAVA.run_java_stics import run_independants_usms
 
 
-def run_crop_simu(crop_model, option_2D, WD, daily_irr, lat, alt):
+
+def run_crop_simu(crop_model, option_2D, WD, daily_irr, scenario_P):
         
     if crop_model == 1:
         
-        Soil_plot, Crop_plot = simple_model(option_2D, WD, daily_irr, lat, alt)
+        Soil_plot, Crop_plot = simple_model(option_2D, WD, daily_irr, 
+                                            scenario_P['Latitude'],
+                                            scenario_P['Altitude'])
         
-    return Soil_plot, Crop_plot
+    if crop_model == 2:
+
+        run_independants_usms(WD, daily_irr, scenario_P)
+        
+        Soil_plot = object()
+        Crop_plot = object()
+        
     
+    return Soil_plot, Crop_plot

@@ -14,8 +14,12 @@ class XML_STICS_Inputs_Provider(dict):
         
         dict.__init__(self)
         
-        rfile = open('INPUTS/CROPS/STICS/'+file,"r")
-        xml_dict = xmltodict.parse(rfile.read())
+        if 'plt.xml' in file:
+            rfile = open('INPUTS/CROPS/STICS/plant/'+file,"r")
+            xml_dict = xmltodict.parse(rfile.read())
+        else:
+            rfile = open('INPUTS/CROPS/STICS/param_files/'+file,"r")
+            xml_dict = xmltodict.parse(rfile.read())
         
         if ('plt.xml' in file or 'tec.xml' in file 
             or 'sta.xml' in file or 'param' in file) and soil_name is None:

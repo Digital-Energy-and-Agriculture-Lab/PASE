@@ -45,7 +45,7 @@ SimulationStartingYear:
    Unit: dimensionless [-]
    Definition: Starting year of the simulation, PvGis has data from 2005 to 2016 comprise
 SimulationEndingYear:
-   Value: 2005
+   Value: 2006
    Type: integer
    Limit: [SimulationStartingYear, 2022]
    Unit: dimensionless [-]

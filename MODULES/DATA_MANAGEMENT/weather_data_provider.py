@@ -17,6 +17,7 @@ import numpy as np
 import os
 
 from MODULES.user_support_tools import PASE_Logger
+from MODULES.ENVIRONMENT.aerodynamics import get_wind_speed
 
 
 class Weather_data:
@@ -129,7 +130,7 @@ class Weather_data:
             mean_temp = data_to_resample['T2m'].resample('D').mean().tolist()
             mean_CO2 = 5*np.sin(new_index.month*(2*np.pi/12))+(415*np.ones((len(mean_temp))))
             mean_WS = data_to_resample['WS10m'].resample('D').mean().tolist() 
-            WS_crop = np.zeros((len(mean_WS))).tolist()
+            WS_crop_2m = get_wind_speed(np.array(mean_WS)).tolist()
             
             if csv_file is None:
                 min_RH = data_to_resample['RH2m'].resample('D').min().tolist()
@@ -147,7 +148,7 @@ class Weather_data:
                                           'Max_temp':max_temp,
                                           'CO2':mean_CO2,
                                           'Rain':daily_rain,
-                                          'Avg_WS_10m':mean_WS,
+                                          'Avg_WS_2m':WS_crop_2m,
                                           'Vap_press':vap_press},
                                          index=new_index)
 
