@@ -14,6 +14,8 @@ class PV_Configuration_3D:
     
     def __init__(self, PV_i, sun_vector, visualization=False):
         
+        PV_i = self.get_dict_default_parameters(PV_i)
+        
         panel_dimX = PV_i['PanelDimensionX']
         panel_dimY = PV_i['PanelDimensionY']
         panel_thickness = PV_i['PanelThickness']
@@ -36,9 +38,9 @@ class PV_Configuration_3D:
         self.visualization = visualization
         
         if panel_thickness is True:
-            first_panel = self.create_first_panel_3D(panel_dimX, panel_dimY, 0.1)
+            first_panel = self.create_first_panel_3D(panel_dimX, panel_dimY, PV_i["PanelDimensionZ"])
         else:
-            first_panel = self.create_first_panel(panel_dimX, panel_dimY)
+            first_panel = self.create_first_panel(panel_dimX, panel_dimY,PV_i["PanelDimensionZ"]/2)
             
         PV_block = self.create_block_of_panels(repet_dist_panelsX, 
                                                repet_dist_panelsY,
@@ -71,13 +73,23 @@ class PV_Configuration_3D:
                                                  two_facets_rel_position=0)
                 self.PV_central.append(PV_central)
             
+            
+    #Set default parameters in the dict, this avoid error of missing key
+    def get_dict_default_parameters(self, PV_i):
+        
+        keys = list(PV_i.keys())
+        if not("PanelDimensionZ" in keys):
+            PV_i["PanelDimensionZ"] = 0.1
+        if not("MeshConfig" in keys):
+            PV_i["MeshConfig"] = False
+        return PV_i
+            
+    def create_first_panel(self, panel_dimX, panel_dimY,z_level = 0):
                 
-    def create_first_panel(self, panel_dimX, panel_dimY):
-                
-        first_panel_vertices = np.array([[-panel_dimX/2, panel_dimY/2, 0],
-                                         [panel_dimX/2, panel_dimY/2, 0],
-                                         [-panel_dimX/2, -panel_dimY/2, 0],
-                                         [panel_dimX/2, -panel_dimY/2, 0]])
+        first_panel_vertices = np.array([[-panel_dimX/2, panel_dimY/2, z_level],
+                                         [panel_dimX/2, panel_dimY/2, z_level],
+                                         [-panel_dimX/2, -panel_dimY/2, z_level],
+                                         [panel_dimX/2, -panel_dimY/2, z_level]])
         
         first_panel_meshes = np.hstack([[3, 0, 1, 2],    # first triangular mesh
                                         [3, 1, 2, 3],])  # second triangular mesh
