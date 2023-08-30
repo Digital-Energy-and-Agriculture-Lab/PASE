@@ -149,41 +149,41 @@ merged2.plot(style='wireframe', color='tan')
                                        # Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
                                        # Loc_1['dX_InterestZone'], Loc_1['dY_InterestZone'])
 
-Sun_positions = Sun_positions(Loc_1['Latitude'],
-                              Loc_1['Longitude'],
-                              len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
-                              Loc_1['TimeZone'])
+# Sun_positions = Sun_positions(Loc_1['Latitude'],
+#                               Loc_1['Longitude'],
+#                               len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+#                               Loc_1['TimeZone'])
 
-Light = Light(WD.nyears, Sun_positions)
+# Light = Light(WD.nyears, Sun_positions)
 
-PV_central = PV_system(PV_params_dict)
+# PV_central = PV_system(PV_params_dict)
 
-shade_scene = Light_shade_scene(msh_grid, PV_1_3Dconfig.PV_central)
-shade_scene.get_light_map(360, Sun_positions_samp.solar_vector)
+# shade_scene = Light_shade_scene(msh_grid, PV_1_3Dconfig.PV_central)
+# shade_scene.get_light_map(360, Sun_positions_samp.solar_vector)
 
-shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
-                                      len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
-                                      Light.data)
+# shade_scene.get_daily_irradiation_map(Sun_positions_samp.SP,
+#                                       len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+#                                       Light.data)
 
-PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
+# PV_central.get_electricity_production(Sun_positions, Light.data, WD.nyears)
 
-### VISUALISATION (temporary)
+# ### VISUALISATION (temporary)
 
-j=150
-show_light_map(shade_scene.dir_map[:,:,j], msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Relative direct light reaching the ground [-]")
-# IF there is one rotation axis
-#show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
+# j=150
+# show_light_map(shade_scene.dir_map[:,:,j], msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Relative direct light reaching the ground [-]")
+# # IF there is one rotation axis
+# #show_light_map(shade_scene.dir_map[:,:,5], msh_grid, PV_1_3Dconfig.PV_central[5])
 
-show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Sky visibility factor [-]")
+# show_light_map(shade_scene.diff_map.astype(np.float32), msh_grid, PV_1_3Dconfig.PV_central, 0, 1, "Sky visibility factor [-]")
 
-#temporary lines
+# #temporary lines
 
-show_light_map(shade_scene.daily_irr_spat['2005'][:,:,j],
-               msh_grid,
-               PV_1_3Dconfig.PV_central,
-               shade_scene.daily_irr_spat['2005'][:,:,j].min(),
-               shade_scene.daily_irr_spat['2005'][:,:,j].max(),
-               "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
+# show_light_map(shade_scene.daily_irr_spat['2005'][:,:,j],
+#                msh_grid,
+#                PV_1_3Dconfig.PV_central,
+#                shade_scene.daily_irr_spat['2005'][:,:,j].min(),
+#                shade_scene.daily_irr_spat['2005'][:,:,j].max(),
+#                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
 
 
 
@@ -193,5 +193,5 @@ crop_model = 1 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
 
 Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_WD, 
-                                     shade_scene.daily_irr_spat,
+                                     L.daily_irr_spat, #Test 
                                      Loc_1['Latitude'], Loc_1['Altitude'])
