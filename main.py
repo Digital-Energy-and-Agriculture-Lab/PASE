@@ -188,7 +188,7 @@ merged2.plot(style='wireframe', color='tan')
 
 
 #Temporary lines, those 2 parameters (crop_model and option_2D) should be in SCENARIOS input files
-crop_model = 1 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour STICS python
+crop_model = 2 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour STICS python
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
 # (à discuter avec Nicolas et Arnaud, parfois on voudra la map au sol et parfois avoir juste des points d'intérêt suffira)
 

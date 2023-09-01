@@ -41,7 +41,7 @@ def run_independants_usms(WD, daily_irr, scenario_P):
                 
                 count+=1
                 
-                os.chdir("INPUTS/CROPS/STICS")
+                os.chdir("INPUTS/CROPS/STICS") #Mettre le chemin d'accès avant l'exécutable pour ne pas devoir naviguer dans les dossiers.
 
                 if platform.system() == "Linux" or platform.system() == "Darwin":
                     subprocess.call(["java", "-jar","JavaSticsCmd.exe",
@@ -50,6 +50,7 @@ def run_independants_usms(WD, daily_irr, scenario_P):
                     subprocess.call(["java", "-jar","JavaSticsCmd.exe",
                                      "--run", "param_files", WD_file], shell=True)
 
-                os.chdir("..")
-                os.chdir("..")
-                os.chdir("..")
+                os.chdir("../../..")
+                
+                """os.chdir("..")
+                os.chdir("..")"""
