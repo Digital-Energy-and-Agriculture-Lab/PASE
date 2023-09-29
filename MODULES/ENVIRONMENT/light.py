@@ -508,7 +508,7 @@ class Light_shade_scene:
         """
 
         Index = self.mesh.Get_SourcePointsIndex(Flags)
-        return self.dir_map[:,Index]
+        return self.dir_map[Index,:]
     
     def Get_diffuse_map_byFlag(self,Flags):
         """
@@ -689,4 +689,37 @@ def show_light_map(light_matrix, msh_grid, PV_central, lim_min, lim_max, lgd_tit
     plotter.camera.position = (30, 60, 40)
     plotter.camera.focal_point = (0,10,0)
 
+    plotter.show()
+    
+    
+def show_light_map2(source_points, light_at_source_points, scene, lgd_title):
+    
+    labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)', ylabel='Y (NORTH)')
+    
+    plotter = pyV.Plotter()
+
+    plotter.add_mesh(scene, color='black')
+    ground = np.array([[-100, 100, 0],
+                       [100, 100, 0],
+                       [-100, -100, 0],
+                       [100, -100, 0]])
+
+    ground_m = np.hstack([[3, 0, 1, 2],    
+                          [3, 1, 2, 3],])
+
+    grnd = pyV.PolyData(ground, ground_m)
+    
+    plotter.add_mesh(grnd, color='green')
+    
+    plotter.add_axes(**labels)
+    
+    plotter.add_mesh(source_points,
+                     scalars=light_at_source_points,
+                     point_size=10,
+                     lighting=False,
+                     show_edges=False,
+                     scalar_bar_args={"title": lgd_title},
+                     clim=[light_at_source_points.min(), 
+                           light_at_source_points.max()])
+    
     plotter.show()

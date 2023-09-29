@@ -17,7 +17,7 @@ from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
 from MODULES.PHOTOVOLTAICS.configurations import PV_Configuration_3D
 from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from MODULES.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
-from MODULES.ENVIRONMENT.light import show_light_map, Light_shade_scene
+from MODULES.ENVIRONMENT.light import show_light_map2, Light_shade_scene
 from MODULES.ENVIRONMENT.mesh import Mesh
 from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
 from MODULES.CROPS.run_crop_simulations import run_crop_simu
@@ -71,21 +71,27 @@ M = Mesh()
 #M.Add_PV_Mesh(PV_1_3DconfigMeshTop.PV_central,flag = "TopPV", radius = 0.5)
 #M.Add_PV_Mesh(PV_1_3DconfigMeshBot.PV_central, flag = "BotPV", radius = 0.5)
 #M.Add_Plane_Ground_regular_meshes(0,1,0,3,0.1,1,flag="corn")
-M.Add_Plane_Ground_regular_meshes(1,2,0,3,1,1,flag="wheat")
+M.Add_Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'],
+                                  Loc_1['Xmax_InterestZone'],
+                                  Loc_1['Ymin_InterestZone'],
+                                  Loc_1['Ymax_InterestZone'],
+                                  Loc_1['dX_InterestZone'],
+                                  Loc_1['dY_InterestZone'],
+                                  flag="crop")
 
-TopPoints = M.Get_SourcePoints_ByFlag('TopPV')
-BotPoints = M.Get_SourcePoints_ByFlag('BotPV')
-TopPointsBis = M.Get_SourcePoints(FlagId=[0])
-BotPointsBis = M.Get_SourcePoints(FlagId=[1])
-FlagIdTop = M.Get_FlagId_ByFlag("BotPV")
-print("The Bottom of the PV have the FlagID = " + str(FlagIdTop))
+#TopPoints = M.Get_SourcePoints_ByFlag('TopPV')
+#BotPoints = M.Get_SourcePoints_ByFlag('BotPV')
+#TopPointsBis = M.Get_SourcePoints(FlagId=[0])
+#BotPointsBis = M.Get_SourcePoints(FlagId=[1])
+#FlagIdTop = M.Get_FlagId_ByFlag("BotPV")
+#print("The Bottom of the PV have the FlagID = " + str(FlagIdTop))
 
-import pyvista
-P = pyvista.Plotter()
-P.add_mesh(PV_1_3Dconfig.PV_central)
-P.add_mesh(pyvista.PolyData(TopPoints[:,:-1]),color="blue")
-P.add_mesh(pyvista.PolyData(BotPoints[:,:-1]),color="red")
-P.show()
+#import pyvista
+#P = pyvista.Plotter()
+#P.add_mesh(PV_1_3Dconfig.PV_central)
+#P.add_mesh(pyvista.PolyData(TopPoints[:,:-1]),color="blue")
+#P.add_mesh(pyvista.PolyData(BotPoints[:,:-1]),color="red")
+#P.show()
 
 Light_instance = Light(WD.nyears, Sun_positionsInstance)
 
@@ -94,15 +100,23 @@ L.get_light_map(180,Sun_positions_samp.solar_vector)
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
                                       len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
                                       Light_instance.data)
-DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
-DirectGround = L.Get_direct_map_byFlag(Flags=["wheat","corn"])
+#DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
+DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])
 
-import pyvista
-P = pyvista.Plotter()
-P.add_mesh(PV_1_3Dconfig.PV_central)
-P.add_mesh(pyvista.PolyData(TopPoints[:,:-1]),color="blue")
-P.add_mesh(pyvista.PolyData(BotPoints[:,:-1]),color="red")
-P.show()
+
+j = 5 #day definition
+show_light_map2(L.sourcePoints[:,:-1], 
+                L.daily_irr_spat['2005'][:,j], 
+                PV_1_3Dconfig.PV_central,
+                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
+
+
+#import pyvista
+#P = pyvista.Plotter()
+#P.add_mesh(PV_1_3Dconfig.PV_central)
+#P.add_mesh(pyvista.PolyData(TopPoints[:,:-1]),color="blue")
+#P.add_mesh(pyvista.PolyData(BotPoints[:,:-1]),color="red")
+#P.show()
 
 # L = Light_shade_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central)
 
