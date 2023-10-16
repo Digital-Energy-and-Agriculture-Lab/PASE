@@ -399,7 +399,7 @@ class Light_shade_scene:
         
         
         delta = np.linalg.norm(intercept_points - SourcePoints[id_rays_stopped,:], axis=1)
-        return id_rays_stopped[delta>tol]
+        return np.unique(id_rays_stopped[delta>tol])
         
  
     def diffuse_map(self, n_small_suns=180):
