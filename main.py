@@ -70,7 +70,6 @@ PV_1_3DconfigMeshBot = PV_Configuration_3D(PV_params_dictBis, Sun_positions_samp
 M = Mesh()
 #M.Add_PV_Mesh(PV_1_3DconfigMeshTop.PV_central,flag = "TopPV", radius = 0.5)
 #M.Add_PV_Mesh(PV_1_3DconfigMeshBot.PV_central, flag = "BotPV", radius = 0.5)
-#M.Add_Plane_Ground_regular_meshes(0,1,0,3,0.1,1,flag="corn")
 M.Add_Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'],
                                   Loc_1['Xmax_InterestZone'],
                                   Loc_1['Ymin_InterestZone'],
@@ -85,13 +84,6 @@ M.Add_Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'],
 #BotPointsBis = M.Get_SourcePoints(FlagId=[1])
 #FlagIdTop = M.Get_FlagId_ByFlag("BotPV")
 #print("The Bottom of the PV have the FlagID = " + str(FlagIdTop))
-
-#import pyvista
-#P = pyvista.Plotter()
-#P.add_mesh(PV_1_3Dconfig.PV_central)
-#P.add_mesh(pyvista.PolyData(TopPoints[:,:-1]),color="blue")
-#P.add_mesh(pyvista.PolyData(BotPoints[:,:-1]),color="red")
-#P.show()
 
 Light_instance = Light(WD.nyears, Sun_positionsInstance)
 
@@ -118,8 +110,6 @@ show_light_map2(L.sourcePoints[:,:-1],
 #P.add_mesh(pyvista.PolyData(BotPoints[:,:-1]),color="red")
 #P.show()
 
-# L = Light_shade_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central)
-
 # import time
 # start = time.time()
 # L.diffuse_map(180)
@@ -133,14 +123,12 @@ show_light_map2(L.sourcePoints[:,:-1],
 
 #Example of a way to combine multiple configurations of PV rows and integration of a barrier 
 #(Nicolas started to integrate the combination of mutpliple PV_central files in functions in the MaiBis.py)
-"""
-PV_2_3Dconfig = PV_Configuration_3D(PV_2, Sun_positions_samp.solar_vector,
-                                    visualization=True) 
 
 #### TEMPORARY: EXAMPLE OF a .OBJ importation and merging with the PV panels and merge of the 2 PV polydata
 import pyvista
-reader = pyvista.get_reader('INPUTS/HARDWARE/STRUCTURES/atc030006.obj')
-barriere = reader.read()
+reader = pyvista.get_reader('INPUTS/HARDWARE/STRUCTURES/gen_siguesol.obj')
+structure = reader.read()
+
 xrng = np.arange(0, 
                  24,
                  4, dtype=np.float32)
@@ -148,15 +136,17 @@ yrng = np.arange(0,
                  1,
                  2, dtype=np.float32)
 zrng = np.arange(0, 1, 2, dtype=np.float32)
+
 x, y, z = np.meshgrid(xrng, yrng, zrng)    
 GlobalMesh = pyvista.StructuredGrid(x, y, z)
-barrieres = GlobalMesh.glyph(geom=barriere, factor=0.001)
+structures = GlobalMesh.glyph(geom=structure, factor=0.001)
 
-merged = PV_1_3Dconfig.PV_central.merge(PV_2_3Dconfig.PV_central)
-merged2 = merged.merge(barrieres)
-merged2.plot(style='wireframe', color='tan')
+merged = PV_1_3Dconfig.PV_central.merge(structures)
+PV_1_3Dconfig.PV_central.plot()
+structures.plot()
+merged.plot()
 ####
-"""
+
 
 # msh_grid = Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'], Loc_1['Xmax_InterestZone'],
                                        # Loc_1['Ymin_InterestZone'], Loc_1['Ymax_InterestZone'],
