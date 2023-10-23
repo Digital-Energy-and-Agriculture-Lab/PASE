@@ -132,17 +132,14 @@ import pyvista
 reader = pyvista.get_reader('INPUTS/HARDWARE/STRUCTURES/gen_siguesol.obj')
 structure = reader.read()
 
-xrng = np.arange(0, 
-                 24,
-                 4, dtype=np.float32)
-yrng = np.arange(0, 
-                 1,
-                 2, dtype=np.float32)
-zrng = np.arange(0, 1, 2, dtype=np.float32)
+xrng = np.arange(1.08, 2.08, 2, dtype=np.float32)
+yrng = np.arange(-1.54, -0.54, 2, dtype=np.float32)
+zrng = np.arange(-3.3, -2.3, 2, dtype=np.float32)
 
 x, y, z = np.meshgrid(xrng, yrng, zrng)    
 GlobalMesh = pyvista.StructuredGrid(x, y, z)
 structures = GlobalMesh.glyph(geom=structure, factor=0.001)
+structures = structures.rotate_z(-AV_1['CentralAzimut'])
 
 merged = PV_1_3Dconfig.PV_central.merge(structures)
 PV_1_3Dconfig.PV_central.plot()

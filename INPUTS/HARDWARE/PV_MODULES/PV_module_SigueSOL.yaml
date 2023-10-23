@@ -1,5 +1,5 @@
 PanelDimensionX:
-   Value: 2.450
+   Value: 2.384
    Type: float
    Limit: [0.1,5]
    Unit: meters [m]

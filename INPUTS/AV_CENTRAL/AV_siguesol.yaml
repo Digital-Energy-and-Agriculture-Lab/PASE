@@ -17,7 +17,7 @@ RepetitionDistanceOfPanelsX:
    Unit: meters [m]
    Definition: Length between the repetition of 2 panels on the x axis of one block of panels
 RepetitionDistanceOfPanelsY:
-   Value: 1.903
+   Value: 1.953
    Type: float
    Limit: [0, 100]
    Unit: meters [m]
