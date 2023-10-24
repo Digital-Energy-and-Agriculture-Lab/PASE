@@ -27,6 +27,7 @@ class YAML_Inputs_provider:
         self.i = {}
    
         for key, data in inputs.items():   
+            print(key, data['Value'])
 
             if data['Value'] is not list:
                 if data['Type'] == 'float':
@@ -40,6 +41,9 @@ class YAML_Inputs_provider:
                     
                 elif data['Type'] == 'boolean':
                     self.check_value_bool(key, data, inputs)
+                
+                elif data['Type'] == 'list':
+                    self.check_value_list(key, data, inputs)
         
         PASE_Logger('Input values from '+file+' have been imported successfully', 'INFO')
 
@@ -91,6 +95,16 @@ class YAML_Inputs_provider:
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
             self.i[key] = data['Value'] 
+            
+    
+    def check_value_list(self, key, data, inputs):
+        
+        if type(data['Value']) is not list:
+            self.error_message(key, data['Type'])
+            PASE_Logger(self.msg, 'ERROR', 'value')
+        else:
+            self.i[key] = data['Value']
+            print(self.i)
 
 
     def check_limits(self, key, data, inputs):
