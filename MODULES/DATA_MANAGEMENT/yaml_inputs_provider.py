@@ -104,7 +104,6 @@ class YAML_Inputs_provider:
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
             self.i[key] = data['Value']
-            print(self.i)
 
 
     def check_limits(self, key, data, inputs):
