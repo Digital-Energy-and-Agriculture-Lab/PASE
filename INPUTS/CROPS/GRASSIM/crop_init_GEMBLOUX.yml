@@ -1,0 +1,93 @@
+CropID:
+    Value: 1
+    Type: integer
+    Limit: [0,1]
+    Definition: ID of the crop in the crop_parameters file
+InitialHeight:
+    Value: 0.05
+    Type: float
+    Limit: [0,1]
+    Unit: centimeter [cm]
+    Definition : Height of grass
+AgeGV:
+    Value: 0
+    Type: float
+    Limit: [0,200]
+    Unit: celcius degrees[°C]
+    Definition: Age of green vegetative parts
+AgeDV:
+    Value: 0
+    Type: float
+    Limit: [0,200]
+    Unit: celcius degrees[°C]
+    Definition: Age of dead vegetative parts
+AgeGR:
+    Value: 0
+    Type: float
+    Limit: [0,200]
+    Unit: celcius degrees[°C]
+    Definition: Age of green reproductive parts
+AgeDR:
+    Value: 0
+    Type: float
+    Limit: [0,200]
+    Unit: celcius degrees[°C]
+    Definition: Age of dead reproductive parts
+apex_grazed:
+    Value: 0
+    Type: integer
+    Limit: [0,1]
+    Definition: 1 if apex is grazes on the initial day, 0 if not
+notRunoff:
+    Value: 0
+    Type: float
+    Unit: millimeter [mm]
+    Limit: [0,1000]
+    Definition: Water remaining above saturation from previous day
+Nmin:
+    Value: 50
+    Type: float
+    Limit: [0,20000]
+    Unit: kilograms per hectare
+    Definition: Mineral nitrogen in soil
+Norg:
+    Value: 8750
+    Type: float
+    Limit: [0,20000]
+    Unit: kilograms per hectare
+    Definition: Organic nitrogen in soil
+sand:
+    Value: 70
+    Type: float
+    Limit: [0,100]
+    Definition: proportion of sand in the soil
+clay:
+    Value: 20
+    Type: float
+    Limit: [0,100]
+    Definition: proportion of clay in the soil
+org:
+    Value: 4
+    Type: float
+    Limit: [0,100]
+    Definition: proportion of organic matter in the soil
+T0:
+    Value : 0
+    Type: float
+    Limit: [0,100]
+    Defintiion : Minimum growth air temperature
+T1:
+    Value : 0
+    Type: float
+    Limit: [0,100]
+    Definition : Air temperature at which plateau is reached
+T2:
+    Value : 18
+    Type: float
+    Limit: [0,100]
+    Definition : Air temperature at which growth starts decreasing
+Tlim:
+    Value : 18
+    Type: float
+    Limit: [0,100]
+    Definition : Air temperature at which growth ends

@@ -1,54 +1,52 @@
-PATH = "C:/Users/lloui/Desktop/Gembloux/Recherche/ROBHERB/Gras-Sim/Python_agrivoltaics_framework/"
-import sys
-sys.path.append(PATH)
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct 26 15:06:53 2023
 
-import numpy as np
-from GrasSim_spatialized_V2 import GrasSim_spatial
-from MODULES.DATA_MANAGEMENT.get_parameters import get_parameters
-from MODULES.DATA_MANAGEMENT.save_output import save_array
-from MODULES.DATA_MANAGEMENT.save_graphs import GrasSim_graph_saver
+@author: lloui
+"""
 
-PARAMETERS = get_parameters(PATH)
-duration = PARAMETERS.duration
-management = PARAMETERS.management
-weather = PARAMETERS.weather
-soil_conditions = PARAMETERS.soil_conditions
-PFT_parameters = PARAMETERS.PFT_parameters
-pasture_conditions = PARAMETERS.pasture_conditions
-convenience_variables = PARAMETERS.convenience_variables
-
-#auxiliary variables
-names = ['exported_biomass', 'exported_digestibleOM', 'forage_quality', 'exported_N']
-auxiliary_variables = [np.zeros((duration, PARAMETERS.nx, PARAMETERS.ny)) for i in range(len(names))]
-auxiliary_variables = np.core.records.fromarrays(auxiliary_variables, names=names)
+import pandas as pd
+from MODULES.CROPS.GRASSIM import grassim_model
+from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from MODULES.CROPS.SIMPLE.evapotranspiration_FAO56_PM import get_ET0
 
 
-#initiation of the day-by-day integration loop
-print('starting simulation')
-for i in range(duration-1): 
-    #get model output for day i
-    pc, cv, aux_var = GrasSim_spatial(pasture_conditions[i], PFT_parameters, weather[i], soil_conditions, management[i])
-    #save model output for next iteration
-    pasture_conditions[i+1] = pc  
-    convenience_variables[i+1] = cv
-    auxiliary_variables[i] = aux_var
+def call_grassim(WD, daily_irr, lat, alt):
+    Crop_init = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\crop_init_GEMBLOUX.yml').i
+    Kc_values = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\Kc_values.yml').i
+    PFT_composition = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\PFT_composition.yml').i
+    PFT_values = pd.read_csv('INPUTS\\CROPS\\GRASSIM\\Parameters_values_PFT.csv',header=0, sep=";", decimal='.')
+    Management = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\Management.yml').i #need to add duration parameter
+    albedo = 0.2 #needs to be in crop init parameters. Not available for GEMBLOUX crop.
 
+    
+    Soil_plot = 0 #for now, all of the output is stored in Crop_plot
+    Crop_plot = grassim_model.Crop(crop_init=Crop_init, Kc_values=Kc_values, PFT_composition=PFT_composition, PFT_values=PFT_values, Management=Management)
+    
+    for year in WD.keys():
+        
+        Crop_plot.init_dict_one_year()
+        Crop_plot.init_crop(daily_irr[year])
+    
+        for day in WD[year].index:
+            
+            irradiation = daily_irr[year][:,day.day_of_year-1]
+            
+            ET0 = get_ET0(WD[year]['Avg_temp'][day],
+                          WD[year]['Min_temp'][day],
+                          WD[year]['Max_temp'][day],
+                          WD[year]['Avg_WS_2m'][day],
+                          WD[year]['Vap_press'][day],
+                          irradiation,
+                          Crop_plot.LAI,
+                          day.day_of_year,
+                          len(WD[year]['Avg_temp']),
+                          lat,
+                          alt,
+                          albedo)
+            
+            Crop_plot.run_grassim_model(WD[year].loc[day], ET0, irradiation, day)
 
-#Compute for analytics
-#THIS SHOULD BE DONE IN ANOTER MODULE
-total_production = pasture_conditions['BMGV'] + pasture_conditions['BMGR'] + pasture_conditions['BMDV'] + pasture_conditions['BMDR']
-total_N = pasture_conditions['QNGV'] + pasture_conditions['QNGR'] + pasture_conditions['QNDV'] + pasture_conditions['QNDR']
-
-#Yieldpercut = [i for i in exported_biomass if (type(i) != int)]
-#TotalNpercut = [i for i in exported_Ncont if (type(i) != int)]
-Annualyield = np.mean(np.sum(auxiliary_variables['exported_biomass'], axis=0))
-exported_digestibleOM = np.mean(np.sum(auxiliary_variables['exported_digestibleOM'], axis=0))
-
-
-#************************************************************#
-#                   #Save Data and graphs#                   #
-#************************************************************#
-save_array(pasture_conditions, PATH+'OUTPUTS/DATA/pc_spatial.npy')
-save_array(convenience_variables, PATH+'OUTPUTS/DATA/cv_spatial.npy')
-save_array(total_production, PATH+'OUTPUTS/DATA/total_production.npy')
-save_array(exported_digestibleOM, 'OUTPUTS/DATA/exported_digestibleOM.npy')
+            Crop_plot.fill_nyears_data_dict(year)
+    
+    return Soil_plot, Crop_plot

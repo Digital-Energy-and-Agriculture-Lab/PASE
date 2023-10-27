@@ -27,7 +27,6 @@ class YAML_Inputs_provider:
         self.i = {}
    
         for key, data in inputs.items():   
-            print(key, data['Value'])
 
             if data['Value'] is not list:
                 if data['Type'] == 'float':

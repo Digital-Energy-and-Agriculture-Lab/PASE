@@ -122,12 +122,12 @@ def GrasSim_spatial(input_args, parameters, weather, cond_soil, management):
     # Weather parameters for this day
     #---------------------------------
     j = days # convert the state variable J (giving days since Jan 1st into an integar)  
-    PP = weather['Rainfall'] # mm (rainfall)
-    Temp = weather['T'] # ?C average T
+    PP = weather['Rain'] # mm (rainfall)
+    Temp = weather['Avg_temp'] # ?C average T
     PET  = weather['ETP']# mm (potential evapotranspiration)
     PPmPET = PP-PET
     PARi  =  weather['PARi']# MJ/m?/d
-    ST  = weather['ST_grass']# ?C.d
+    ST  = weather['ST']# ?C.d
     Kc = weather['Kc']#crop coefficient for grassland 
 
 

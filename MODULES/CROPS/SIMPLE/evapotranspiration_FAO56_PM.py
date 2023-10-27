@@ -30,7 +30,8 @@ def get_ET0(avg_T, min_T, max_T, avg_WS, vap_press, irrad, LAI, Jday,
         else:
             albedo = crop_albedo
     else:
-        albedo = np.ones((len(LAI[:,1]), len(LAI[1,:])))*crop_albedo
+        #albedo = np.ones((len(LAI[:,1]), len(LAI[1,:])))*crop_albedo
+        albedo = np.ones(LAI.shape)*crop_albedo
         ind = np.where(LAI<3)
         albedo[ind] = ((LAI[ind]/3)*crop_albedo + (1-(LAI[ind]/3))*soil_albedo)
         

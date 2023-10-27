@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
-
+cwd = 'C:\\Users\\lloui\\Desktop\\Gembloux\\Recherche\\ROBHERB\\Gras-Sim\\framework_agrivoltaics\\'
 import numpy as np
 import pandas as pd
 import configparser
 
+
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from MODULES.CROPS.SIMPLE.evapotranspiration_FAO56_PM import get_ET0
 
 class get_parameters():
     
-    def __init__(self, PATH='C:/Users/lloui/Desktop/Gembloux/Recherche/ROBHERB/Modèles de prairies/Gras-Sim (Urbain)/Python agrivoltaics_framework/'):
+    def __init__(self, PATH=cwd):
         
         #Are parameters already in spatialized format ?
         self.management_is_spatialized = False
@@ -17,8 +20,8 @@ class get_parameters():
         self.crop_init_is_spatialized = False
         
         self.PATH = PATH
-        self.crop_init = YAML_Inputs_provider('crop_init_GEMBLOUX.yml', path=PATH+'INPUTS', subpath='CROPS').i
-        self.PFT_composition = YAML_Inputs_provider('PFT_composition.yml', path=PATH+'INPUTS', subpath='CROPS').i
+        self.crop_init = YAML_Inputs_provider('crop_init_GEMBLOUX.yml', path=PATH+'INPUTS', subpath='CROPS\\GRASSIM').i
+        self.PFT_composition = YAML_Inputs_provider('PFT_composition.yml', path=PATH+'INPUTS', subpath='CROPS\\GRASSIM').i
         
         self.config = self.get_config()
         #Crop dimentions (grid size)
@@ -30,14 +33,18 @@ class get_parameters():
         self.soil_conditions = self.get_soil_conditions()
         self.PFT_parameters = self.get_PFT_parameters()
         self.weather = self.get_weather()
+        self.WD = self.get_WD()
+        #self.ST = self.get_ST()
+        #self.Kc = self.get_Kc()
         self.pasture_conditions = self.get_pasture_conditions()
         self.convenience_variables = self.get_convenience_variables()
+        
         
         
     def get_config(self):
         
         config = configparser.ConfigParser()
-        config.read(self.PATH+'config.ini')
+        config.read(self.PATH+'INPUTS\\CROPS\\GRASSIM\\config.ini')
         
         return config
 
@@ -58,7 +65,7 @@ class get_parameters():
     def get_management(self):
         
         duration = self.duration     
-        management_input = YAML_Inputs_provider('Management.yml',path=self.PATH+'INPUTS', subpath='MANAGEMENT').i
+        management_input = YAML_Inputs_provider('Management.yml',path=self.PATH+'INPUTS', subpath='CROPS\\GRASSIM').i
         print(management_input)
         
         grazing_days = pd.to_datetime(management_input['CutDays']).dayofyear
@@ -120,8 +127,8 @@ class get_parameters():
     
     def get_PFT_parameters(self):
         
-        PFT_parameters = pd.read_csv(self.PATH+"/INPUTS/CROPS/Parameters_values_PFTs.csv", header=0, sep=";", decimal='.')
-        PFT_composition = YAML_Inputs_provider('PFT_composition.yml', path=self.PATH+'INPUTS', subpath='CROPS').i
+        PFT_parameters = pd.read_csv(self.PATH+"INPUTS\\CROPS\\GRASSIM\\Parameters_values_PFTs.csv", header=0, sep=";", decimal='.')
+        PFT_composition = YAML_Inputs_provider('PFT_composition.yml', path=self.PATH+'INPUTS', subpath='CROPS\\GRASSIM').i
         
         clay = self.soil_conditions['clay']
         
@@ -233,9 +240,65 @@ class get_parameters():
         
         return PFT_parameters
     
-    
-
     def get_weather(self):
+        weather = pd.read_csv(self.PATH + "/INPUTS/CROPS/Weather_Gembloux_2010.csv",header=0, sep=";", decimal='.')
+        Kc = YAML_Inputs_provider('Kc values.yml', path=self.PATH+'INPUTS',subpath='CROPS').i
+        
+        weather['PARi'] = 0.48*weather['Radiation_MJ']
+
+        #--- computation of ST value ---#
+        Tmin = self.crop_init['T1']
+        Tmax = self.crop_init['T2']
+
+        #add ST column to weather
+        weather['ST_grass'] = np.nan
+        weather.loc[0,'ST_grass'] = 0
+             
+        #Compute ST values
+        for j in range(1, len(weather['ST_grass'])):    
+            if  ((weather["T"][j-1] >= Tmin) and  (weather["T"][j-1]<=Tmax)) : 
+                weather.loc[j,'ST_grass'] = weather.loc[j-1,'ST_grass']+weather.loc[j-1,"T"]-Tmin
+            elif (weather["T"][j-1] >Tmax) :
+                weather.loc[j,'ST_grass'] = weather.loc[j-1,'ST_grass']+Tmax-Tmin
+            else:
+                weather.loc[j,'ST_grass'] = weather.loc[j-1,'ST_grass']
+                
+        #Add Kc to weather column
+        #get Kc values for each month
+        weather['Day'] = pd.to_datetime(weather['Day'])
+        for k in range(0,weather.shape[0]):
+            weather.loc[k,'Kc'] = Kc.get(weather['Day'][k].month_name())
+
+        weather = weather.drop(['Day'],axis=1)
+        
+        #Assumption : weather is homogeneous, can be used for each point
+        nx = self.nx
+        ny = self.ny
+        
+        
+        names = list(weather.columns)
+        
+        #values : Numpy array of shape (duration, nx, ny)
+        values = []
+        #append values with spatialized columns
+        for colname in weather:
+            spatial_col = np.full((weather.shape[0],nx,ny), np.nan)
+            for i,value in enumerate(weather[colname]):
+                spatial_value = np.full((nx,ny), value)
+                spatial_col[i] = spatial_value
+                
+            values.append(spatial_col)
+                
+        #weather = dict(zip(names, values))
+        weather = np.core.records.fromarrays(values, names=names)
+        
+        return weather
+    
+    
+    def get_WD(self, file='Siguesol_loc.yaml'):
+        
+        '''
+        OLD WEATHER FILES
         
         weather = pd.read_csv(self.PATH + "/INPUTS/CROPS/Weather_Gembloux_2010.csv",header=0, sep=";", decimal='.')
         Kc = YAML_Inputs_provider('Kc values.yml', path=self.PATH+'INPUTS',subpath='CROPS').i
@@ -289,12 +352,81 @@ class get_parameters():
         weather = np.core.records.fromarrays(values, names=names)
         
         return weather
+        '''
+    
+        Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml',path=self.PATH+'INPUTS', subpath='SCENARIOS').i
         
+        WD = Weather_data(Loc_1['Latitude'],
+                          Loc_1['Longitude'],
+                          Loc_1['SimulationStartingYear'],
+                          Loc_1['SimulationEndingYear'],
+                          Loc_1['WeatherDataOption'],
+                          Loc_1['WeatherFileName'],
+                          Loc_1['DailyWeatherFileName'])
+
+        return WD.nyears_daily_WD['2005']
+    
+    def get_ST(self):
+        ST = pd.DataFrame(np.nan, index=range(self.duration), columns=['ST'])
+        ST.loc[0, 'ST'] = 0
+        #--- computation of Sum of Temperature values ---#
+        Tmin = self.crop_init['T1']
+        Tmax = self.crop_init['T2']      
+        WD = self.WD
+        
+        for j in range(1, len(ST['ST'])):    
+            if  ((WD["Avg_temp"][j-1] >= Tmin) and  (WD["Avg_temp"][j-1]<=Tmax)) : 
+                ST.loc[j,'ST'] = ST.loc[j-1, 'ST'] + WD.loc[j-1,"Avg_temp"]-Tmin
+            elif (WD["T"][j-1] >Tmax) :
+                ST.loc[j,'ST'] = ST.loc[j-1,'ST'] + Tmax-Tmin
+            else:
+                ST.loc[j,'ST'] = ST.loc[j-1,'ST']
+                
+        return ST
+    
+    
+    
+    def get_PARi(self):
+        WD = self.WD
+        
+        PARi = WD['Daily_rad']*0.48
+        
+        return PARi
+        
+    def get_PET(self):
+        WD = self.WD
+        
+        PET = get_ET0(WD[year]['Avg_temp'][day],
+                      WD[year]['Min_temp'][day],
+                      WD[year]['Max_temp'][day],
+                      WD[year]['Avg_WS_2m'][day],
+                      WD[year]['Vap_press'][day],
+                      irradiation,
+                      Crop_plot.LAI,
+                      day.day_of_year,
+                      len(WD[year]['Avg_temp']),
+                      lat,
+                      alt,
+                      Soil_param['Albedo'])
+        
+        return PET
+    
+    def get_KC(self):
+        Kc_values = YAML_Inputs_provider('Kc values.yml', path=self.PATH+'INPUTS',subpath='CROPS').i
+        WD = self.WD
+        Kc = pd.DataFrame(np.nan, index=range(self.duration), columns=['Kc'])
+        #get Kc values for each month
+        days = pd.to_datetime(WD.index)
+        for k in range(days):
+            Kc.loc[k,'Kc'] = Kc_values.get(days[k].month_name())
+
+        return Kc
         
 
     def get_pasture_conditions(self):
         
         crop_init = self.crop_init
+        print(crop_init)
         PFT_parameters = self.PFT_parameters
         soil_conditions = self.soil_conditions
         
@@ -327,7 +459,7 @@ class get_parameters():
         OMDGV = maxOMDGV-(AGEGV*(maxOMDGV-minOMDGV)/LLS)
         OMDGR = maxOMDGR-(AGEGR*(maxOMDGR-minOMDGR)/(ST2-ST1))
         days = int(self.config['simulation.period']['Start'])
-        apex_grazed  = crop_init['apex_grazed'] #or 1 depending on previous cuts or grazing events
+        apex_grazed = crop_init['apex_grazed'] #or 1 depending on previous cuts or grazing events
         notRunoff = crop_init['notRunoff']
 
         #we assume that at the beginning of the season the plant has at least the minimum amount of N needed for maximum growth
