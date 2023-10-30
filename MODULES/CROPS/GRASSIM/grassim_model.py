@@ -228,6 +228,12 @@ class Crop:
         self.dict_LAI = {}
         self.dict_ST = {}
         
+        #Auxiliary variables
+        self.dict_exportedBM = {}
+        self.dict_exported_digestibleOM = {}
+        self.dict_forage_quality = {}
+        self.dict_exported_Ncontent = {}
+        
         self.data_dict = {}
         
         #get management_input
@@ -263,6 +269,12 @@ class Crop:
         self.data_dict['OMDGR'] = self.dict_OMDGR
         self.data_dict['LAI'] = self.dict_LAI
         self.data_dict['ST'] = self.dict_ST
+        
+        #Auxiliary variables
+        self.data_dict['exportedBM'] = self.dict_exportedBM
+        self.data_dict['exported_digestibleOM'] = self.dict_exported_digestibleOM
+        self.data_dict['forage_quality'] = self.dict_forage_quality
+        self.data_dict['exported_Ncontent'] = self.dict_exported_Ncontent
 
         
         self.nyears_data[year] = self.data_dict
@@ -748,6 +760,12 @@ class Crop:
         resQNDV = resBMDV*self.NDV
         resQNDR = resBMDR*self.NDR
         
+        self.exported_biomass = self.BMGV-resBMGV + self.BMGR-resBMGR + self.BMDV-resBMDV + self.BMDR-resBMDR
+        self.exported_digestibleOM = (self.BMGV-resBMGV)*self.OMDGV + (self.BMGR-resBMGR)*self.OMDGR + (self.BMDV-resBMDV)*self.OMDDV + (self.BMDR-resBMDR)*self.OMDDR
+        self.forage_quality = np.where(cut_height != 0, self.exported_digestibleOM/self.exported_biomass, np.zeros_like(self.BMGV))
+        self.exported_Ncontent = self.QNGV-resQNGV + self.QNGR-resQNGR + self.QNDV-resQNDV + self.QNDR-resQNDR
+     
+        
         self.BMGV = resBMGV
         self.BMGR = resBMGR
         self.BMDV = resBMDV
@@ -784,3 +802,9 @@ class Crop:
         self.dict_OMDGR[str(day)] = self.OMDGR
         self.dict_LAI[str(day)] = self.LAI
         self.dict_ST[str(day)] = self.ST
+        
+        #Auxiliary variables
+        self.dict_exportedBM[str(day)] = self.exported_biomass
+        self.dict_exported_digestibleOM[str(day)] = self.exported_digestibleOM
+        self.dict_forage_quality[str(day)] = self.forage_quality
+        self.dict_exported_Ncontent[str(day)] = self.exported_Ncontent
