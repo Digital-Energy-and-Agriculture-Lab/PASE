@@ -6,6 +6,8 @@ Created on Thu Oct 26 15:32:38 2023
 """
 import numpy as np
 import pandas as pd
+import datetime
+import calendar
 
 class Crop:
     
@@ -23,7 +25,10 @@ class Crop:
         PFT_values : pandas dataframe from csv file
             columns : parameters names
             index : PFT group
-            fill ; parameter values
+            fill : parameter values
+        
+        Management : dictionnary from yaml file
+            {'cut/fertilization date/height_quantity':[values]}
             
         '''
         
@@ -33,12 +38,18 @@ class Crop:
         self.PFT_values = PFT_values
         self.management = Management
         
-        self.nyears_data = {} #output to be filled 
+        #initialization of the output 
+        self.nyears_data = {}
         
         
     def get_PFT_param(self):
+        '''
+        Extracting PFT parameters and computing their weighted average depending on PFT composition
+        '''
+
         
-        #normalize PFT composition in case the sum of PFT composition is not 1 1
+        #normalize PFT composition in case the sum of PFT composition is not 1
+        #---------------------------------------------------------------------
         sum_PFT= sum(self.PFT_composition.values())
         self.PFT_composition = {k:(v/sum_PFT) for k,v in self.PFT_composition.items()}
         
@@ -49,8 +60,6 @@ class Crop:
         
         #Extract individual parameters for each PFT group
         #------------------------------------------------
-        
-        
         self.SLA_V  =  self.PFT_values['SLA']# (specific leaf area), Adapted from Cruz et al (2010)
         self.percentageLAM_V  =  self.PFT_values['percentageLAM'] # # (percentage of laminae)
         self.ST1_V  =  self.PFT_values['ST1']# oC (initial reproductive growth T), Adapted from Cruz et al (2010)
@@ -66,9 +75,7 @@ class Crop:
         self.BDDV_V  =  self.PFT_values['BDDV']# g DM/m^3 (bulk density of dead vegetative)
         self.BDGR_V  =  self.PFT_values['BDGR']# g DM/m^3 (bulk density of green reproductive)
         self.BDDR_V  =  self.PFT_values['BDDR'] # g DM/m^3 (bulk density of dead reproductive)
-        
-
-        self.RUEmax_V = self.PFT_values['RUEmax']
+        self.RUEmax_V = self.PFT_values['RUEmax']#maximim radiation use efficiency
         self.a_Ncrit_V = self.PFT_values['a_Ncrit']
         self.b_Ncrit_V = self.PFT_values['b_Ncrit']
         self.a_Nmax_V = self.PFT_values['a_Nmax']
@@ -77,7 +84,7 @@ class Crop:
         self.FNH_coef2_V = self.PFT_values['FNH_coef2']
         
         # Computing the average value 
-        # -----------------------
+        # --------------------------
         self.SLA  =  self.SLA_V[0]*self.A+self.SLA_V[1]*self.B+self.SLA_V[2]*self.C+self.SLA_V[3]*self.D # m^2/g [specific leaf area]
         self.percentageLAM  =  self.percentageLAM_V[0]*self.A+self.percentageLAM_V[1]*self.B+self.percentageLAM_V[2]*self.C+self.percentageLAM_V[3]*self.D # # [percentage of laminae]
         self.ST1  =  self.ST1_V[0]*self.A+self.ST1_V[1]*self.B+self.ST1_V[2]*self.C+self.ST1_V[3]*self.D # oC [initial reproductive growth T]
@@ -93,7 +100,6 @@ class Crop:
         self.BDDV = self.BDDV_V[0]*self.A+self.BDDV_V[1]*self.B+self.BDDV_V[2]*self.C+self.BDDV_V[3]*self.D # g DM/m^3 [bulk density of dead vegetative]
         self.BDGR = self.BDGR_V[0]*self.A+self.BDGR_V[1]*self.B+self.BDGR_V[2]*self.C+self.BDGR_V[3]*self.D # g DM/m^3 [bulk density of green reproductive]
         self.BDDR = self.BDDR_V[0]*self.A+self.BDDR_V[1]*self.B+self.BDDR_V[2]*self.C+self.BDDR_V[3]*self.D # g DM/m^3 (bulk density of dead reproductive)
-
         self.RUEmax = self.RUEmax_V[0]*self.A+self.RUEmax_V[1]*self.B+self.RUEmax_V[2]*self.C+self.RUEmax_V[3]*self.D #Maximum radiation use efficiency
         self.a_Ncrit = self.a_Ncrit_V[0]*self.A+self.a_Ncrit_V[1]*self.B+self.a_Ncrit_V[2]*self.C+self.a_Ncrit_V[3]*self.D
         self.b_Ncrit = self.b_Ncrit_V[0]*self.A+self.b_Ncrit_V[1]*self.B+self.b_Ncrit_V[2]*self.C+self.b_Ncrit_V[3]*self.D
@@ -102,7 +108,8 @@ class Crop:
         self.FNH_coef1 = self.FNH_coef1_V[0]*self.A+self.FNH_coef1_V[1]*self.B+self.FNH_coef1_V[2]*self.C+self.FNH_coef1_V[3]*self.D
         self.FNH_coef2 = self.FNH_coef2_V[0]*self.A+self.FNH_coef2_V[1]*self.B+self.FNH_coef2_V[2]*self.C+self.FNH_coef2_V[3]*self.D
         
-        #Non-specific parameters
+        #Non-specific parameters : no need to average
+        # -------------------------------------------
         self.sigmaGV  =  self.PFT_values['sigmaGV'][0] # - rate of biomass losses with respiration
         self.sigmaGR  =  self.PFT_values['sigmaGR'][0] # - rate of biomass losses with respiration
         self.T0 =  self.PFT_values['T0'][0] # oC (min growth air T)
@@ -124,10 +131,23 @@ class Crop:
         self.repartitionN2NO2 = 0.189+(1.171*self.clay/(1+0.136*self.clay))#parameters in Ruelle 2018 for denitrificatoin pathways (N2 vs NO2)
         
     def init_crop(self, daily_irr):
+        '''
+        Initialization of crop with plant-related and soil-related parameters.
+        Some are given in crop_init, some are computed.
+        
+        number of cell depends on daily irradiance data.
+
+        '''
+        #Get grid size
+        # ------------
         self.n_cells = daily_irr.shape[0]
         
+        #get PFT parameters
+        # -----------------
         self.get_PFT_param()
         
+        #get initial conditions
+        # ---------------------
         self.sward_height = np.full((self.n_cells, ), self.I['InitialHeight'])
         self.ageGV = np.full((self.n_cells, ), self.I['AgeGV'])
         self.ageGR = np.full((self.n_cells, ), self.I['AgeGR'])
@@ -141,19 +161,21 @@ class Crop:
         self.Norg = np.full((self.n_cells, ), self.I['Norg'])
         self.Nmin = np.full((self.n_cells, ), self.I['Nmin'])
         
+        #compute initial conditions that depend on PFT parameters
+        # -------------------------------------------------------
         self.BMGV = self.sward_height*10*self.BDGV
         self.BMGR = self.sward_height*10*self.BDGR
         self.BMDV = self.sward_height*10*self.BDDV
-        self.BMDR = self.sward_height*10*self.BDDR
-        
+        self.BMDR = self.sward_height*10*self.BDDR       
         self.WaterCapacity = (0.2576-0.002*self.sand+0.0036*self.clay+0.0299*self.org)*1000 
         self.WaterSaturation = 100/88*self.WaterCapacity
         self.Wiltingpoint = (0.026+0.005*self.clay+0.0158*self.org)*1000
         
+        #initial water content is arbitrarily set to soil water capacity
         self.water = self.WaterCapacity
         
-        self.OMDGV = self.maxOMDGV-(self.ageGV*(self.maxOMDGV-self.minOMDGV)/self.LLS)
-        self.OMDGR = self.maxOMDGR-(self.ageGR*(self.maxOMDGR-self.minOMDGR)/(self.ST2-self.ST1))
+        self.OMDGV = self.maxOMDGV-(self.ageGV*(self.maxOMDGV-self.minOMDGV)/self.LLS) #organic mater digestibility of green vegetative biomass
+        self.OMDGR = self.maxOMDGR-(self.ageGR*(self.maxOMDGR-self.minOMDGR)/(self.ST2-self.ST1)) #organic mater digestibility of green reproductive biomass
         
         #we assume that at the beginning of the season the plant has at least the minimum amount of N needed for maximum growth
         self.Nconc = self.a_Ncrit*0.01 #*(BMGV+BMGR/1000)^-b_Ncrit
@@ -172,10 +194,14 @@ class Crop:
         self.NDR = self.QNDR/self.BMDR# DR grass N concentration (kg N/kgDM)
         
         self.ST = 0
+        
 
         
-    def init_dict_one_year(self):
-        
+    def init_dict_one_year(self, year):
+        '''
+        Initiate dictionnaries containing values of variables of interest. 
+        This list can be extended at will.
+        '''
         self.dict_sward_height = {}
         self.dict_BMGV = {}
         self.dict_BMGR = {}
@@ -201,8 +227,15 @@ class Crop:
         
         self.data_dict = {}
         
+        #get management_input
+        # -------------------
+        self.get_management_input(year)
+        
         
     def fill_nyears_data_dict(self, year):
+        '''
+        Fill output dictionnary nyears_data with data from 1 year
+        '''
         
         self.data_dict['sward_height'] = self.dict_sward_height
         self.data_dict['BMGV'] = self.dict_BMGV
@@ -216,33 +249,96 @@ class Crop:
         self.data_dict['ageDR'] = self.dict_ageDR     
         self.data_dict['apex_grazed'] = self.dict_apex_grazed
         self.data_dict['notRunoff'] = self.dict_notRunoff
-        self.data_dict['Norg'] = self.dict_water
-        self.data_dict['Nmin'] = self.dict_Norg
-        self.data_dict['QNGV'] = self.dict_Nmin
-        self.data_dict['QNGR'] =  self.dict_QNGV
-        self.data_dict['QNDV'] = self.dict_QNGR
-        self.data_dict['QNDR'] = self.dict_QNDV
-        self.data_dict['OMDGV'] = self.dict_QNDR
-        self.data_dict['OMDGR'] = self.dict_OMDGV
-        self.data_dict['LAI'] = self.dict_OMDGR
-        self.data_dict['ST'] = self.dict_LAI
+        self.data_dict['water'] = self.dict_water
+        self.data_dict['Norg'] = self.dict_Norg
+        self.data_dict['Nmin'] = self.dict_Nmin
+        self.data_dict['QNGV'] =  self.dict_QNGV
+        self.data_dict['QNGR'] = self.dict_QNGR
+        self.data_dict['QNDV'] = self.dict_QNDV
+        self.data_dict['QNDR'] = self.dict_QNDR
+        self.data_dict['OMDGV'] = self.dict_OMDGV
+        self.data_dict['OMDGR'] = self.dict_OMDGR
+        self.data_dict['LAI'] = self.dict_LAI
+        self.data_dict['ST'] = self.dict_ST
 
         
         self.nyears_data[year] = self.data_dict
         
-    def get_management_input(self):
+    def get_management_input(self, year):
+        '''
+        Get management inputs with type of management and date of application
         
-        self.list_grazing_days = pd.to_datetime(self.management['CutDays']).dayofyear
-        self.list_cut_height = self.management['CutHeight']
-        self.list_FertlizationDateMin = pd.to_datetime(self.management['FertlizationDateMin']).dayofyear
-        self.list_FertlizationQuantityMin = self.management['FertlizationQuantityMin']
-        self.list_FertlizationDateOrg = pd.to_datetime(self.management['FertlizationDateOrg']).dayofyear
-        self.list_FertlizationQuantityOrg = self.management['FertlizationQuantityOrg']
+        3 management types :
+            - grass cutting
+            - mineral fertilization
+            - organic fertilization
+        '''
         
+        list_grazing_days = pd.to_datetime(self.management['CutDays'], format='%d-%m-%Y')
+        list_cut_height = self.management['CutHeight']
+        list_FertlizationDateMin = pd.to_datetime(self.management['FertlizationDateMin'], format='%d-%m-%Y')
+        list_FertlizationQuantityMin = self.management['FertlizationQuantityMin']
+        list_FertlizationDateOrg = pd.to_datetime(self.management['FertlizationDateOrg'], format='%d-%m-%Y')
+        list_FertlizationQuantityOrg = self.management['FertlizationQuantityOrg']
+        
+        #CREATE DICTIONNARY FOR 1 YEAR
+        if calendar.isleap(int(year)):
+            ndays = 366
+        else:
+            ndays = 365
+        
+        start = datetime.date(int(year), 1, 1)
+        
+        zeros = [{'cut_height':0, 'fert_min':0, 'fert_org':0} for x in range(ndays)]        
+        dates = [start + datetime.timedelta(days=x) for x in range(ndays)]
+        '''
+        for i, dict_values in enumerate(zeros):
+            
+            for j, date in enumerate(list_grazing_days):
+                if dates[i] == date.date():
+                    zeros[i]['cut_height'] = list_cut_height[j]
+
+        '''
+        self.dict_management = dict(zip(dates, zeros))
+        
+        
+        for key in self.dict_management:
+            
+            for index, value in enumerate(list_grazing_days):         
+                if key == value.date():
+                    self.dict_management[key]['cut_height'] = list_cut_height[index]
+                    
+            for index, value in enumerate(list_FertlizationDateMin):
+                if key == value.date():
+                    self.dict_management[key]['fert_min'] = list_FertlizationQuantityMin[index]
+                    
+            for index, value in enumerate(list_FertlizationDateOrg):
+                if key == value.date():
+                    self.dict_management[key]['fert_org'] = list_FertlizationQuantityOrg[index]
+                    
+                    
+              
     def run_grassim_model(self, WD, ET0, irradiation, day):
-        
-        
-        self.cut_height = 0
+        '''
+        GrasSim model (Urbain Kokah)
+        Computes new values for crop and soil parameters.
+        Adds values to one year dictionnaries
+
+        WD : pandas DataFrame of weather data for 1 year
+            
+        ET0 : float
+            Potential evapotranspiration. 
+            
+        irradiation : pandas DataFrame of irradiance data for 1 year
+            shape : (n_cells, 365)
+            Computed using ray casting simulation
+            
+        day : datetime Timestamp 
+            day of simulation
+
+        '''  
+        management = self.dict_management[day.date()]
+        cut_height = management['cut_height']
         
         self.day = day
         
@@ -510,10 +606,10 @@ class Crop:
         
         #Vegetative and reproductive growth 
         
-        self.apex_grazed = np.where(np.logical_and(self.ST>self.ST1, np.logical_and(self.ST<self.ST2, self.cut_height != 0)), 1, 0)
+        self.apex_grazed = np.where(np.logical_and(self.ST>self.ST1, np.logical_and(self.ST<self.ST2, cut_height != 0)), 1, 0)
         
         REP = np.where(self.ST<self.ST1, 0,
-              np.where(np.logical_and(self.ST<self.ST2, np.logical_and(self.apex_grazed==0, self.cut_height ==0, RNC>0.35)), 0.25+((1-0.25)*(RNC-0.35))/(1-0.35),
+              np.where(np.logical_and(self.ST<self.ST2, np.logical_and(self.apex_grazed==0, cut_height ==0, RNC>0.35)), 0.25+((1-0.25)*(RNC-0.35))/(1-0.35),
               0
               ))
         
@@ -623,24 +719,20 @@ class Crop:
         #N supply through rain
         #-----------------
         Nfromrain = 0.009*self.PP
-        # position = days%in%c(start:time)
-        
-        self.Norg = self.Norg+immobilization-mineralisation+Nplantlitter# the N content of dead material was ascribed the fixed value of 8 g N/kg DM (Delagarde et al., 2000).(DOI: 10.1080/01431160110114529 and Leconte et Laissus, 1985)  
-        self.Nmin = self.Nmin +Nfromrain+mineralisation -immobilization-Nuptake -NLeached
-        
-        '''
+          
+        #Soil N
+        #------
         self.Norg = self.Norg+immobilization-mineralisation+(1-self.percentageofNmin)*management["fert_org"]+Nplantlitter# the N content of dead material was ascribed the fixed value of 8 g N/kg DM (Delagarde et al., 2000).(DOI: 10.1080/01431160110114529 and Leconte et Laissus, 1985)  
         self.Nmin = self.Nmin +Nfromrain+mineralisation +management["fert_min"] +self.percentageofNmin*(1-self.NH3volatfactor)*management["fert_org"] -immobilization-Nuptake -NLeached
-        '''
+
         # Cut day conditions
-        #-------------------
-        '''
+        #-------------------    
         cutBMGV = cut_height*10*self.BMGV
         cutBMGR = cut_height*10*self.BMGR
         cutBMDV  = cut_height*10*self.BMDV
         cutBMDR  = cut_height*10*self.BMDR
         
-        sward_height = np.where(cut_height != 0, cut_height, sward_height)
+        self.sward_height = np.where(cut_height != 0, cut_height, self.sward_height)
         resBMGV = np.where(cut_height != 0, cutBMGV, self.BMGV)
         resBMGR = np.where(cut_height != 0, cutBMGR, self.BMGR)
         resBMDV = np.where(cut_height != 0, cutBMDV, self.BMDV)
@@ -649,7 +741,15 @@ class Crop:
         resQNGR = resBMGR*self.NGR
         resQNDV = resBMDV*self.NDV
         resQNDR = resBMDR*self.NDR
-        '''
+        
+        self.BMGV = resBMGV
+        self.BMGR = resBMGR
+        self.BMDV = resBMDV
+        self.BMDR = resBMDR
+        self.QNGV = resQNGV
+        self.QNGR = resQNGR
+        self.QNDV = resQNDV
+        self.QNDR = resQNDR
         
         
         #output =  input for the next day
@@ -678,12 +778,3 @@ class Crop:
         self.dict_OMDGR[str(day)] = self.OMDGR
         self.dict_LAI[str(day)] = self.LAI
         self.dict_ST[str(day)] = self.ST
-        
-        
-        
-        
-        
-        
-        
-        
-        

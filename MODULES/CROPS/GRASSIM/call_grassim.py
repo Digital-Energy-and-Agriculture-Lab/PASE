@@ -12,6 +12,7 @@ from MODULES.CROPS.SIMPLE.evapotranspiration_FAO56_PM import get_ET0
 
 
 def call_grassim(WD, daily_irr, lat, alt):
+    
     Crop_init = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\crop_init_GEMBLOUX.yml').i
     Kc_values = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\Kc_values.yml').i
     PFT_composition = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\PFT_composition.yml').i
@@ -25,7 +26,7 @@ def call_grassim(WD, daily_irr, lat, alt):
     
     for year in WD.keys():
         
-        Crop_plot.init_dict_one_year()
+        Crop_plot.init_dict_one_year(year)
         Crop_plot.init_crop(daily_irr[year])
     
         for day in WD[year].index:
