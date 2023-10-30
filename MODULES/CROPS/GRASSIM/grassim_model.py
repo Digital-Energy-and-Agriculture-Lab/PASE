@@ -140,7 +140,10 @@ class Crop:
         '''
         #Get grid size
         # ------------
-        self.n_cells = daily_irr.shape[0]
+        self.firstday_grid = daily_irr[0]
+        self.n_cells = self.firstday_grid.shape[0]
+        self.grid_shape = ((int(np.sqrt(self.n_cells)), int(np.sqrt(self.n_cells))))
+        self.grid_shape = (20, 20)
         
         #get PFT parameters
         # -----------------
@@ -148,18 +151,18 @@ class Crop:
         
         #get initial conditions
         # ---------------------
-        self.sward_height = np.full((self.n_cells, ), self.I['InitialHeight'])
-        self.ageGV = np.full((self.n_cells, ), self.I['AgeGV'])
-        self.ageGR = np.full((self.n_cells, ), self.I['AgeGR'])
-        self.ageDV = np.full((self.n_cells, ), self.I['AgeDV'])
-        self.ageDR = np.full((self.n_cells, ), self.I['AgeDR'])
-        self.apex_grazed = np.full((self.n_cells, ), self.I['apex_grazed']) #or 1 depending on previous cuts or grazing events
-        self.notRunoff = np.full((self.n_cells, ), self.I['notRunoff'])
-        self.sand = np.full((self.n_cells, ), self.I['sand'])
-        self.clay = np.full((self.n_cells, ), self.I['clay'])
-        self.org = np.full((self.n_cells, ), self.I['org'])
-        self.Norg = np.full((self.n_cells, ), self.I['Norg'])
-        self.Nmin = np.full((self.n_cells, ), self.I['Nmin'])
+        self.sward_height = np.full(self.grid_shape, self.I['InitialHeight'])
+        self.ageGV = np.full(self.grid_shape, self.I['AgeGV'])
+        self.ageGR = np.full(self.grid_shape, self.I['AgeGR'])
+        self.ageDV = np.full(self.grid_shape, self.I['AgeDV'])
+        self.ageDR = np.full(self.grid_shape, self.I['AgeDR'])
+        self.apex_grazed = np.full(self.grid_shape, self.I['apex_grazed']) #or 1 depending on previous cuts or grazing events
+        self.notRunoff = np.full(self.grid_shape, self.I['notRunoff'])
+        self.sand = np.full(self.grid_shape, self.I['sand'])
+        self.clay = np.full(self.grid_shape, self.I['clay'])
+        self.org = np.full(self.grid_shape, self.I['org'])
+        self.Norg = np.full(self.grid_shape, self.I['Norg'])
+        self.Nmin = np.full(self.grid_shape, self.I['Nmin'])
         
         #compute initial conditions that depend on PFT parameters
         # -------------------------------------------------------
@@ -337,6 +340,9 @@ class Crop:
             day of simulation
 
         '''  
+        
+        irradiation = irradiation.reshape((20,20))
+        
         management = self.dict_management[day.date()]
         cut_height = management['cut_height']
         

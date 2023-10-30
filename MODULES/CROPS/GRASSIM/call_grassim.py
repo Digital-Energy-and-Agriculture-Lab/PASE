@@ -31,7 +31,7 @@ def call_grassim(WD, daily_irr, lat, alt):
     
         for day in WD[year].index:
             
-            irradiation = daily_irr[year][:,day.day_of_year-1]
+            irradiation = daily_irr[year][:,day.day_of_year-1].reshape((20, 20))
             
             ET0 = get_ET0(WD[year]['Avg_temp'][day],
                           WD[year]['Min_temp'][day],

@@ -7,6 +7,7 @@ Created on Tue Jan 17 16:06:55 2023
 """
 import numpy as np
 import os
+import pickle
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
@@ -160,3 +161,6 @@ option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du mod
 Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_WD, 
                                      L.daily_irr_spat,
                                      Loc_1)
+if crop_model == 3:
+    with open('OUTPUTS\\GRASSIM\\Crop_plot.pkl', 'wb') as handle:
+        pickle.dump(Crop_plot, handle, protocol=pickle.HIGHEST_PROTOCOL)
