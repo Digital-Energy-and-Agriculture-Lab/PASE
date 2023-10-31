@@ -352,6 +352,7 @@ class Crop:
             day of simulation
 
         '''  
+        print(self.BMGV[0][0])
         
         irradiation = irradiation.reshape((20,20))
         
@@ -745,20 +746,20 @@ class Crop:
 
         # Cut day conditions
         #-------------------    
-        cutBMGV = cut_height*10*self.BMGV
-        cutBMGR = cut_height*10*self.BMGR
-        cutBMDV  = cut_height*10*self.BMDV
-        cutBMDR  = cut_height*10*self.BMDR
+        cutBMGV = cut_height*10*self.BDGV
+        cutBMGR = cut_height*10*self.BDGR
+        cutBMDV  = cut_height*10*self.BDDV
+        cutBMDR  = cut_height*10*self.BDDR
         
-        self.sward_height = np.where(cut_height != 0, cut_height, self.sward_height)
-        resBMGV = np.where(cut_height != 0, cutBMGV, self.BMGV)
-        resBMGR = np.where(cut_height != 0, cutBMGR, self.BMGR)
-        resBMDV = np.where(cut_height != 0, cutBMDV, self.BMDV)
-        resBMDR = np.where(cut_height != 0, cutBMDR, self.BMDR)
+        resBMGV = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), cutBMGV, self.BMGV)
+        resBMGR = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), cutBMGR, self.BMGR)
+        resBMDV = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), cutBMDV, self.BMDV)
+        resBMDR = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), cutBMDR, self.BMDR)
         resQNGV = resBMGV*self.NGV
         resQNGR = resBMGR*self.NGR
         resQNDV = resBMDV*self.NDV
         resQNDR = resBMDR*self.NDR
+        self.sward_height = np.where(cut_height != 0, cut_height, self.sward_height)
         
         self.exported_biomass = self.BMGV-resBMGV + self.BMGR-resBMGR + self.BMDV-resBMDV + self.BMDR-resBMDR
         self.exported_digestibleOM = (self.BMGV-resBMGV)*self.OMDGV + (self.BMGR-resBMGR)*self.OMDGR + (self.BMDV-resBMDV)*self.OMDDV + (self.BMDR-resBMDR)*self.OMDDR
