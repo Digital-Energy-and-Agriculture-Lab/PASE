@@ -10,11 +10,11 @@ import os
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from MODULES.PHOTOVOLTAICS.configurations import PV_Configuration_3D
+from MODULES.PHOTOVOLTAICS.PV_configurations import PV_Configuration_3D
 from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from MODULES.ENVIRONMENT.light import show_light_map2, Light_shade_scene
 from MODULES.ENVIRONMENT.mesh import Mesh
-from MODULES.PHOTOVOLTAICS.photovoltaic_systems import PV_system
+from MODULES.PHOTOVOLTAICS.PV_productions import PV_production
 from MODULES.CROPS.run_crop_simulations import run_crop_simu
 
 PASE_Logger()
@@ -148,7 +148,7 @@ merged.plot()
 
 
 # PV production model based on a geometric approach
-PV_central = PV_system(PV_params_dict)
+PV_central = PV_production(PV_params_dict)
 PV_central.get_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears)
 
 
