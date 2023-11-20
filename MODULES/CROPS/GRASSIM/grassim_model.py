@@ -140,10 +140,8 @@ class Crop:
         '''
         #Get grid size
         # ------------
-        self.firstday_grid = daily_irr[0]
-        self.n_cells = self.firstday_grid.shape[0]
-        self.grid_shape = ((int(np.sqrt(self.n_cells)), int(np.sqrt(self.n_cells))))
-        self.grid_shape = (20, 20)
+        self.grid_shape = daily_irr.shape[0]
+        print('-----SHAPE--------',self.grid_shape)
         
         #get PFT parameters
         # -----------------
@@ -352,9 +350,7 @@ class Crop:
             day of simulation
 
         '''  
-        print(self.BMGV[0][0])
         
-        irradiation = irradiation.reshape((20,20))
         
         management = self.dict_management[day.date()]
         cut_height = management['cut_height']
@@ -613,6 +609,7 @@ class Crop:
         #Environmental limitations
         #----------------------
         fWfN = np.where(fW<fN, fW, fN)
+        
         ENV = fPARi*fT*fWfN
         
         #Potential growth 
