@@ -9,21 +9,17 @@ import pandas as pd
 from MODULES.CROPS.GRASSIM import grassim_model
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.CROPS.SIMPLE.evapotranspiration_FAO56_PM import get_ET0
-from MODULES.CROPS.GRASSIM.weather_data_topandas import weather_data_topandas
 
 
 def call_grassim(WD, daily_irr, lat, alt):
     
-    Crop_init = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\crop_init_GEMBLOUX.yml').i
-    Kc_values = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\Kc_values.yml').i
-    PFT_composition = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\PFT_composition.yml').i
-    PFT_values = pd.read_csv('INPUTS\\CROPS\\GRASSIM\\Parameters_values_PFT.csv',header=0, sep=";", decimal='.')
-    Management = YAML_Inputs_provider(file = 'CROPS\\GRASSIM\\Management.yml').i #need to add duration parameter
+    Crop_init = YAML_Inputs_provider(file = 'CROPS/GRASSIM/crop_init_GEMBLOUX.yml').i
+    Kc_values = YAML_Inputs_provider(file = 'CROPS/GRASSIM/Kc_values.yml').i
+    PFT_composition = YAML_Inputs_provider(file = 'CROPS/GRASSIM/PFT_composition.yml').i
+    PFT_values = pd.read_csv('INPUTS/CROPS/GRASSIM/Parameters_values_PFT.csv',header=0, sep=";", decimal='.')
+    Management = YAML_Inputs_provider(file = 'CROPS/GRASSIM/Management.yml').i #need to add duration parameter
     albedo = 0.2 #needs to be in crop init parameters. Not available for GEMBLOUX crop.
     
-    weather_option = 1
-    if weather_option:
-        WD = weather_data_topandas('INPUTS\\CROPS\\GRASSIM\\Weather_Gembloux_2016.csv')
     
     Soil_plot = 0 #for now, all of the output is stored in Crop_plot
     Crop_plot = grassim_model.Crop(crop_init=Crop_init, Kc_values=Kc_values, PFT_composition=PFT_composition, PFT_values=PFT_values, Management=Management)
@@ -37,9 +33,10 @@ def call_grassim(WD, daily_irr, lat, alt):
 
             irradiation = daily_irr[year][:,day.day_of_year-1]
             
-            if 'ETP' in WD[year].columns:
-                ET0 = WD[year]['ETP'][day]
+            if 'ET0' in WD[year].columns:
+                ET0 = WD[year]['ET0'][day]
             else :
+                #[FIX] column indexes are not right
                 ET0 = get_ET0(WD[year]['Avg_temp'][day],
                               WD[year]['Min_temp'][day],
                               WD[year]['Max_temp'][day],

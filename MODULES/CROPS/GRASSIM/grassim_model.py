@@ -225,6 +225,7 @@ class Crop:
         self.dict_OMDGR = {}
         self.dict_LAI = {}
         self.dict_ST = {}
+        self.dict_irradiation = {}
         
         #Auxiliary variables
         self.dict_exportedBM = {}
@@ -267,6 +268,7 @@ class Crop:
         self.data_dict['OMDGR'] = self.dict_OMDGR
         self.data_dict['LAI'] = self.dict_LAI
         self.data_dict['ST'] = self.dict_ST
+        self.data_dict['irradiation'] = self.dict_irradiation
         
         #Auxiliary variables
         self.data_dict['exportedBM'] = self.dict_exportedBM
@@ -350,7 +352,7 @@ class Crop:
             day of simulation
 
         '''  
-        
+        self.irradiation = irradiation
         
         management = self.dict_management[day.date()]
         cut_height = management['cut_height']
@@ -800,6 +802,8 @@ class Crop:
         self.dict_OMDGR[str(day)] = self.OMDGR
         self.dict_LAI[str(day)] = self.LAI
         self.dict_ST[str(day)] = self.ST
+        
+        self.dict_irradiation[str(day)] = self.irradiation
         
         #Auxiliary variables
         self.dict_exportedBM[str(day)] = self.exported_biomass
