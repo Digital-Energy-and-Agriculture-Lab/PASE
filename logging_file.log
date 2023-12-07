@@ -1,46 +1,21 @@
-01:58:20 PM  (INFO)  -  START OF THE SIMULATION
-01:58:20 PM  (INFO)  -  Input values from Gembloux.yaml have been imported successfully
-01:58:20 PM  (INFO)  -  Input values from AV_siguesol.yaml have been imported successfully
-01:58:20 PM  (INFO)  -  Input values from PV_module_SigueSOL.yaml have been imported successfully
-01:59:31 PM  (INFO)  -  Get hourly weather data for year 2016 from PvGis
-01:59:31 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-01:59:31 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=50.56&lon=4.692&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2016&endyear=2016&components=1&outputformat=json HTTP/1.1" 302 0
-01:59:31 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-01:59:31 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=50.56&lon=4.692&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2016&endyear=2016&components=1&outputformat=json HTTP/1.1" 301 None
-01:59:32 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.56&lon=4.692&raddatabase=PVGIS-SARAH&startyear=2016&endyear=2016&components=1&outputformat=json HTTP/1.1" 200 964786
-01:59:33 PM  (INFO)  -  Computation of daily weather data for year 2016
-02:00:19 PM  (INFO)  -  Get hourly weather data for year 2016 from PvGis
-02:00:19 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-02:00:19 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=50.56&lon=4.692&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2016&endyear=2016&components=1&outputformat=json HTTP/1.1" 302 0
-02:00:19 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-02:00:19 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=50.56&lon=4.692&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2016&endyear=2016&components=1&outputformat=json HTTP/1.1" 301 None
-02:00:20 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.56&lon=4.692&raddatabase=PVGIS-SARAH&startyear=2016&endyear=2016&components=1&outputformat=json HTTP/1.1" 200 964786
-02:00:21 PM  (INFO)  -  Computation of daily weather data for year 2016
-02:04:17 PM  (INFO)  -  Input values from Gembloux.yaml have been imported successfully
-02:05:17 PM  (INFO)  -  Input values from Gembloux.yaml have been imported successfully
-02:05:33 PM  (DEBUG)  -  searching for scad in: C:\Users\u242825\AppData\Local\anaconda3;C:\Users\u242825\AppData\Local\anaconda3\Library\mingw-w64\bin;C:\Users\u242825\AppData\Local\anaconda3\Library\usr\bin;C:\Users\u242825\AppData\Local\anaconda3\Library\bin;C:\Users\u242825\AppData\Local\anaconda3\Scripts;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Git\cmd;C:\Users\u242825\AppData\Local\Microsoft\WindowsApps;C:\Users\u242825\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files\OpenSCAD;C:\Program Files (x86)\OpenSCAD
-02:05:33 PM  (DEBUG)  -  searching for blender in: C:\Users\u242825\AppData\Local\anaconda3;C:\Users\u242825\AppData\Local\anaconda3\Library\mingw-w64\bin;C:\Users\u242825\AppData\Local\anaconda3\Library\usr\bin;C:\Users\u242825\AppData\Local\anaconda3\Library\bin;C:\Users\u242825\AppData\Local\anaconda3\Scripts;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Git\cmd;C:\Users\u242825\AppData\Local\Microsoft\WindowsApps;C:\Users\u242825\AppData\Local\Programs\Microsoft VS Code\bin
-02:05:33 PM  (DEBUG)  -  searching for vhacd in: C:\Users\u242825\AppData\Local\anaconda3;C:\Users\u242825\AppData\Local\anaconda3\Library\mingw-w64\bin;C:\Users\u242825\AppData\Local\anaconda3\Library\usr\bin;C:\Users\u242825\AppData\Local\anaconda3\Library\bin;C:\Users\u242825\AppData\Local\anaconda3\Scripts;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Git\cmd;C:\Users\u242825\AppData\Local\Microsoft\WindowsApps;C:\Users\u242825\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files;C:\Program Files (x86)
-02:05:51 PM  (INFO)  -  Get hourly weather data for year 2016 from PvGis
-02:05:51 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-02:05:51 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=50.56&lon=4.692&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2016&endyear=2016&components=1&outputformat=json HTTP/1.1" 302 0
-02:05:51 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-02:05:51 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=50.56&lon=4.692&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2016&endyear=2016&components=1&outputformat=json HTTP/1.1" 301 None
-02:05:51 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.56&lon=4.692&raddatabase=PVGIS-SARAH&startyear=2016&endyear=2016&components=1&outputformat=json HTTP/1.1" 200 964786
-02:05:52 PM  (INFO)  -  Computation of daily weather data for year 2016
-02:07:10 PM  (INFO)  -  Input values from CROPS/GRASSIM/crop_init_GEMBLOUX.yml have been imported successfully
-02:07:10 PM  (INFO)  -  Input values from CROPS/GRASSIM/Kc_values.yml have been imported successfully
-02:07:10 PM  (INFO)  -  Input values from CROPS/GRASSIM/PFT_composition.yml have been imported successfully
-02:07:10 PM  (INFO)  -  Input values from CROPS/GRASSIM/Management.yml have been imported successfully
-02:07:14 PM  (INFO)  -  Input values from CROPS/GRASSIM/crop_init_GEMBLOUX.yml have been imported successfully
-02:07:14 PM  (INFO)  -  Input values from CROPS/GRASSIM/Kc_values.yml have been imported successfully
-02:07:14 PM  (INFO)  -  Input values from CROPS/GRASSIM/PFT_composition.yml have been imported successfully
-02:07:14 PM  (INFO)  -  Input values from CROPS/GRASSIM/Management.yml have been imported successfully
-02:09:25 PM  (INFO)  -  Input values from CROPS/GRASSIM/crop_init_GEMBLOUX.yml have been imported successfully
-02:09:25 PM  (INFO)  -  Input values from CROPS/GRASSIM/Kc_values.yml have been imported successfully
-02:09:25 PM  (INFO)  -  Input values from CROPS/GRASSIM/PFT_composition.yml have been imported successfully
-02:09:25 PM  (INFO)  -  Input values from CROPS/GRASSIM/Management.yml have been imported successfully
-02:20:02 PM  (INFO)  -  Input values from CROPS/GRASSIM/crop_init_GEMBLOUX.yml have been imported successfully
-02:20:02 PM  (INFO)  -  Input values from CROPS/GRASSIM/Kc_values.yml have been imported successfully
-02:20:02 PM  (INFO)  -  Input values from CROPS/GRASSIM/PFT_composition.yml have been imported successfully
-02:20:02 PM  (INFO)  -  Input values from CROPS/GRASSIM/Management.yml have been imported successfully
+09:30:17 AM  (INFO)  -  START OF THE SIMULATION
+09:30:17 AM  (INFO)  -  Input values from Siguesol_loc.yaml have been imported successfully
+09:30:17 AM  (INFO)  -  Input values from AV_siguesol.yaml have been imported successfully
+09:30:17 AM  (INFO)  -  Input values from PV_module_SigueSOL.yaml have been imported successfully
+09:30:17 AM  (INFO)  -  Get hourly weather data for year 2005 from PvGis
+09:30:17 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+09:30:17 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 302 0
+09:30:17 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+09:30:18 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 301 None
+09:30:18 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 200 961521
+09:30:19 AM  (INFO)  -  Computation of daily weather data for year 2005
+09:30:19 AM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
+09:30:19 AM  (DEBUG)  -  Trying `CDLL(libc.so.6)`
+09:30:19 AM  (DEBUG)  -  Library path: 'libc.so.6'
+09:30:19 AM  (DEBUG)  -  DLL: <CDLL 'libc.so.6', handle 7f08ad770410 at 0x7f083d6d9f10>
+09:30:20 AM  (DEBUG)  -  generating face normals
+09:30:20 AM  (DEBUG)  -  intersects_id executed in 0.2298 seconds.
+09:30:20 AM  (DEBUG)  -  generating face normals
+09:30:20 AM  (DEBUG)  -  intersects_id executed in 0.5296 seconds.
+09:30:27 AM  (INFO)  -  Input values from CROPS/SIMPLE/crop_init.yaml have been imported successfully
+09:30:27 AM  (INFO)  -  Input values from CROPS/SIMPLE/soil_init.yaml have been imported successfully

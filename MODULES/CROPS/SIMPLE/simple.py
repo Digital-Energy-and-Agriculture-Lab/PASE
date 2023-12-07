@@ -15,7 +15,6 @@ from MODULES.CROPS.SIMPLE.evapotranspiration_FAO56_PM import get_ET0
 
 def simple_model(option_2D, WD, daily_irr, lat, alt):
     
-    
     Crop_init = YAML_Inputs_provider(file = 'CROPS/SIMPLE/crop_init.yaml').i
     Crop_param = pd.read_csv('INPUTS/CROPS/SIMPLE/crops_parameters.csv', skiprows=int(Crop_init['CropID'])-1, nrows=1).to_dict('records')[0]
     Soil_param = YAML_Inputs_provider(file = 'CROPS/SIMPLE/soil_init.yaml').i
@@ -60,7 +59,7 @@ def simple_model(option_2D, WD, daily_irr, lat, alt):
                 Crop_plot.growth(WD[year]['Avg_temp'][day],
                                  WD[year]['Max_temp'][day],
                                  WD[year]['CO2'][day],
-                                 irradiation, 
+                                 irradiation,
                                  ET0,
                                  Soil_plot.dict_transpi[str(day)],
                                  day)

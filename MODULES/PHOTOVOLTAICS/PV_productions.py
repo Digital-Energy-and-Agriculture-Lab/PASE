@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
 
-class PV_system:
+class PV_production:
     
     def __init__(self, inputs):
         

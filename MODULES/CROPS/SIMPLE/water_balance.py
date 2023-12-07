@@ -108,8 +108,7 @@ class Soil:
                     *((available_water_before_drainage/self.P['RootZoneDepth'])
                       -self.P['WaterHoldingCapacity'])
         else:
-            deep_drainage = np.zeros((len(available_water_before_drainage),
-                                      len(available_water_before_drainage)))
+            deep_drainage = np.zeros(len(available_water_before_drainage))
             ind = np.where(self.P['WaterHoldingCapacity'] < (available_water_before_drainage/self.P['RootZoneDepth']))
             deep_drainage[ind] = self.P['DrainageCoeff']*self.P['RootZoneDepth']\
                     *((available_water_before_drainage[ind]/self.P['RootZoneDepth'])
