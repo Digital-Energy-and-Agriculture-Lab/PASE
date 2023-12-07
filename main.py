@@ -97,6 +97,17 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP,
 
 # Examples of visualisation
 j = 5 #day definition
+
+show_light_map2(L.sourcePoints[:,:-1], 
+                L.dir_map[:,3], 
+                PV_1_3Dconfig.PV_central,
+                "Direct map [-]")
+
+show_light_map2(L.sourcePoints[:,:-1], 
+                np.array(L.diff_map,dtype=np.float32), 
+                PV_1_3Dconfig.PV_central,
+                "Sky visibility map [-]")
+
 show_light_map2(L.sourcePoints[:,:-1], 
                 L.daily_irr_spat['2005'][:,j], 
                 PV_1_3Dconfig.PV_central,

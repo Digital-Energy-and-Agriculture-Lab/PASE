@@ -146,7 +146,7 @@ class Crop:
                 ARID = 0
                 
         else:
-            ARID = np.zeros((len(ET0), len(ET0)))
+            ARID = np.zeros(len(ET0))
             ind = np.where(ET0!=0)
             ARID[ind] = 1-(transpi[ind]/ET0[ind])
             
@@ -202,7 +202,7 @@ class Crop:
                 fSolar_Wstressed = 1
                 
         else:
-            fSolar_Wstressed = np.ones((len(fWater), len(fWater)))
+            fSolar_Wstressed = np.ones(len(fWater))
             ind = np.where(fWater<0.1)
             fSolar_Wstressed[ind] = 0.9 + fWater[ind]
             
