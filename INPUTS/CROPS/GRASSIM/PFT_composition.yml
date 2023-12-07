@@ -1,0 +1,21 @@
+A:
+    Value:  1
+    Type: float
+    Limit: [0,1]
+    Definition: Proportion of PFT A
+B:
+    Value:  0
+    Type: float
+    Limit: [0,1]
+    Definition: Proportion of PFT B
+C:
+    Value:  0
+    Type: float
+    Limit: [0,1]
+    Definition: Proportion of PFT C
+    Definition: Proportion of PFT B
+D:
+    Value:  0
+    Type: float
+    Limit: [0,1]
+    Definition: Proportion of PFT D

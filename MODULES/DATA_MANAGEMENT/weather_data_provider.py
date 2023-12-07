@@ -93,8 +93,9 @@ class Weather_data:
         if csv_file is not None:
             daily_csv = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', csv_file + '.csv'))
 
-            new_index2 = pd.date_range("01-01-2005 00:00:00","31-12-2015 00:00:00", freq='D')
-            rain_vap_pressure = daily_csv.drop(['id','DAY'], axis=1).set_index(new_index2)
+            new_index2 = pd.date_range("01-01-2016 00:00:00","31-12-2016 00:00:00", freq='D')
+            rain_vap_pressure = daily_csv
+            #rain_vap_pressure = daily_csv.drop(['id','DAY'], axis=1).set_index(new_index2)
             
                    
         if (freq_deter == 8760 or freq_deter == 8784):
@@ -138,7 +139,7 @@ class Weather_data:
                 mean_RH = data_to_resample['RH2m'].resample('D').mean().tolist()
                 daily_rain = data_to_resample['PRECIP'].resample('D').sum()
                 vap_press = math.nan
-                        
+            
             daily_weather = pd.DataFrame({'Avg_RH':mean_RH,
                                           'Min_RH':min_RH,
                                           'Max_RH':max_RH,
@@ -154,6 +155,7 @@ class Weather_data:
 
             self.nyears_daily_WD[year] = daily_weather
            
+            
              
 class PvGis:
 # Source : https://github.com/MechatronicsBlog/Weather_data_Python_PVGIS/blob/master/PvGis.py    
