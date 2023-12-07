@@ -20,7 +20,7 @@ from MODULES.CROPS.run_crop_simulations import run_crop_simu
 
 PASE_Logger()
 # Import of general parameters
-Loc_1 = YAML_Inputs_provider(file='Gembloux.yaml', subpath='SCENARIOS').i
+Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').i
 # Import PV central and panels parameters
 AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').i
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).i
@@ -110,7 +110,7 @@ show_light_map2(L.sourcePoints[:,:-1],
                 "Sky visibility map [-]")
 
 show_light_map2(L.sourcePoints[:,:-1], 
-                L.daily_irr_spat['2016'][:,j], 
+                L.daily_irr_spat['2005'][:,j], 
                 PV_1_3Dconfig.PV_central,
                 "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
 
@@ -167,13 +167,13 @@ PV_central.get_electricity_production(Sun_positions_complete, Light_instance.dat
 
 ### CROP MODEL
 #Temporary lines, those 2 parameters (crop_model and option_2D) should be in SCENARIOS input files (general parameters)
-crop_model = 3 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
+crop_model = 1 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
 Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_WD, 
                                      L.daily_irr_spat,
                                      Loc_1)
 
 show_light_map2(L.sourcePoints[:,:-1], 
-                Crop_plot.nyears_data['2016']['sward_height']['2016-01-05 00:00:00'], 
+                Crop_plot.nyears_data['2005']['Biomass']['2005-05-20 00:00:00'], 
                 PV_1_3Dconfig.PV_central,
-                "Sward height on julian day "+str(j)+" [m]")
+                "Biomass height on 20th June 2005 [g/m²]")
