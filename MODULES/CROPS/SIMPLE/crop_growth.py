@@ -118,7 +118,7 @@ class Crop:
 
         if max_T < self.P['Tmax'] :
             fHeat = 1
-        elif ((max_T >= self.P['Tmax']) & (max_T < self.Text)) :
+        elif ((max_T >= self.P['Tmax']) & (max_T < self.P['Text'])) :
             fHeat = 1 - ((max_T-self.P['Tmax'])/(self.P['Text']-self.P['Tmax']))
         else :
             fHeat = 0
