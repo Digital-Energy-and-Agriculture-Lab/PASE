@@ -7,6 +7,7 @@ Created on Fri Aug 25 13:41:47 2023
 """
 
 import pandas as pd
+import numpy as np
 from MODULES.CROPS.SIMPLE import crop_growth
 from MODULES.CROPS.SIMPLE import water_balance
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
@@ -16,7 +17,10 @@ from MODULES.CROPS.SIMPLE.evapotranspiration_FAO56_PM import get_ET0
 def simple_model(option_2D, WD, daily_irr, lat, alt):
     
     Crop_init = YAML_Inputs_provider(file = 'CROPS/SIMPLE/crop_init.yaml').i
-    Crop_param = pd.read_csv('INPUTS/CROPS/SIMPLE/crops_parameters.csv', skiprows=int(Crop_init['CropID'])-1, nrows=1).to_dict('records')[0]
+    list_rows_to_skip = list(np.arange(1, int(Crop_init['CropID']), 1))
+    Crop_param = pd.read_csv('INPUTS/CROPS/SIMPLE/crops_parameters.csv', 
+                             skiprows=lambda x: x in list_rows_to_skip, 
+                             nrows=1).to_dict('records')[0]
     Soil_param = YAML_Inputs_provider(file = 'CROPS/SIMPLE/soil_init.yaml').i
     
     Soil_plot = water_balance.Soil(Soil_param)
