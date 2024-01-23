@@ -167,13 +167,13 @@ PV_central.get_electricity_production(Sun_positions_complete, Light_instance.dat
 
 ### CROP MODEL
 #Temporary lines, those 2 parameters (crop_model and option_2D) should be in SCENARIOS input files (general parameters)
-crop_model = 1 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
+crop_model = 3 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
 Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_WD, 
                                      L.daily_irr_spat,
                                      Loc_1)
 
 show_light_map2(L.sourcePoints[:,:-1], 
-                Crop_plot.nyears_data['2005']['Biomass']['2005-05-20 00:00:00'], 
+                Crop_plot.nyears_data['2005']['total_cumulated_BMG'], 
                 PV_1_3Dconfig.PV_central,
                 "Biomass height on 20th June 2005 [g/m²]")

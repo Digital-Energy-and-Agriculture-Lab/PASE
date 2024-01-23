@@ -167,7 +167,6 @@ class Crop:
         self.BMGR = self.sward_height*10*self.BDGR # Green reproductive biomass
         self.BMDV = self.sward_height*10*self.BDDV # Dead vegetative biomass
         self.BMDR = self.sward_height*10*self.BDDR # Dead reproductive biomass
-        print(self.BMDR)
         self.BM = self.BMGV+self.BMGR+self.BMDV+self.BMDR 
         self.diffBMGV = self.BMGV
         self.diffBMGR = self.BMGR
@@ -684,7 +683,6 @@ class Crop:
         self.BM = self.BMGV+self.BMGR+self.BMDV+self.BMDR
         self.BMG = self.BMGV + self.BMGR
         
-        print(self.BMDR[0])
         
         #Green biomass
         #-----------
