@@ -141,7 +141,6 @@ class Crop:
         #Get grid size
         # ------------
         self.grid_shape = daily_irr.shape[0]
-        print('-----SHAPE--------',self.grid_shape)
         
         #get PFT parameters
         # -----------------
@@ -149,25 +148,32 @@ class Crop:
         
         #get initial conditions
         # ---------------------
-        self.sward_height = np.full(self.grid_shape, self.I['InitialHeight'])
-        self.ageGV = np.full(self.grid_shape, self.I['AgeGV'])
-        self.ageGR = np.full(self.grid_shape, self.I['AgeGR'])
-        self.ageDV = np.full(self.grid_shape, self.I['AgeDV'])
-        self.ageDR = np.full(self.grid_shape, self.I['AgeDR'])
+        self.sward_height = np.full(self.grid_shape, self.I['InitialHeight']) # sward height
+        self.ageGV = np.full(self.grid_shape, self.I['AgeGV']) # age of green vegetative biomass
+        self.ageGR = np.full(self.grid_shape, self.I['AgeGR']) # age of green reproductive biomass
+        self.ageDV = np.full(self.grid_shape, self.I['AgeDV']) # age of dead vegetative biomass
+        self.ageDR = np.full(self.grid_shape, self.I['AgeDR']) # age of dead reproductive biomass
         self.apex_grazed = np.full(self.grid_shape, self.I['apex_grazed']) #or 1 depending on previous cuts or grazing events
-        self.notRunoff = np.full(self.grid_shape, self.I['notRunoff'])
-        self.sand = np.full(self.grid_shape, self.I['sand'])
-        self.clay = np.full(self.grid_shape, self.I['clay'])
-        self.org = np.full(self.grid_shape, self.I['org'])
-        self.Norg = np.full(self.grid_shape, self.I['Norg'])
-        self.Nmin = np.full(self.grid_shape, self.I['Nmin'])
+        self.notRunoff = np.full(self.grid_shape, self.I['notRunoff']) # water that has not run off the soil
+        self.sand = np.full(self.grid_shape, self.I['sand']) # sand fraction of soil
+        self.clay = np.full(self.grid_shape, self.I['clay']) # clay fraction of soil
+        self.org = np.full(self.grid_shape, self.I['org']) # organic matter fraction of soil
+        self.Norg = np.full(self.grid_shape, self.I['Norg']) # Organic Nitrogen in soil
+        self.Nmin = np.full(self.grid_shape, self.I['Nmin']) # Mineral Nitrogen in soil
         
         #compute initial conditions that depend on PFT parameters
         # -------------------------------------------------------
-        self.BMGV = self.sward_height*10*self.BDGV
-        self.BMGR = self.sward_height*10*self.BDGR
-        self.BMDV = self.sward_height*10*self.BDDV
-        self.BMDR = self.sward_height*10*self.BDDR       
+        self.BMGV = self.sward_height*10*self.BDGV # Green vegetative biomass
+        self.BMGR = self.sward_height*10*self.BDGR # Green reproductive biomass
+        self.BMDV = self.sward_height*10*self.BDDV # Dead vegetative biomass
+        self.BMDR = self.sward_height*10*self.BDDR # Dead reproductive biomass
+        print(self.BMDR)
+        self.BM = self.BMGV+self.BMGR+self.BMDV+self.BMDR 
+        self.diffBMGV = self.BMGV
+        self.diffBMGR = self.BMGR
+        self.diffBMDV = self.BMDV
+        self.diffBMDR = self.BMDR
+        self.diffBM = self.BM
         self.WaterCapacity = (0.2576-0.002*self.sand+0.0036*self.clay+0.0299*self.org)*1000 
         self.WaterSaturation = 100/88*self.WaterCapacity
         self.Wiltingpoint = (0.026+0.005*self.clay+0.0158*self.org)*1000
@@ -208,6 +214,14 @@ class Crop:
         self.dict_BMGR = {}
         self.dict_BMDV = {}
         self.dict_BMDR = {}
+        self.dict_BM = {}
+        self.dict_BMG = {}
+        self.dict_diffBMGV = {}
+        self.dict_diffBMGR = {}
+        self.dict_diffBMDV = {}
+        self.dict_diffBMDR = {}
+        self.dict_diffBM = {}
+        self.dict_diffBMG = {}
         self.dict_ageGV = {}
         self.dict_ageGR = {}
         self.dict_ageDV = {}
@@ -250,6 +264,14 @@ class Crop:
         self.data_dict['BMGR'] = self.dict_BMGR
         self.data_dict['BMDV'] = self.dict_BMDV
         self.data_dict['BMDR'] = self.dict_BMDR 
+        self.data_dict['BM'] = self.dict_BM
+        self.data_dict['BMG'] = self.dict_BMG
+        self.data_dict['diffBMGV'] = self.dict_diffBMGV
+        self.data_dict['diffBMGR'] = self.dict_diffBMGR
+        self.data_dict['diffBMDV'] = self.dict_diffBMDV
+        self.data_dict['diffBMDR'] = self.dict_diffBMDR 
+        self.data_dict['diffBM'] = self.dict_diffBM
+        self.data_dict['diffBMG'] = self.dict_diffBMG
         self.data_dict['ageGV'] = self.dict_ageGV
         self.data_dict['ageGR'] = self.dict_ageGV
         self.data_dict['ageDV'] = self.dict_ageGR
@@ -275,7 +297,13 @@ class Crop:
         self.data_dict['exported_digestibleOM'] = self.dict_exported_digestibleOM
         self.data_dict['forage_quality'] = self.dict_forage_quality
         self.data_dict['exported_Ncontent'] = self.dict_exported_Ncontent
-
+        
+        self.data_dict['total_cumulated_BM'] = np.array(list(self.dict_diffBM.values())).sum(axis=0) #cumulated biomass for this year
+        self.data_dict['total_cumulated_BMGV'] = np.array(list(self.dict_diffBMGV.values())).sum(axis=0)
+        self.data_dict['total_cumulated_BMGR'] = np.array(list(self.dict_diffBMGR.values())).sum(axis=0)
+        self.data_dict['total_cumulated_BMDV'] = np.array(list(self.dict_diffBMDV.values())).sum(axis=0)
+        self.data_dict['total_cumulated_BMDR'] = np.array(list(self.dict_diffBMDR.values())).sum(axis=0)
+        self.data_dict['total_cumulated_BMG'] = np.array(list(self.dict_diffBMG.values())).sum(axis=0)
         
         self.nyears_data[year] = self.data_dict
         
@@ -526,7 +554,7 @@ class Crop:
         
         #Green biomass
         #-----------
-        BMG = self.BMGV+self.BMGR
+        self.BMG = self.BMGV + self.BMGR
         
         # #Biomass over 5 cm 
         #------------
@@ -642,13 +670,21 @@ class Crop:
         
         #Total biomass after the growth
         #------------
-
-        self.BMGV = self.BMGV+GROGV-SENGV# eq 1
-        self.BMGR = self.BMGR+GROGR-SENGR# eq 2
-        self.BMDV = self.BMDV+(1-self.sigmaGV)*SENGV-ABSDV# eq 3
-        self.BMDR = self.BMDR+(1-self.sigmaGR)*SENGR-ABSDR# eq 4
+        self.diffBMGV = GROGV-SENGV
+        self.diffBMGR = GROGR-SENGR
+        self.diffBMDV = (1-self.sigmaGV)*SENGV-ABSDV
+        self.diffBMDR = (1-self.sigmaGR)*SENGR-ABSDR
+        self.diffBM = self.diffBMGV+self.diffBMGR+self.diffBMDV+self.diffBMDR 
+        self.diffBMG = self.diffBMGV+self.diffBMGR
         
+        self.BMGV = self.BMGV + self.diffBMGV # eq 1
+        self.BMGR = self.BMGR + self.diffBMGR # eq 2
+        self.BMDV = self.BMDV + self.diffBMDV # eq 3
+        self.BMDR = self.BMDR + self.diffBMDR # eq 4
         self.BM = self.BMGV+self.BMGR+self.BMDV+self.BMDR
+        self.BMG = self.BMGV + self.BMGR
+        
+        print(self.BMDR[0])
         
         #Green biomass
         #-----------
@@ -747,13 +783,14 @@ class Crop:
         #-------------------    
         cutBMGV = cut_height*10*self.BDGV
         cutBMGR = cut_height*10*self.BDGR
-        cutBMDV  = cut_height*10*self.BDDV
-        cutBMDR  = cut_height*10*self.BDDR
+        cutBMDV = cut_height*10*self.BDDV
+        cutBMDR = cut_height*10*self.BDDR
         
-        resBMGV = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), cutBMGV, self.BMGV)
-        resBMGR = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), cutBMGR, self.BMGR)
-        resBMDV = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), cutBMDV, self.BMDV)
-        resBMDR = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), cutBMDR, self.BMDR)
+        # If cut height is smaller than current height, BM value is set to min(cut value, current value)
+        resBMGV = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), np.minimum(cutBMGV, self.BMGV), self.BMGV)
+        resBMGR = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), np.minimum(cutBMGR, self.BMGR), self.BMGR)
+        resBMDV = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), np.minimum(cutBMDV, self.BMDV), self.BMDV)
+        resBMDR = np.where(np.logical_and(cut_height != 0, cut_height < self.sward_height), np.minimum(cutBMDR, self.BMDR), self.BMDR)
         resQNGV = resBMGV*self.NGV
         resQNGR = resBMGR*self.NGR
         resQNDV = resBMDV*self.NDV
@@ -770,6 +807,8 @@ class Crop:
         self.BMGR = resBMGR
         self.BMDV = resBMDV
         self.BMDR = resBMDR
+        self.BM = self.BMGV+self.BMGR+self.BMDV+self.BMDR 
+        self.BMG = self.BMGV+self.BMGR
         self.QNGV = resQNGV
         self.QNGR = resQNGR
         self.QNDV = resQNDV
@@ -782,9 +821,17 @@ class Crop:
         
         self.dict_sward_height[str(day)] = self.sward_height
         self.dict_BMGV[str(day)] = self.BMGV
-        self.dict_BMGR[str(day)] = self.BMDV
+        self.dict_BMGR[str(day)] = self.BMGR
         self.dict_BMDV[str(day)] = self.BMDV
-        self.dict_BMDR[str(day)] = self.BMDV
+        self.dict_BMDR[str(day)] = self.BMDR
+        self.dict_BM[str(day)] = self.BM
+        self.dict_BMG[str(day)] = self.BMG
+        self.dict_diffBMGV[str(day)] = self.diffBMGV
+        self.dict_diffBMGR[str(day)] = self.diffBMGR
+        self.dict_diffBMDV[str(day)] = self.diffBMDV
+        self.dict_diffBMDR[str(day)] = self.diffBMDR
+        self.dict_diffBM[str(day)] = self.diffBM
+        self.dict_diffBMG[str(day)] = self.diffBMG
         self.dict_ageGV[str(day)] = self.ageGV
         self.dict_ageGR[str(day)] = self.ageGV
         self.dict_ageDV[str(day)] = self.ageGV
