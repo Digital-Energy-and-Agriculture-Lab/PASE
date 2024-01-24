@@ -90,8 +90,7 @@ L = Light_shade_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central)
 L.get_light_map(180,Sun_positions_samp.solar_vector)
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
-                                      len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
-                                      Light_instance.data)
+                            Light_instance.data)
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
 #DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])
 
@@ -167,13 +166,13 @@ PV_central.get_electricity_production(Sun_positions_complete, Light_instance.dat
 
 ### CROP MODEL
 #Temporary lines, those 2 parameters (crop_model and option_2D) should be in SCENARIOS input files (general parameters)
-crop_model = 3 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
+crop_model = 1 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
 Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_WD, 
                                      L.daily_irr_spat,
                                      Loc_1)
 
 show_light_map2(L.sourcePoints[:,:-1], 
-                Crop_plot.nyears_data['2005']['total_cumulated_BMG'], 
+                Crop_plot.nyears_data['2005']['Dry_yield']['2005-10-27 00:00:00'], 
                 PV_1_3Dconfig.PV_central,
-                "Biomass height on 20th June 2005 [g/m²]")
+                "Dry yield on 27th October 2005 [g/m²]")

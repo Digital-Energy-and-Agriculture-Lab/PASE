@@ -594,22 +594,24 @@ class Light_shade_scene:
     
  
     
-    def get_daily_irradiation_map(self, SP_sampled, freq_deter, light_data):
+    def get_daily_irradiation_map(self, SP_sampled, light_data):
 
         Week = SP_sampled.reset_index()['week'].to_numpy()
-        
-        if (freq_deter == 8760 or freq_deter == 8784):
-            n = 1
-        elif (freq_deter == 35040 or freq_deter == 35136):
-            n = 4
-        elif (freq_deter == 52560 or freq_deter == 52704):
-            n = 6
         
         self.daily_irr_spat = {}
         self.daily_dir_irr_spat = {}
         self.daily_diff_irr_spat = {}
         
         for year in light_data.keys():
+            
+            freq_deter = len(light_data[year]['GHI'])
+            if (freq_deter == 8760 or freq_deter == 8784):
+                n = 1
+            elif (freq_deter == 35040 or freq_deter == 35136):
+                n = 4
+            elif (freq_deter == 52560 or freq_deter == 52704):
+                n = 6
+            
             daily_irradiation_spat = np.zeros((self.sourceLength,
                                                int(freq_deter/(24*n))))
             

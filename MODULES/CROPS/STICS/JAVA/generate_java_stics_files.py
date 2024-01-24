@@ -24,6 +24,9 @@ def generate_weather_data_file(WD, irrad, loc_name):
             
             for day in WD[year].index:
                 
+                if day.day_of_year==366:
+                    break
+                
                 month = day.month
                 day_of_month = day.day
                 julian_day = day.day_of_year

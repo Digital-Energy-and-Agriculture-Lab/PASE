@@ -36,6 +36,9 @@ def simple_model(option_2D, WD, daily_irr, lat, alt):
                
         for day in WD[year].index:
             
+            if day.day_of_year==366:
+                break
+            
             if option_2D==1:
                 irradiation = daily_irr[year][:,day.day_of_year-1]
             

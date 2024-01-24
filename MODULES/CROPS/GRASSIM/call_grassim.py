@@ -30,6 +30,9 @@ def call_grassim(WD, daily_irr, lat, alt):
         Crop_plot.init_crop(daily_irr[year])
     
         for day in WD[year].index:
+            
+            if day.day_of_year==366:
+                break
 
             irradiation = daily_irr[year][:,day.day_of_year-1]
             
