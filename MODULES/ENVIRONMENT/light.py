@@ -13,8 +13,18 @@ import pvlib.solarposition as pvlibSP
 import matplotlib.pyplot as plt
 import os
 
-def fibonacci_half_sphere( samples=18):
+
+
+def fibonacci_half_sphere(samples=18):
+    """
+    Function computing a number of direction sampling a virtual upper half sphere with a center at 0,0,0
     
+    Parameters:
+        samples (int): Number of directions
+
+    Returns:
+       Directions (np.array): Matrix (samples x 3) providing the direction
+    """
     phi = np.pi * (3. - np.sqrt(5.))
     i = np.linspace(0,samples-1,num=samples)
     yp = (1 - i/float(samples-1))
@@ -254,7 +264,7 @@ class Sun_positions_sampled:
             self.SP = self.SP.set_index('hour', append=True)
 
         elif precision_lvl == 2:  
-            # Creation of a sampling week variable which is offset by half of 365/12
+            # Creation of a sampling week variable which is offset by half of 365/52
             # The first created period is removed by removing negative value
             solar_position['weekS'] = (index.dayofyear-3.5)//7
             solar_position.weekS[solar_position.weekS==-1] = 52
@@ -554,7 +564,7 @@ class Light_shade_scene:
             sun_P (int): sun positions
 
         Returns:
-           direct_ID_t_map (np.array t x n):  Providing a matrix of boolean (0/1) for each source points (n) and each
+           direct_ID_t_map (np.array n x t):  Providing a matrix of boolean (0/1) for each source points (n) and each
                                            sun positions (t). If the point does not directly see the sun a value of 0 is given.
         """
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
