@@ -225,61 +225,47 @@ class Sun_positions_sampled:
         self.get_sun_vector(self.SP['elevation'], self.SP['azimuth'])
         #self.get_sun_path_diagram()
         #self.get_PVSyst_Plot()
-        
-    
+   
     def get_solar_positions_sampled(self, lat, long, precision_lvl, freq_deter, TZ):
-        
+        """
+        Private method, used to compute the sun positions at an hourly or 1/4 hourly frequence
+        for each day (precision = 3), one day per week (precision = 2) or one day per month (precision = 1)
+
+        Returns:
+           None
+       Attribute SP is a dataframe containing the sun positions at the requested sampling
+        """
         if (freq_deter == 8760 or freq_deter == 8784):
             frq = '1H'
             n = 1
-            mark = 'hour'
         elif (freq_deter == 35040 or freq_deter == 35136):
             frq = '15min'
             n = 4
-            mark = 'H:M'
-                
+        elif (freq_deter == 52560 or freq_deter == 52704):
+            n = 6
+            frq = '10min'
+        #Query of the sun positions parameters from pvlib
         index = pd.date_range(start='2005-01-01 00:00', freq=frq, 
                               periods=365*24*n, tz=TZ)
-        
-        
         solar_position = pvlibSP.get_solarposition(index, lat, long)
         
-        solar_position['H:M'] = index
-        solar_position['H:M'] = pd.to_datetime(solar_position['H:M']).dt.strftime("%H:%M")
-        solar_position['hour'] = index.hour
-        solar_position['month'] = index.month//(365/12)
-        solar_position['week'] = index.dayofyear//7
-        solar_position['doy'] = index.dayofyear
-        
-        
-        if precision_lvl == 1:       
-            # Creation of a sampling month variable which is offset by half of 365/12
-            # The first created period is removed by removing negative value
-            solar_position['monthS'] = (index.dayofyear-365/12/2)//30.4
-            solar_position = solar_position.loc[solar_position['monthS']>0,:]
-            SP_month = solar_position.drop_duplicates(subset = ['monthS', mark], 
-                                                      keep = 'first').drop(columns = ["monthS"])
-            self.SP = SP_month[SP_month['elevation']>=0]
-            self.SP = self.SP.set_index('week', append=True)
-            self.SP = self.SP.set_index('hour', append=True)
-
-        elif precision_lvl == 2:  
-            # Creation of a sampling week variable which is offset by half of 365/52
-            # The first created period is removed by removing negative value
-            solar_position['weekS'] = (index.dayofyear-3.5)//7
-            solar_position.weekS[solar_position.weekS==-1] = 52
-            #solar_position = solar_position.loc[solar_position['weekS']>0,:]
-            SP_week = solar_position.drop_duplicates(subset = ['weekS', mark], 
-                                                     keep = 'first') #.drop(columns = ["weekS"])
-            self.SP = SP_week[SP_week['elevation']>=0]
-            self.SP = self.SP.set_index('month', append=True)
-            self.SP = self.SP.set_index('hour', append=True)
-
+        #Sampling based on required precision level
+        if precision_lvl == 1:
+            
+            SP = solar_position.loc[solar_position.index.day==15]
+            
+        elif precision_lvl == 2:
+            
+            SP = solar_position.loc[solar_position.index.day_of_week==3]
+            
         else:
-            self.SP = solar_position[solar_position['elevation']>=0]
-            self.SP = self.SP.set_index('month', append=True)
-            self.SP = self.SP.set_index('hour', append=True)
-            self.SP = self.SP.set_index('week', append=True)
+            
+            SP = solar_position
+        #Positions when the sun elevation is below the horizon are discarded to save computation ressources    
+        self.SP = SP.loc[SP['elevation']>=0]
+        
+                
+   
             
                
          
@@ -601,18 +587,84 @@ class Light_shade_scene:
     
         return direct_ID_t_map
     
-    
- 
+    def get_daily_irradiation_map(self, SP_sampled, light_data):
+       
+           Week = SP_sampled.index.isocalendar().week.to_numpy()
+           
+           self.daily_irr_spat = {}
+           self.daily_dir_irr_spat = {}
+           self.daily_diff_irr_spat = {}
+           
+           for year in light_data.keys():
+               
+               freq_deter = len(light_data[year]['GHI'])
+               if (freq_deter == 8760 or freq_deter == 8784):
+                   n = 1
+               elif (freq_deter == 35040 or freq_deter == 35136):
+                   n = 4
+               elif (freq_deter == 52560 or freq_deter == 52704):
+                   n = 6
+               
+               daily_irradiation_spat = np.zeros((self.sourceLength,
+                                                  int(freq_deter/(24*n))))
+               
+               daily_irradiation_dir_spat = np.zeros((self.sourceLength,
+                                                  int(freq_deter/(24*n))))  
+               
+               daily_irradiation_diff_spat = np.zeros((self.sourceLength,
+                                                  int(freq_deter/(24*n))))  
+       
+               for day in range(0, int(freq_deter/(24*n)), 1):
+       
+                   WeekNumber = day//7
+       
+                   indices = list(np.where(Week==WeekNumber))[0]
+                       
+                   ind = np.where((light_data[year].index.dayofyear==day+1) & 
+                                  (light_data[year]['rad_top_atm']>0))
+                   first_ind = ind[0][0]
+                   ind2 = np.arange(first_ind, first_ind+len(indices), 1)
+                   
+                   print(day)
+       
+                   irradianceMap_direct = np.round(self.dir_map[:,indices]*light_data[year]['BHI'].to_numpy()[ind2]*10**-6*60*60/n, 3) #W/m² to MJ/m²
+                   
+                   if type(self.geometry) == list:
+                       irradianceMap_diffus = np.round(self.diff_map[:,indices]
+                                                       *light_data[year]['DHI'].to_numpy()[ind2]
+                                                       *(60*60/n), 3)  #J/m²
+                   else:
+                       daily_diff = np.sum(light_data[year]['DHI'].to_numpy()[ind2])
+                       irradianceMap_diffus = np.round(self.diff_map*daily_diff*10**-6*60*60/n, 3)   #W/m² to MJ/m²
+                       
+                   daily_irradiation = np.sum(irradianceMap_direct,axis = 1)+irradianceMap_diffus #MJ/m²
+                   daily_irradiation_spat[:,day] = daily_irradiation
+                   daily_irradiation_dir_spat[:,day] = np.sum(irradianceMap_direct,axis = 1)
+                   daily_irradiation_diff_spat[:,day] = irradianceMap_diffus
+               
+               self.daily_irr_spat[year] = daily_irradiation_spat
+               self.daily_dir_irr_spat[year] = daily_irradiation_dir_spat
+               self.daily_diff_irr_spat[year] = daily_irradiation_diff_spat         
     
     def get_daily_irradiation_map(self, SP_sampled, light_data):
 
-        Week = SP_sampled.reset_index()['week'].to_numpy()
+        #Week = SP_sampled.reset_index()['week'].to_numpy()
         
         self.daily_irr_spat = {}
         self.daily_dir_irr_spat = {}
         self.daily_diff_irr_spat = {}
         
-        for year in light_data.keys():
+        
+        #initialisation des différents dataframes utilisés
+        #df1 contient les données lié aux positions du soleil utilisé pour les cartes d'ombrage
+        #df2 et df3 contiennent les données météos
+        df_1 = SP_sampled.tz_convert('Etc/GMT+0').reset_index()
+        df_1['date'] = pd.to_datetime(df_1['index'].dt.date)
+        df_1['RefDate'] = df_1['date']
+        df_1['hour'] = df_1['index'].dt.hour
+        df_1['RefHour'] = df_1['hour'] 
+
+        for year in light_data: 
             
             freq_deter = len(light_data[year]['GHI'])
             if (freq_deter == 8760 or freq_deter == 8784):
@@ -621,48 +673,37 @@ class Light_shade_scene:
                 n = 4
             elif (freq_deter == 52560 or freq_deter == 52704):
                 n = 6
-            
-            daily_irradiation_spat = np.zeros((self.sourceLength,
-                                               int(freq_deter/(24*n))))
-            
-            daily_irradiation_dir_spat = np.zeros((self.sourceLength,
-                                               int(freq_deter/(24*n))))  
-            
-            daily_irradiation_diff_spat = np.zeros((self.sourceLength,
-                                               int(freq_deter/(24*n))))  
-
-            for day in range(0, int(freq_deter/(24*n)), 1):
-
-                WeekNumber = day//7
-    
-                indices = list(np.where(Week==WeekNumber))[0]
-                    
-                ind = np.where((light_data[year].index.dayofyear==day+1) & 
-                               (light_data[year]['rad_top_atm']>0))
-                first_ind = ind[0][0]
-                ind2 = np.arange(first_ind, first_ind+len(indices), 1)
                 
-                print(day)
-
-                irradianceMap_direct = np.round(self.dir_map[:,indices]*light_data[year]['BHI'].to_numpy()[ind2]*10**-6*60*60/n, 3) #W/m² to MJ/m²
                 
-                if type(self.geometry) == list:
-                    irradianceMap_diffus = np.round(self.diff_map[:,indices]
-                                                    *light_data[year]['DHI'].to_numpy()[ind2]
-                                                    *(60*60/n), 3)  #J/m²
-                else:
-                    daily_diff = np.sum(light_data[year]['DHI'].to_numpy()[ind2])
-                    irradianceMap_diffus = np.round(self.diff_map*daily_diff*10**-6*60*60/n, 3)   #W/m² to MJ/m²
-                    
-                daily_irradiation = np.sum(irradianceMap_direct,axis = 1)+irradianceMap_diffus #MJ/m²
-                daily_irradiation_spat[:,day] = daily_irradiation
-                daily_irradiation_dir_spat[:,day] = np.sum(irradianceMap_direct,axis = 1)
-                daily_irradiation_diff_spat[:,day] = irradianceMap_diffus
+            df_2 = light_data[year].tz_localize('Etc/GMT+0').reset_index()
+            df_2['date'] = pd.to_datetime(df_2['index'].dt.date)
+            df_2['hour'] = df_2['index'].dt.hour
+        
+            # Jointure entre les données météos et les données d'ombrage en vue de déterminée la date/index liée aux données d'ombrage
+            #la plus proche pour chaque donnée météo
+            df_3 = pd.merge_asof(df_2,df_1[['RefDate','date']],on=['date'],direction='nearest',suffixes=('_x','_y')).sort_values('hour')
+            irradianceMap_direct = {}
+            irradianceMap_diffus = {}
             
-            self.daily_irr_spat[year] = daily_irradiation_spat
-            self.daily_dir_irr_spat[year] = daily_irradiation_dir_spat
-            self.daily_diff_irr_spat[year] = daily_irradiation_diff_spat                    
- 
+            # Boucle sur les n jours de l'annee afin de calculer l'irradiation journaliere
+            doy = df_3['index'].dt.dayofyear.unique()
+            doy.sort()
+            for day in doy:
+                
+                #Creation de sous dataframe comprenant les donnees du jour numero "doy"
+                sublight_df = df_3.loc[df_3['index'].dt.dayofyear==day,:]
+                subdf2 = df_1.loc[sublight_df['RefDate'].unique()[0]==df_1['RefDate']]
+                subdf3 = subdf2.join(sublight_df[['hour','BHI','GHI','DHI']].set_index('hour'),on='hour',how='left',rsuffix='_',lsuffix="__")
+                
+                #Calcul de l'irradiation directe et diffuse dans ce jour et injection de la donnee dans le dictionnaire lie
+                irradianceMap_direct[day] = np.sum(self.dir_map[:,list(subdf2.index)] * subdf3['BHI'].to_numpy(),axis=1)*10**-6*60*60/n
+                irradianceMap_diffus[day] = np.sum(subdf3['BHI'].to_numpy())*self.diff_map*10**-6*60*60/n
+            
+            #Conversion des dictionnaires en matrice numpy et ajout dans l attribut ad-hoc
+            self.daily_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()    + pd.DataFrame.from_dict(irradianceMap_direct).to_numpy() 
+            self.daily_dir_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_direct).to_numpy()    
+            self.daily_diff_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()    
+
     
 
 def show_light_map(light_matrix, msh_grid, PV_central, lim_min, lim_max, lgd_title):
