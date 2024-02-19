@@ -3,7 +3,7 @@ PlantFile:
    Type: string
    Definition: Name of the xml file of STICS with crop and variety parameters
 BeginDate:
-   Value: 290
+   Value: 240
    Type: integer
    Limit: [1, 365]
    Definition: Julian day at which the simulation starts (hydric balance starts also on this day ???), it is not the sowing date which is define in the technic xml file

@@ -166,13 +166,13 @@ PV_central.get_electricity_production(Sun_positions_complete, Light_instance.dat
 
 ### CROP MODEL
 #Temporary lines, those 2 parameters (crop_model and option_2D) should be in SCENARIOS input files (general parameters)
-crop_model = 1 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
+crop_model = 2 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
 Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_WD, 
                                      L.daily_irr_spat,
                                      Loc_1)
 
 show_light_map2(L.sourcePoints[:,:-1], 
-                Crop_plot.nyears_data['2005']['Dry_yield']['2005-10-27 00:00:00'], 
+                Crop_plot.nyears_data['2006']['Dry_yield'], 
                 PV_1_3Dconfig.PV_central,
-                "Dry yield on 27th October 2005 [g/m²]")
+                "Dry yield STICS 2006 [t/ha]")

@@ -9,9 +9,12 @@ Created on Mon Aug 28 17:13:22 2023
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.CROPS.STICS.JAVA.generate_java_stics_files import \
     generate_weather_data_file, generate_USMS_file
+from MODULES.CROPS.STICS.JAVA.get_java_stics_outputs import Crop
 import os
 import subprocess
 import platform
+import pandas as pd
+import numpy as np
 
 
 def run_independants_usms(WD, daily_irr, scenario_P):
@@ -21,13 +24,19 @@ def run_independants_usms(WD, daily_irr, scenario_P):
     WD_files_dict = generate_weather_data_file(WD, daily_irr,
                                                scenario_P['LocationName'])
     
+    Crop_plot = Crop()
+    
     for year, WD_files_positions in WD_files_dict.items():
+        
+        n_positions = len(daily_irr[str(scenario_P['SimulationStartingYear'])][:,0])
+        Crop_plot.initiate_one_year_variables(n_positions)        
         
         if (int(year) == scenario_P['SimulationStartingYear'] 
             and Simu_init['AnnualCropOption'] == 0):                
             pass
         
-        else:     
+        else:                 
+            
             count = 0                               
             for WD_file in WD_files_positions:
                 
@@ -39,8 +48,6 @@ def run_independants_usms(WD, daily_irr, scenario_P):
                 generate_USMS_file(WD_file, WD_file_previous_year,
                                    Simu_init, year)
                 
-                count+=1
-                
                 os.chdir("INPUTS/CROPS/STICS") #Mettre le chemin d'accès avant l'exécutable pour ne pas devoir naviguer dans les dossiers.
 
                 if platform.system() == "Linux" or platform.system() == "Darwin":
@@ -49,8 +56,43 @@ def run_independants_usms(WD, daily_irr, scenario_P):
                 else : 
                     subprocess.call(["java", "-jar","JavaSticsCmd.exe",
                                      "--run", "param_files", WD_file], shell=True)
+                
+                
+                daily_results_stics = pd.read_csv('param_files/mod_s'+WD_file+'.sti', sep=';', decimal='.')
+                daily_results_stics['jul_day'] = daily_results_stics['jul']
+                nd_year = max(daily_results_stics['ian'])
+                st_year = min(daily_results_stics['ian'])
+                if st_year%4==0:
+                    supp_day = 1
+                else:
+                    supp_day = 0
+                daily_results_stics.loc[daily_results_stics['ian']
+                                                   ==nd_year, 'jul_day'] = (daily_results_stics.loc[daily_results_stics['ian']==nd_year, 'jul_day'] 
+                                                                                         + 365 + supp_day)
+                harvest_jul_day = max(daily_results_stics['irecs'])
+                sowing_jul_day = min(daily_results_stics['iplts'])
 
+                daily_results_stics = daily_results_stics.set_index('jul_day')
+
+                Fresh_yield = float(daily_results_stics.loc[daily_results_stics.index==harvest_jul_day, 'pdsfruitfrais'])
+                H2Ocontent_fruit = float(daily_results_stics.loc[daily_results_stics.index==harvest_jul_day, 'H2Orec'])
+                Dry_yield = float(daily_results_stics.loc[daily_results_stics.index==harvest_jul_day, 'mafruit'])
+                Total_ET = sum(daily_results_stics.loc[(daily_results_stics.index<=harvest_jul_day) & 
+                                                       (daily_results_stics.index>=sowing_jul_day), 'et'])
+                
+                Crop_plot.fill_np_variables_for_each_position(count, Fresh_yield,
+                                                              Dry_yield, Total_ET)
+                
+                count+=1
+                
                 os.chdir("../../..")
                 
                 """os.chdir("..")
                 os.chdir("..")"""
+                
+            Crop_plot.fill_dict_variables_for_each_year(year)
+    
+    Soil_plot = object()
+    
+    return Soil_plot, Crop_plot
+        

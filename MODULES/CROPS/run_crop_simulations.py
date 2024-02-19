@@ -22,11 +22,7 @@ def run_crop_simu(crop_model, option_2D, WD, daily_irr, scenario_P):
         
     if crop_model == 2:
 
-        run_independants_usms(WD, daily_irr, scenario_P)
-        
-        Soil_plot = object()
-        Crop_plot = object()
-        
+        Soil_plot, Crop_plot = run_independants_usms(WD, daily_irr, scenario_P)        
         
     if crop_model == 3:
         

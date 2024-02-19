@@ -1,21 +1,25 @@
 nbinterventions
-2
-opp1
-297 1 2.00 42.00 60.00 0.00 0.00 
-opp1
-298 1 2.00 42.00 60.00 0.00 0.00 
+1
+julres coderes qres Crespc CsurNres Nminres eaures 
+248 1 2.00 42.00 60.00 0.00 0.00 
+code_auto_profres
+1
+resk
+0.14
+resz
+5
 nbinterventions
 1
-opp1
-297 0.00 22.00 
+jultrav profres proftrav 
+248 0.00 22.00 
 iplt0
-297
+286
 profsem
 2.50000
 densitesem
-311.00000
+290.70
 variete
-2
+1
 codetradtec
 2
 interrang
@@ -28,6 +32,12 @@ nbjmaxapressemis
 30
 nbjseuiltempref
 15
+nbj_pr_apres_semis
+3
+eau_mini_decisemis
+10
+humirac_decisemis
+0.75
 codestade
 2
 ilev
@@ -48,8 +58,6 @@ imat
 999
 irec
 999
-irecbutoir
-700
 effirr
 1.00000
 codecalirrig
@@ -60,28 +68,26 @@ dosimx
 40.00000
 doseirrigmin
 20.00000
+codedate_irrigauto
+3
+datedeb_irrigauto
+0
+datefin_irrigauto
+0
+stage_start_irrigauto
+0
+stage_end_irrigauto
+0
 codedateappH2O
 2
 nbinterventions
-5
-opp1
-495 22.20 
-opp1
-523 16.40 
-opp1
-533 20.60 
-opp1
-541 20.80 
-opp1
-546 29.20 
+0
 codlocirrig
 1
 locirrig
 0
 profmes
 60.00000
-engrais
-1
 concirr
 0.00000
 codedateappN
@@ -91,19 +97,23 @@ codefracappN
 Qtot_N
 100
 nbinterventions
-3
-opp1
-417 60.00 
-opp1
-447 120.00 
-opp1
-482 120.00 
+2
+julapN_or_sum_upvt absolute_value/% engrais 
+412 198.90 2 
+julapN_or_sum_upvt absolute_value/% engrais 
+444 266.50 2 
 codlocferti
 1
 locferti
 0
+irecbutoir
+700
 ressuite
 straw+roots
+code_autoressuite
+2
+Stubblevegratio
+0
 codceuille
 1
 nbceuille
@@ -132,8 +142,10 @@ nbjmaxapresrecolte
 15
 codefauche
 2
-mscoupemini
-0.00000
+code_hautfauche_dyn
+2
+codetempfauche
+1
 codemodfauche
 1
 hautcoupedefaut
@@ -166,10 +178,8 @@ margerogne
 0.00000
 codeclaircie
 1
-juleclair
+nbinterventions
 0
-nbinfloecl
-0.00000
 codeffeuil
 1
 codhauteff
@@ -208,6 +218,10 @@ julouvre3
 0
 surfouvre3
 0.00000
+codejourdes
+2
+juldes
+999
 codeDST
 2
 dachisel

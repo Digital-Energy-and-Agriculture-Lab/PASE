@@ -45,13 +45,13 @@ SimulationStartingYear:
    Unit: dimensionless [-]
    Definition: Starting year of the simulation, PvGis has data from 2005 to 2016 comprise
 SimulationEndingYear:
-   Value: 2005
+   Value: 2007
    Type: integer
    Limit: [SimulationStartingYear, 2022]
    Unit: dimensionless [-]
    Definition: Ending year of the simulation (included in the simulation)
 PrecisionLevelOnSunPosition:
-   Value: 2
+   Value: 1
    Type: integer
    Limit: [1, 3]
    Unit: dimensionless [-]
@@ -69,7 +69,7 @@ Xmax_InterestZone:
    Unit: meters [m]
    Definition: Maximal x coordinates of the zone of interest for the light and crop modelling
 dX_InterestZone:
-   Value: 0.2
+   Value: 1
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
@@ -87,7 +87,7 @@ Ymax_InterestZone:
    Unit: meters [m]
    Definition: Maximal y coordinates of the zone of interest for the light and crop modelling
 dY_InterestZone:
-   Value: 0.2
+   Value: 1
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
