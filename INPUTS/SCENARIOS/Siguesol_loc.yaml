@@ -39,7 +39,7 @@ DailyWeatherFileName:
    Type: string
    Definition: Name of the daily weather data csv file with precipitation and vapour pressure (pay attention to the format it should have) if WeatherDataOption is 1 (PVGis used)
 SimulationStartingYear:
-   Value: 2005
+   Value: 2006
    Type: integer
    Limit: [1900, SimulationEndingYear]
    Unit: dimensionless [-]
@@ -51,7 +51,7 @@ SimulationEndingYear:
    Unit: dimensionless [-]
    Definition: Ending year of the simulation (included in the simulation)
 PrecisionLevelOnSunPosition:
-   Value: 1
+   Value: 2
    Type: integer
    Limit: [1, 3]
    Unit: dimensionless [-]

@@ -613,8 +613,8 @@ class Light_shade_scene:
 
         #df_1 = SP_sampled.tz_convert('Etc/GMT+0').reset_index()
         dfShade = SP_sampled.tz_localize(None).reset_index()
-        dfShade['date'] = pd.to_datetime(dfShade['index'].dt.date)
-        dfShade['RefDate'] = dfShade['date']
+        dfShade['doy'] = dfShade['index'].dt.dayofyear
+        dfShade['RefDate'] = pd.to_datetime(dfShade['index'].dt.date)
  #       dfShade['hour'] = dfShade['index'].dt.hour
         dfShade['second'] = pd.to_timedelta(dfShade['index'].dt.time.astype(str)).dt.total_seconds()
  #       dfShade['RefHour'] = dfShade['hour'] 
@@ -633,13 +633,13 @@ class Light_shade_scene:
   
             #dfWeather = light_data[year].tz_localize('Etc/GMT+0').reset_index()
             dfWeather = light_data[year].tz_localize(None).reset_index()
-            dfWeather['date'] = pd.to_datetime(dfWeather['index'].dt.date)
+            dfWeather['doy'] = dfWeather['index'].dt.dayofyear
      #       dfWeather['hour'] = dfWeather['index'].dt.hour
             dfWeather['second'] = pd.to_timedelta(dfWeather['index'].dt.time.astype(str)).dt.total_seconds()
 
             # Jointure entre les données météos et les données d'ombrage en vue de déterminée la date/index liée aux données d'ombrage
             #la plus proche pour chaque donnée météo
-            dfWeatherMerged = pd.merge_asof(dfWeather,dfShade[['RefDate','date']],on=['date'],direction='nearest',suffixes=('_x','_y')).sort_values('hour')
+            dfWeatherMerged = pd.merge_asof(dfWeather,dfShade[['RefDate','doy']],on=['doy'],direction='nearest',suffixes=('_x','_y')).sort_values('second')
             irradianceMap_direct = {}
             irradianceMap_diffus = {}
             
@@ -651,11 +651,11 @@ class Light_shade_scene:
                 #Creation de sous dataframe comprenant les donnees du jour numero "doy"
                 sublight_df = dfWeatherMerged.loc[dfWeatherMerged['index'].dt.dayofyear==day,:]
                 df_subShade = dfShade.loc[sublight_df['RefDate'].unique()[0]==dfShade['RefDate']]
-                df_subShade_merged = df_subShade.join(sublight_df[['hour','BHI','GHI','DHI']].set_index('hour'),on='hour',how='left',rsuffix='_',lsuffix="__")
+                df_subShade_merged = df_subShade.join(sublight_df[['second','BHI','GHI','DHI']].set_index('second'),on='second',how='left',rsuffix='_',lsuffix="__")
                 
                 #df_subShade_merged = df_subShade.join(sublight_df[['hour','BHI','GHI','DHI']].set_index('hour'),on='hour',how='left',rsuffix='_',lsuffix="__")
                 #Jointure sur l'instant de la journee la plus proche sur base des secondes écoulées depuis le debut de la journee
-                df_subShade_merged = pd.merge_asof(df_subShade,sublight_df[['second','BHI','GHI','DHI']].set_index('second'),on=['second'],direction='nearest',suffixes=('_x','_y')).sort_values('second')
+                df_subShade_merged = pd.merge_asof(df_subShade,sublight_df[['second','BHI','GHI','DHI','doy']].set_index('second'),on=['second'],direction='nearest',suffixes=('_x','_y')).sort_values('second')
 
                 #Calcul de l'irradiation directe et diffuse dans ce jour et injection de la donnee dans le dictionnaire lie
                 irradianceMap_direct[day] = np.sum(self.dir_map[:,list(df_subShade.index)] * df_subShade_merged['BHI'].to_numpy(),axis=1)*10**-6*60*60/n
@@ -664,7 +664,7 @@ class Light_shade_scene:
             #Conversion des dictionnaires en matrice numpy et ajout dans l attribut ad-hoc
             self.daily_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()    + pd.DataFrame.from_dict(irradianceMap_direct).to_numpy() 
             self.daily_dir_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_direct).to_numpy()    
-            self.daily_diff_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()    
+            self.daily_diff_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()     
 
     
 
