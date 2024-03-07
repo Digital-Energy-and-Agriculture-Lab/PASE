@@ -66,9 +66,13 @@ def run_independants_usms(WD, daily_irr, scenario_P):
                     supp_day = 1
                 else:
                     supp_day = 0
-                daily_results_stics.loc[daily_results_stics['ian']
+                    
+                if Simu_init['AnnualCropOption'] == 0:
+                    daily_results_stics.loc[daily_results_stics['ian']
                                                    ==nd_year, 'jul_day'] = (daily_results_stics.loc[daily_results_stics['ian']==nd_year, 'jul_day'] 
                                                                                          + 365 + supp_day)
+                else:
+                    pass
                 harvest_jul_day = max(daily_results_stics['irecs'])
                 sowing_jul_day = min(daily_results_stics['iplts'])
 
