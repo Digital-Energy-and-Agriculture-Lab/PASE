@@ -65,8 +65,12 @@ def generate_USMS_file(FN, FN_PY, simu_P, year):
     output_file.write('    <finit>' + simu_P['InitFile'] + '.xml</finit>\n')
     output_file.write('    <nomsol>' + simu_P['SoilName'] + '</nomsol>\n')
     output_file.write('    <fstation>' + simu_P['StationFile'] + '.xml</fstation>\n')
-    output_file.write('    <fclim1>' + FN_PY+'.' + str(int(year)-1) + '</fclim1>\n')
-    output_file.write('    <fclim2>' + FN+'.' + year + '</fclim2>\n')
+    if simu_P['AnnualCropOption'] == 0:
+        output_file.write('    <fclim1>' + FN_PY+'.' + str(int(year)-1) + '</fclim1>\n')
+        output_file.write('    <fclim2>' + FN+'.' + year + '</fclim2>\n')
+    elif simu_P['AnnualCropOption'] == 1:
+        output_file.write('    <fclim1>' + FN+'.' + year + '</fclim1>\n')
+        output_file.write('    <fclim2>' + FN+'.' + year + '</fclim2>\n')
     output_file.write('    <culturean>' + str(simu_P['AnnualCropOption']) + '</culturean>\n')
     output_file.write('    <nbplantes>' + str(simu_P['PlantsNumber']) + '</nbplantes>\n')
     output_file.write('    <codesimul>0</codesimul>\n')
