@@ -87,8 +87,10 @@ class Crop:
         # --------------------------
         self.SLA  =  self.SLA_V[0]*self.A+self.SLA_V[1]*self.B+self.SLA_V[2]*self.C+self.SLA_V[3]*self.D # m^2/g [specific leaf area]
         self.percentageLAM  =  self.percentageLAM_V[0]*self.A+self.percentageLAM_V[1]*self.B+self.percentageLAM_V[2]*self.C+self.percentageLAM_V[3]*self.D # # [percentage of laminae]
+        
         self.ST1  =  self.ST1_V[0]*self.A+self.ST1_V[1]*self.B+self.ST1_V[2]*self.C+self.ST1_V[3]*self.D # oC [initial reproductive growth T]
         self.ST2  =  self.ST2_V[0]*self.A+self.ST2_V[1]*self.B+self.ST2_V[2]*self.C+self.ST2_V[3]*self.D # oC [end reproductive growth T]
+
         self.maxSEA  = self.maxSEA_V[0]*self.A+self.maxSEA_V[1]*self.B+self.maxSEA_V[2]*self.C+self.maxSEA_V[3]*self.D  # - [maximum seasonal effect]
         self.minSEA  =  self.minSEA_V[0]*self.A+self.minSEA_V[1]*self.B+self.minSEA_V[2]*self.C+self.minSEA_V[3]*self.D # - [minimum seasonal effect]
         self.LLS  =  self.LLS_V[0]*self.A+self.LLS_V[1]*self.B+self.LLS_V[2]*self.C+self.LLS_V[3]*self.D # oC.d [leaf lifespan]
@@ -116,6 +118,8 @@ class Crop:
         self.T1 =  self.PFT_values['T1'][0] # oC (air T at which plateau is reached) 
         self.T2 =  self.PFT_values['T2'][0]# oC (air T at which growth starts decreasing) 
         self.Tlimit  =  self.PFT_values['Tlimit'][0] #oC (air T at which growth ends) 
+        self.Tmin = 0
+        self.Tmax = 18
         self.STmin = self.PFT_values['STmin'][0] # oC (min sum of temperature for growth)
         self.KGV =  self.PFT_values['KGV'][0]# basic senescence rate for green vegetative
         self.KGR  =  self.PFT_values['KGR'][0]# basic senescence rate for green reproductive
@@ -239,7 +243,17 @@ class Crop:
         self.dict_LAI = {}
         self.dict_ST = {}
         self.dict_irradiation = {}
+        self.dict_BMover5 = {}
         
+        self.dict_Nact = {}
+        self.dict_Ncrit = {}
+        self.dict_Nmax = {}
+        
+        self.dict_NGV = {}
+        self.dict_NGR = {}
+        self.dict_NDV = {}
+        self.dict_NDR = {}
+
         #Auxiliary variables
         self.dict_exportedBM = {}
         self.dict_exported_digestibleOM = {}
@@ -290,6 +304,16 @@ class Crop:
         self.data_dict['LAI'] = self.dict_LAI
         self.data_dict['ST'] = self.dict_ST
         self.data_dict['irradiation'] = self.dict_irradiation
+        self.data_dict['BMover5'] = self.dict_BMover5
+        
+        self.data_dict['Nact'] = self.dict_Nact
+        self.data_dict['Ncrit'] = self.dict_Ncrit
+        self.data_dict['Nmax'] = self.dict_Nmax
+        
+        self.data_dict['NGV'] = self.dict_NGV
+        self.data_dict['NGR'] = self.dict_NGR
+        self.data_dict['NDV'] = self.dict_NDV
+        self.data_dict['NDR'] = self.dict_NDR
         
         #Auxiliary variables
         self.data_dict['exportedBM'] = self.dict_exportedBM
@@ -380,7 +404,7 @@ class Crop:
 
         '''  
         self.irradiation = irradiation
-        
+
         management = self.dict_management[day.date()]
         cut_height = management['cut_height']
         
@@ -391,11 +415,14 @@ class Crop:
         self.PET = ET0
         self.PARi = irradiation*0.48
         
+        self.Tmin = 0
+        self.Tmax = 18
+        
         #compute cumulated temperature value for day i
-        if  (self.Temp >= self.T1) and  (self.Temp <= self.T2) : 
-            self.ST = self.ST + self.Temp - self.T1
-        elif (self.Temp > self.T2) :
-            self.ST = self.ST + self.T2 - self.T1
+        if  (self.Temp >= self.Tmin) and  (self.Temp <= self.Tmax) : 
+            self.ST = self.ST + self.Temp - self.Tmin
+        elif (self.Temp > self.Tmax) :
+            self.ST = self.ST + self.Tmax - self.Tmin
         else:
             self.ST = self.ST
         
@@ -450,14 +477,14 @@ class Crop:
         
         #adjustment for T
         #-----------------
-        fT = np.where(self.Temp<0, 0,                 
+        fT = np.where(self.Temp<=self.T0, 0,                 
              np.where(self.Temp<=self.T1, (self.Temp-self.T0)/(self.T1-self.T0),
              np.where(self.Temp<=self.T2, 1,
              np.where(self.Temp<=self.Tlimit, (self.Tlimit-self.Temp)/(self.Tlimit-self.T2),
              0
              ))))
         
-         
+        
         #adjustment for RUE decrease with PAR intensity
         #-----------------------------------------------
         
@@ -483,21 +510,23 @@ class Crop:
                  np.where(self.ageGV/self.LLS<1, 3*(self.ageGV/self.LLS),
                           3))
         
-        fageGR = np.where(self.ageGV/(self.ST2-self.ST1)<1/3, 1,
-                 np.where(self.ageGV/(self.ST2-self.ST1)<1, 3*(self.ageGV/(self.ST2-self.ST1)),
+        fageGR = np.where(self.ageGR/(self.ST2-self.ST1)<1/3, 1,
+                 np.where(self.ageGR/(self.ST2-self.ST1)<1, 3*(self.ageGR/(self.ST2-self.ST1)),
                           3))
 
         fageDV = np.where(self.ageDV/self.LLS<1/3, 1,
                  np.where(self.ageDV/self.LLS<2/3, 2,
                           3))
      
-        fageDR = np.where(self.ageGV/(self.ST2-self.ST1)<1/3, 1,
-                 np.where(self.ageGV/(self.ST2-self.ST1)<2/3, 2,
+        fageDR = np.where(self.ageDR/(self.ST2-self.ST1)<1/3, 1,
+                 np.where(self.ageDR/(self.ST2-self.ST1)<2/3, 2,
                           3))
 
         
         ABSDV = np.where(self.Temp>0, self.KlDV*self.BMDV*self.Temp*fageDV, 0)
         ABSDR = np.where(self.Temp>0, self.KlDR*self.BMDR*self.Temp*fageDR, 0)
+        
+        
 
         SENGV = np.where(self.Temp>self.T0, self.KGV*self.BMGV*self.Temp*fageGV,
                 np.where(self.Temp<0, self.KGV*self.BMGV*-(self.Temp),
@@ -508,7 +537,6 @@ class Crop:
                 0))
         
         
-        
 
     #*******************************************************************************
                  #Mineralization and immobilization (from Ruelle et al., 2018)
@@ -517,10 +545,11 @@ class Crop:
         fTnitro=np.exp(self.K*(self.Temp-self.Tref))
         
         Vp=(0.0929+(0.1833-0.0929)*np.exp(-0.2173*self.Norg/1000))*self.Norg/1000
-        
+  
+   
         mineralisation=Vp*fTnitro*g0
         Ip = 4/1000*self.Nmin
-        Ip = np.clip(Ip, a_min=0, a_max=Ip)
+        Ip = np.clip(Ip, a_min=0, a_max=None)
         immobilization = Ip*fTnitro*g0
       
       
@@ -539,7 +568,7 @@ class Crop:
         NSc = 270#280#250#(kg N/ha) Soil N content (0-45 cm) for maximum N availability (20.3 g N/m2)- range fom 50 to 400
         
         FNA = FNAmax*(self.Nmin/NSc)
-        FNA = np.clip(FNA, a_min=FNA, a_max=FNAmax)
+        FNA = np.clip(FNA, a_min=None, a_max=FNAmax)
         
         Nsupply = FNA*self.Nmin
         Nsupply  =  np.where(self.Nmin<0, 0, Nsupply) #(to avoid going below 0 with Nmin)
@@ -564,9 +593,9 @@ class Crop:
         cut_off_BMGR = 0.05*10*self.BDDV
         cut_off_BMDR = 0.05*10*self.BDDR
         
-        BMGR_over5 = self.BMGR-0.05*10*self.BDGR
-        BMDV_over5 = self.BMDV-0.05*10*self.BDDV
-        BMDR_over5 = self.BMDR-0.05*10*self.BDDR
+        #BMGR_over5 = self.BMGR-0.05*10*self.BDGR
+        #BMDV_over5 = self.BMDV-0.05*10*self.BDDV
+        #BMDR_over5 = self.BMDR-0.05*10*self.BDDR
         
         BMGV_over5 = np.where(self.BMGV>cut_off_BMGV, self.BMGV-cut_off_BMGV, 0)
         BMGR_over5 = np.where(self.BMGR>cut_off_BMGR, self.BMGR-cut_off_BMGR, 0)
@@ -574,26 +603,26 @@ class Crop:
         BMDR_over5 = np.where(self.BMDR>cut_off_BMDR, self.BMDR-cut_off_BMDR, 0)
         
         
+        
         #for all the biomass
         #----------------------
         
-        BMover5 = np.where(BM>cut_off_BM, BM-cut_off_BM, 0)
-        
-        
+        self.BMover5 = np.where(BM>cut_off_BM, BM-cut_off_BM, 0)
+
         #Critical N dilution curve according for the different plant functional types
         #--------------------------------------------------------
-        Ncrit = np.where(BMover5<=1000, self.a_Ncrit*0.01, self.a_Ncrit*0.01*(BMover5/1000)**(-self.b_Ncrit))
+        self.Ncrit = np.where(self.BMover5<=1000, self.a_Ncrit*0.01, self.a_Ncrit*0.01*(self.BMover5/1000)**(-self.b_Ncrit))
         
         #Maximum plant N content 
         #--------------------------
         
-        Nmax = np.where(BMover5<=1000, self.a_Nmax*0.01, self.a_Nmax*0.01*(BMover5/1000)**(-self.b_Nmax))
+        self.Nmax = np.where(self.BMover5<=1000, self.a_Nmax*0.01, self.a_Nmax*0.01*(self.BMover5/1000)**(-self.b_Nmax))
         
         #From Maria A. Marino et al.,2004
         
         #Actual Plant N content 
         #--------------------
-         
+        
         
         #--------------------
         #************************************************
@@ -604,26 +633,23 @@ class Crop:
         RNCmin = 0.4
         
         # Nact_optm = 0.65
-        Nact = np.where(BMover5<=0, RNCmin*Ncrit, (self.NGV*BMGV_over5+self.NGR*BMGR_over5+self.NDV*BMDV_over5+self.NDR*BMDR_over5)/BMover5)
+        self.Nact = np.where(self.BMover5<=0, RNCmin*self.Ncrit, (self.NGV*BMGV_over5+self.NGR*BMGR_over5+self.NDV*BMDV_over5+self.NDR*BMDR_over5)/self.BMover5)
            
-        Nactlim = Ncrit*RNCmax
+        Nactlim = self.Ncrit*RNCmax
         
-        Nact = np.clip(Nact, a_min=Nact, a_max=Nactlim)
+        self.Nact = np.clip(self.Nact, a_min=None, a_max=Nactlim)
         
         #Relative N concentration (RNC)(CATIMO model)
         #-------------------
-        RNC = (Nact/Ncrit)
+        RNC = (self.Nact/self.Ncrit)
         
         RNC= RNC.clip(min=0.25, max=1)
         
         
-        
-        
         ##################################################################
         
-        # RNC = 0.6
-      
-      
+        # RNC = np.full_like(RNC, 0.4)
+           
       
     #***********************************************************************************************
       # Plant growth (Adapted from Jouven et al., 2006 & Helge Bonesmo et Gilles B?langer 2002(CATIMO model))
@@ -654,15 +680,13 @@ class Crop:
         self.apex_grazed = np.where(np.logical_and(self.ST>self.ST1, np.logical_and(self.ST<self.ST2, cut_height != 0)), 1, 0)
         
         REP = np.where(self.ST<self.ST1, 0,
-              np.where(np.logical_and(self.ST<self.ST2, np.logical_and(self.apex_grazed==0, cut_height ==0, RNC>0.35)), 0.25+((1-0.25)*(RNC-0.35))/(1-0.35),
+              np.where(np.logical_and(self.ST<self.ST2, np.logical_and(self.apex_grazed==0, np.logical_and(cut_height==0, RNC>0.35))), 0.25+((1-0.25)*(RNC-0.35))/(1-0.35),
               0
               ))
-        
+
         GROGV = GRO*(1-REP)# eq 1
         GROGR = GRO*REP # eq 2
-        
-        
-        
+            
         #*****************************************************************************
               #Biomass balance, nutritional value and age (from Jouven et al., 2006)
         #*****************************************************************************
@@ -725,7 +749,7 @@ class Crop:
         #Plant N demand
         #----------------
         # Nact = min(Nact,Nmax)
-        Ndemand = BMover5*((Nmax-Nact))/FNH
+        Ndemand = self.BMover5*(self.Nmax-self.Nact)/FNH
          
         #Plant N uptake
         #-------------
@@ -774,9 +798,10 @@ class Crop:
           
         #Soil N
         #------
-        self.Norg = self.Norg+immobilization-mineralisation+(1-self.percentageofNmin)*management["fert_org"]+Nplantlitter# the N content of dead material was ascribed the fixed value of 8 g N/kg DM (Delagarde et al., 2000).(DOI: 10.1080/01431160110114529 and Leconte et Laissus, 1985)  
-        self.Nmin = self.Nmin +Nfromrain+mineralisation +management["fert_min"] +self.percentageofNmin*(1-self.NH3volatfactor)*management["fert_org"] -immobilization-Nuptake -NLeached
-
+        self.Norg = self.Norg + immobilization - mineralisation + (1-self.percentageofNmin)*management["fert_org"] + Nplantlitter# the N content of dead material was ascribed the fixed value of 8 g N/kg DM (Delagarde et al., 2000).(DOI: 10.1080/01431160110114529 and Leconte et Laissus, 1985)  
+        self.Nmin = self.Nmin + Nfromrain + mineralisation + management["fert_min"] + self.percentageofNmin*(1-self.NH3volatfactor)*management["fert_org"] - immobilization - Nuptake - NLeached
+        
+        print(management["fert_org"], management["fert_min"])
         # Cut day conditions
         #-------------------    
         cutBMGV = cut_height*10*self.BDGV
@@ -849,6 +874,16 @@ class Crop:
         self.dict_ST[str(day)] = self.ST
         
         self.dict_irradiation[str(day)] = self.irradiation
+        self.dict_BMover5[str(day)] = self.BMover5
+        
+        self.dict_Nact[str(day)] = self.Nact
+        self.dict_Ncrit[str(day)] = self.Ncrit
+        self.dict_Nmax[str(day)] = self.Nmax
+        
+        self.dict_NGV[str(day)] = self.NGV
+        self.dict_NGR[str(day)] = self.NGR
+        self.dict_NDV[str(day)] = self.NDV
+        self.dict_NDR[str(day)] = self.NDR
         
         #Auxiliary variables
         self.dict_exportedBM[str(day)] = self.exported_biomass
