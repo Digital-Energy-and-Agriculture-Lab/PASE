@@ -9,7 +9,7 @@ Created on Mon Aug 28 17:13:22 2023
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.CROPS.STICS.JAVA.generate_java_stics_files import \
     generate_weather_data_file, generate_USMS_file
-from MODULES.CROPS.STICS.JAVA.get_java_stics_outputs import Crop
+from MODULES.CROPS.STICS.JAVA.get_java_stics_outputs import Crop_outputs
 import os
 import subprocess
 import platform
@@ -17,14 +17,14 @@ import pandas as pd
 import numpy as np
 
 
-def run_independants_usms(WD, daily_irr, scenario_P):
+def run_independant_usms(WD, daily_irr, scenario_P):
     
     Simu_init = YAML_Inputs_provider('CROPS/STICS/simu_init.yaml').i
     
     WD_files_dict = generate_weather_data_file(WD, daily_irr,
                                                scenario_P['LocationName'])
     
-    Crop_plot = Crop()
+    Crop_plot = Crop_outputs()
     
     for year, WD_files_positions in WD_files_dict.items():
         

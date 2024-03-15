@@ -6,12 +6,12 @@ Created on Thu Oct 26 15:06:53 2023
 """
 
 import pandas as pd
-from MODULES.CROPS.GRASSIM import grassim_model
+from MODULES.CROPS.GRASSIM import grassim
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
-from MODULES.CROPS.SIMPLE.evapotranspiration_FAO56_PM import get_ET0
+from MODULES.CROPS.evapotranspiration_FAO56_PM import get_ET0
 
 
-def call_grassim(WD, daily_irr, lat, alt):
+def run_independant_years_of_grassland(WD, daily_irr, lat, alt):
     
     Crop_init = YAML_Inputs_provider(file = 'CROPS/GRASSIM/crop_init_GEMBLOUX.yml').i
     Kc_values = YAML_Inputs_provider(file = 'CROPS/GRASSIM/Kc_values.yml').i
@@ -22,7 +22,7 @@ def call_grassim(WD, daily_irr, lat, alt):
     
     
     Soil_plot = 0 #for now, all of the output is stored in Crop_plot
-    Crop_plot = grassim_model.Crop(crop_init=Crop_init, Kc_values=Kc_values, PFT_composition=PFT_composition, PFT_values=PFT_values, Management=Management)
+    Crop_plot = grassim.Grassland(crop_init=Crop_init, Kc_values=Kc_values, PFT_composition=PFT_composition, PFT_values=PFT_values, Management=Management)
     
     for year in WD.keys():
         

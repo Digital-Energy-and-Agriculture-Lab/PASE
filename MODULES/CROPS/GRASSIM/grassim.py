@@ -9,7 +9,7 @@ import pandas as pd
 import datetime
 import calendar
 
-class Crop:
+class Grassland:
     
     def __init__(self, crop_init=None, Kc_values=None, PFT_composition=None, PFT_values=None, Management=None):
         '''

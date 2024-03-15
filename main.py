@@ -9,13 +9,13 @@ import numpy as np
 import os
 import pickle
 from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, inputs_aggregator
+from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from MODULES.PHOTOVOLTAICS.PV_configurations import PV_Configuration_3D
+from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
 from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from MODULES.ENVIRONMENT.light import show_light_map2, Light_shade_scene
 from MODULES.ENVIRONMENT.mesh import Mesh
-from MODULES.PHOTOVOLTAICS.PV_productions import PV_production
+from MODULES.PHOTOVOLTAICS.production import PV_Production
 from MODULES.CROPS.run_crop_simulations import run_crop_simu
 
 PASE_Logger()
@@ -24,7 +24,7 @@ Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').i
 # Import PV central and panels parameters
 AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').i
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).i
-PV_params_dict = inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
+PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
 # Import of weather data and computation of daily weather data
 WD = Weather_data(Loc_1['Latitude'],
@@ -159,7 +159,7 @@ merged.plot()
 
 
 # PV production model based on a geometric approach
-PV_central = PV_production(PV_params_dict)
+PV_central = PV_Production(PV_params_dict)
 PV_central.get_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears)
 
 

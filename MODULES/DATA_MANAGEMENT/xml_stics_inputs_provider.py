@@ -8,7 +8,7 @@ Created on Tue Aug  1 14:12:53 2023
 
 import xmltodict
             
-class XML_STICS_Inputs_Provider(dict):
+class XML_STICS_inputs_provider(dict):
     
     def __init__(self, file=None, soil_name=None):
         

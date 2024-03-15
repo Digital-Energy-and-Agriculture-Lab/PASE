@@ -179,7 +179,7 @@ class YAML_Inputs_provider:
                 self.i[key] = data['Value']
 
 
-class inputs_aggregator:
+class Inputs_aggregator:
 
     def __init__(self, inputs):
         self.aggregated_inputs = dict()

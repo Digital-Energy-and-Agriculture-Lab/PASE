@@ -8,7 +8,7 @@ Created on Fri Feb 16 18:02:05 2024
 
 import numpy as np
 
-class Crop:
+class Crop_outputs:
     
     def __init__(self):
         

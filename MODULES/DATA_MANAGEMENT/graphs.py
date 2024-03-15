@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def graph_1_Yaxis(data_x=None, data1=None, data2=None, data3=None, data4=None, 
+def graph_1Y_axis(data_x=None, data1=None, data2=None, data3=None, data4=None, 
                   data_x_name=None, data1_name=None, data2_name=None, data3_name=None, 
                   data4_name=None, c1=None, c2=None, c3=None, c4=None, ax1_name=None, graph_name=None, gd_color=None, 
                   x_inf=None, x_sup=None):
@@ -44,7 +44,7 @@ def graph_1_Yaxis(data_x=None, data1=None, data2=None, data3=None, data4=None,
     fig.savefig(path, format='svg')
     
     
-def graph_2_Yaxis(data_x=None, data1=None, data2=None, data3=None, data4=None, 
+def graph_2Y_axis(data_x=None, data1=None, data2=None, data3=None, data4=None, 
                         data5=None, data6=None, data_x_name=None, data1_name=None, data2_name=None,
                         data3_name=None, data4_name=None, data5_name=None, data6_name=None,
                         ax1_name=None, ax2_name=None, graph_name=None):
@@ -84,7 +84,7 @@ def graph_2_Yaxis(data_x=None, data1=None, data2=None, data3=None, data4=None,
     fig.savefig(path, format='png')
 
     
-def histogram_3or4_series(x_label, data_s1, data_s2, data_s3, label_s1,
+def histogram_several_series(x_label, data_s1, data_s2, data_s3, label_s1,
                           label_s2, label_s3, y_label, graph_title,
                           data_s4=None, label_s4=None):
     
