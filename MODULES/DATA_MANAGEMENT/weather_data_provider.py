@@ -308,7 +308,7 @@ class PvGis:
                 ta = float(json_obj[key_pv_gis_ta])
                 ws = float(json_obj[key_pv_gis_ws])
 
-                data.append(data_row(date, ghi, dni, dhi, ta, ws))
+                data.append(self.data_row(date, ghi, dni, dhi, ta, ws))
 
         # Dictionary
         return data
@@ -367,12 +367,12 @@ class PvGis:
                 # Write each row
                 for data_row in self._data:
 
-                    csv_writer.writerow({self.HEADER_DATE_TIME: data_row.date_time,
-                                         self.HEADER_GHI: data_row.ghi,
-                                         self.HEADER_DNI: data_row.dni,
-                                         self.HEADER_DHI: data_row.dhi,
-                                         self.HEADER_TA: data_row.ta,
-                                         self.HEADER_WS: data_row.ws})
+                    csv_writer.writerow({self.HEADER_DATE_TIME: data_row['date_time'],
+                                         self.HEADER_GHI: data_row['ghi'],
+                                         self.HEADER_DNI: data_row['dni'],
+                                         self.HEADER_DHI: data_row['dhi'],
+                                         self.HEADER_TA: data_row['ta'],
+                                         self.HEADER_WS: data_row['ws']})
         else:
             print('Not available data')
 
@@ -380,19 +380,31 @@ class PvGis:
 
         if self._data_parsed:
 
-            dt = {self.HEADER_DATE_TIME: [d.date_time for d in self._data],
-                  self.HEADER_GHI: [d.ghi for d in self._data],
-                  self.HEADER_DNI: [d.dni for d in self._data],
-                  self.HEADER_DHI: [d.dhi for d in self._data],
-                  self.HEADER_TA: [d.ta for d in self._data],
-                  self.HEADER_WS: [d.ws for d in self._data]}
+            dt = {self.HEADER_DATE_TIME: [d['date_time'] for d in self._data],
+                  self.HEADER_GHI: [d['ghi'] for d in self._data],
+                  self.HEADER_DNI: [d['dni'] for d in self._data],
+                  self.HEADER_DHI: [d['dhi'] for d in self._data],
+                  self.HEADER_TA: [d['ta'] for d in self._data],
+                  self.HEADER_WS: [d['ws'] for d in self._data]}
 
             return pd.DataFrame(data=dt)
 
         else:
             print('Not available data')
-  
             
+    def data_row(self, date_time, ghi, dni, dhi, ta, ws):
+        
+        data_r = {}
+        data_r['date_time'] = date_time
+        data_r['ghi'] = ghi
+        data_r['dni'] = dni
+        data_r['dhi'] = dhi
+        data_r['ta'] = ta
+        data_r['ws'] = ws
+        
+        return data_r
+  
+"""     
 class data_row:
 #Source: https://github.com/MechatronicsBlog/Weather_data_Python_PVGIS/blob/master/PvGis.py
 
@@ -403,3 +415,4 @@ class data_row:
         self.dhi = dhi
         self.ta = ta
         self.ws = ws
+"""
