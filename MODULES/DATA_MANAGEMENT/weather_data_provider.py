@@ -404,15 +404,3 @@ class PvGis:
         
         return data_r
   
-"""     
-class data_row:
-#Source: https://github.com/MechatronicsBlog/Weather_data_Python_PVGIS/blob/master/PvGis.py
-
-    def __init__(self, date_time, ghi, dni, dhi, ta, ws):
-        self.date_time = date_time
-        self.ghi = ghi
-        self.dni = dni
-        self.dhi = dhi
-        self.ta = ta
-        self.ws = ws
-"""

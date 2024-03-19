@@ -13,7 +13,7 @@ from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, I
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
 from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
 from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
-from MODULES.ENVIRONMENT.light import show_light_map2, Light_shade_scene
+from MODULES.ENVIRONMENT.light import show_light_map2, Ray_casting_scene
 from MODULES.ENVIRONMENT.mesh import Mesh
 from MODULES.PHOTOVOLTAICS.production import PV_Production
 from MODULES.CROPS.run_crop_simulations import run_crop_simu
@@ -74,7 +74,7 @@ M.Add_PV_Mesh(PV_1_3DconfigMeshBot.PV_central, flag = "BotPV", radius = 0.5)
 """
 
 # Add of the points of interests on the ground for crop models
-M.Add_Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'],
+M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
                                   Loc_1['Xmax_InterestZone'],
                                   Loc_1['Ymin_InterestZone'],
                                   Loc_1['Ymax_InterestZone'],
@@ -86,7 +86,7 @@ M.Add_Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'],
 # Computation of sun and light data
 Light_instance = Light(WD.nyears_data, Sun_positions_complete)
 # Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
-L = Light_shade_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central)
+L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central)
 L.get_light_map(180,Sun_positions_samp.solar_vector)
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
@@ -98,17 +98,17 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP,
 # Examples of visualisation
 j = 5 #day definition
 
-show_light_map2(L.sourcePoints[:,:-1], 
+show_light_map2(L.sourcepoints[:,:-1], 
                 L.dir_map[:,3], 
                 PV_1_3Dconfig.PV_central,
                 "Direct map [-]")
 
-show_light_map2(L.sourcePoints[:,:-1], 
+show_light_map2(L.sourcepoints[:,:-1], 
                 np.array(L.diff_map,dtype=np.float32), 
                 PV_1_3Dconfig.PV_central,
                 "Sky visibility map [-]")
 
-show_light_map2(L.sourcePoints[:,:-1], 
+show_light_map2(L.sourcepoints[:,:-1], 
                 L.daily_irr_spat['2006'][:,j], 
                 PV_1_3Dconfig.PV_central,
                 "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
@@ -172,7 +172,7 @@ Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_data
                                      L.daily_irr_spat,
                                      Loc_1)
 
-show_light_map2(L.sourcePoints[:,:-1], 
+show_light_map2(L.sourcepoints[:,:-1], 
                 Crop_plot.nyears_data['2007']['Dry_yield'], 
                 PV_1_3Dconfig.PV_central,
                 "Dry yield STICS 2006 [t/ha]")

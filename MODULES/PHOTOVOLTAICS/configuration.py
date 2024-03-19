@@ -18,7 +18,6 @@ class PV_Configuration_3D:
         
         panel_dimX = PV_i['PanelDimensionX']
         panel_dimY = PV_i['PanelDimensionY']
-        panel_thickness = PV_i['PanelThickness']
         repet_dist_panelsX = PV_i['RepetitionDistanceOfPanelsX']
         repet_dist_panelsY = PV_i['RepetitionDistanceOfPanelsY']
         n_panelsX = PV_i['NumberOfPanelsX']
@@ -37,10 +36,10 @@ class PV_Configuration_3D:
         
         self.visualization = visualization
         
-        if panel_thickness is True:
-            first_panel = self.create_first_panel_3D(panel_dimX, panel_dimY, PV_i["PanelDimensionZ"])
+        if PV_i['PanelThickness'] is True:
+            first_panel = self.create_first_panel(panel_dimX, panel_dimY, PV_i["PanelDimensionZ"])
         else:
-            first_panel = self.create_first_panel(panel_dimX, panel_dimY,PV_i["PanelDimensionZ"]/2)
+            first_panel = self.create_first_panel(panel_dimX, panel_dimY, 0)
             
         PV_block = self.create_block_of_panels(repet_dist_panelsX, 
                                                repet_dist_panelsY,
@@ -83,38 +82,37 @@ class PV_Configuration_3D:
         if not("MeshConfig" in keys):
             PV_i["MeshConfig"] = False
         return PV_i
+             
+    
+    def create_first_panel(self, panel_dimX, panel_dimY, panel_dimZ):
+        
+        if panel_dimZ==0:
+            first_panel_vertices = np.array([[-panel_dimX/2, panel_dimY/2, panel_dimZ],
+                                             [panel_dimX/2, panel_dimY/2, panel_dimZ],
+                                             [-panel_dimX/2, -panel_dimY/2, panel_dimZ],
+                                             [panel_dimX/2, -panel_dimY/2, panel_dimZ]])
             
-    def create_first_panel(self, panel_dimX, panel_dimY,z_level = 0):
-                
-        first_panel_vertices = np.array([[-panel_dimX/2, panel_dimY/2, z_level],
-                                         [panel_dimX/2, panel_dimY/2, z_level],
-                                         [-panel_dimX/2, -panel_dimY/2, z_level],
-                                         [panel_dimX/2, -panel_dimY/2, z_level]])
+            first_panel_meshes = np.hstack([[3, 0, 1, 2],    # first triangular mesh
+                                            [3, 1, 2, 3],])  # second triangular mesh
+            
+            first_panel = pyV.PolyData(first_panel_vertices, first_panel_meshes)
+            
+            return first_panel
         
-        first_panel_meshes = np.hstack([[3, 0, 1, 2],    # first triangular mesh
-                                        [3, 1, 2, 3],])  # second triangular mesh
-        
-        first_panel = pyV.PolyData(first_panel_vertices, first_panel_meshes)
-        
-        return first_panel
-    
-    
-    def create_first_panel_3D(self, panel_dimX, panel_dimY,panel_dimZ):
-                 
-         first_panel_vertices = np.array([
-                                          [-panel_dimX/2, panel_dimY/2, panel_dimZ/2],
-                                          [panel_dimX/2, panel_dimY/2, panel_dimZ/2],
-                                          [-panel_dimX/2, -panel_dimY/2, panel_dimZ/2],
-                                          [panel_dimX/2, -panel_dimY/2, panel_dimZ/2],
+        else:                 
+            first_panel_vertices = np.array([
+                                    [-panel_dimX/2, panel_dimY/2, panel_dimZ/2],
+                                    [panel_dimX/2, panel_dimY/2, panel_dimZ/2],
+                                    [-panel_dimX/2, -panel_dimY/2, panel_dimZ/2],
+                                    [panel_dimX/2, -panel_dimY/2, panel_dimZ/2],
                                           
-                                          [-panel_dimX/2, panel_dimY/2, -panel_dimZ/2],
-                                          [panel_dimX/2, panel_dimY/2, -panel_dimZ/2],
-                                          [-panel_dimX/2, -panel_dimY/2, -panel_dimZ/2],
-                                          [panel_dimX/2, -panel_dimY/2, -panel_dimZ/2],
-
-                                          ])
+                                    [-panel_dimX/2, panel_dimY/2, -panel_dimZ/2],
+                                    [panel_dimX/2, panel_dimY/2, -panel_dimZ/2],
+                                    [-panel_dimX/2, -panel_dimY/2, -panel_dimZ/2],
+                                    [panel_dimX/2, -panel_dimY/2, -panel_dimZ/2],
+                                    ])
          
-         first_panel_meshes = np.hstack([
+            first_panel_meshes = np.hstack([
                                          [3, 0, 1, 2],    # first triangular mesh
                                          [3, 1, 2, 3],
                                          [3, 4, 5, 6],    
@@ -129,9 +127,9 @@ class PV_Configuration_3D:
                                          [3, 0, 4, 5]
                                          ])  # second triangular mesh
          
-         first_panel = pyV.PolyData(first_panel_vertices, first_panel_meshes)
+            first_panel = pyV.PolyData(first_panel_vertices, first_panel_meshes)
          
-         return first_panel
+            return first_panel
         
     
     def create_block_of_panels(self, repet_dist_panelsX, repet_dist_panelsY,
@@ -171,7 +169,6 @@ class PV_Configuration_3D:
                          repet_dist_blockY, dtype=np.float32)
         zrng = np.arange(height, height*2, height, dtype=np.float32)
         x, y, z = np.meshgrid(xrng, yrng, zrng)
-        self.x = x
         
         GlobalMesh = pyV.StructuredGrid(x, y, z)
         
@@ -211,10 +208,8 @@ class PV_Configuration_3D:
                     
         sun_vect_central_coord = self.get_sun_vect_in_central_coord(sun_vect, azimut)
         true_tracking_angle = self.get_true_tracking_angle(sun_vect_central_coord)
-        backT_corr_angle = self.get_backT_corr_angle(true_tracking_angle, GCR_x)
-        tiltY_corrected = self.get_corrected_tracking_angle(true_tracking_angle,
-                                                             backT_corr_angle)
-        tiltY_limited = self.get_limitated_angle(tiltY_corrected)
+        backT_angle = self.get_backtracking_angle(true_tracking_angle, GCR_x)
+        tiltY_limited = self.get_limitated_angle(backT_angle)
         self.tiltY_along_time = tiltY_limited*180/np.pi
         
     def get_sun_vect_in_central_coord(self, sun_vect, azimut):
@@ -240,7 +235,7 @@ class PV_Configuration_3D:
             
         return true_tracking_angle
         
-    def get_backT_corr_angle(self, true_angle, GCR_x):
+    def get_backtracking_angle(self, true_angle, GCR_x):
         
         value = np.abs(np.cos(true_angle)/GCR_x)  
            
@@ -249,14 +244,10 @@ class PV_Configuration_3D:
         backT_corr_angle[value<1] = (-np.sign(true_angle[value<1])
                                      *np.arccos((np.abs(np.cos(true_angle[value<1])))/
                                                          GCR_x))
-            
-        return backT_corr_angle
-    
-    def get_corrected_tracking_angle(self, true_T_angle, backT_corr_angle):
-            
-        corrected_tiltY = true_T_angle + backT_corr_angle
-                    
-        return corrected_tiltY
+        
+        backT_angle = true_angle + backT_corr_angle
+        
+        return backT_angle
     
     def get_limitated_angle(self, tiltY):
        

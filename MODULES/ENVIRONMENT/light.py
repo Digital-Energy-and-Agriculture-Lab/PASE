@@ -69,7 +69,7 @@ class Sun_positions:
         self.sun_vect_leapY = self.get_sun_vector(self.sp_leapY['elevation'], 
                                                   self.sp_leapY['azimuth'])
         
-        self.top_atm_rad_leapY = self.get_top_of_atm_radiation(index_leap_year,
+        self.sp_leapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_leap_year,
                                                                n)
         
     def SD_nonleap_year(self, frq, n, TZ):
@@ -83,7 +83,7 @@ class Sun_positions:
         self.sun_vect_nonleapY = self.get_sun_vector(self.sp_nonleapY['elevation'], 
                                                      self.sp_nonleapY['azimuth'])
         
-        self.top_atm_rad_nonleapY = self.get_top_of_atm_radiation(index_com_year,
+        self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_com_year,
                                                                   n)
         
         
@@ -141,9 +141,9 @@ class Light:
             GHI = WD[year]['G(h)'].to_numpy()
             
             if int(year)%4 == 0:                
-                rad_top_atm = SP.top_atm_rad_leapY
+                rad_top_atm = SP.sp_leapY['Top_atm_radiation'].to_numpy()
             else:
-                rad_top_atm = SP.top_atm_rad_nonleapY
+                rad_top_atm = SP.sp_nonleapY['Top_atm_radiation'].to_numpy()
                 
             kt = self.get_clearness_sky_index(rad_top_atm, GHI)    
             DHI = self.get_diffuse_horizontal_radiation(kt, GHI)
@@ -355,7 +355,7 @@ class Sun_positions_sampled:
 
 
 
-class Light_shade_scene:
+class Ray_casting_scene:
     '''
     Class Light_shade_scene
     
@@ -371,10 +371,34 @@ class Light_shade_scene:
     #The class light shade scene init with a geometry (pyvista.polydata) and a mesh instance
     def __init__(self,mesh,geometry):
         self.mesh = mesh
-        self.sourcePoints = self.mesh.Get_SourcePoints()
+        self.sourcepoints = self.mesh.get_sourcepoints()
         self.geometry = geometry
-        self.sourceLength = self.sourcePoints.shape[0]
-        self.SourcesDict = mesh.Get_SourceDict()
+        self.sourceLength = self.sourcepoints.shape[0]
+        self.SourcesDict = mesh.get_sources_flag_dict()
+        
+        
+    def get_light_map(self, n_small_suns, sun_P):
+    
+        if type(self.geometry) == list:
+            sv = np.zeros((1,3))
+            self.dir_map = np.zeros((len(self.meshgrid.X[0,:]),
+                                     len(self.meshgrid.X[:,0]),
+                                     len(sun_P[:,0])))
+            self.diff_map = np.zeros((len(self.meshgrid.X[0,:]),
+                                     len(self.meshgrid.X[:,0]),
+                                     len(sun_P[:,0])))
+            
+            for time in range(len(sun_P[:,0])):
+                print(time)
+                geometry = self.geometry[time]
+                diff_map = self.diffuse_map(n_small_suns)
+                sv[0,:] = sun_P[time,:]
+                dir_map = self.direct_map(geometry, sv)
+                self.dir_map[:,:,time] = dir_map[:,:,0]   
+                self.diff_map[:,:,time] = diff_map
+        else:
+            self.diff_map = self.diffuse_map(n_small_suns)
+            self.dir_map = self.direct_map(sun_P)
 
 
     def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped,tol = 0.01):
@@ -420,9 +444,9 @@ class Light_shade_scene:
         
         #Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
         SourcePoints = np.repeat(np.column_stack((
-                                                  self.sourcePoints[:,0],
-                                                  self.sourcePoints[:,1],
-                                                  self.sourcePoints[:,2]
+                                                  self.sourcepoints[:,0],
+                                                  self.sourcepoints[:,1],
+                                                  self.sourcepoints[:,2]
                                                  )),
                                       n_small_suns,
                                       axis=0)
@@ -464,34 +488,9 @@ class Light_shade_scene:
         Diffu[unique.astype("int")] = 1 - counts/n_small_suns
         
         return Diffu
-    
-            
-  
-    def get_light_map(self, n_small_suns, sun_P):
-    
-        if type(self.geometry) == list:
-            sv = np.zeros((1,3))
-            self.dir_map = np.zeros((len(self.meshgrid.X[0,:]),
-                                     len(self.meshgrid.X[:,0]),
-                                     len(sun_P[:,0])))
-            self.diff_map = np.zeros((len(self.meshgrid.X[0,:]),
-                                     len(self.meshgrid.X[:,0]),
-                                     len(sun_P[:,0])))
-            
-            for time in range(len(sun_P[:,0])):
-                print(time)
-                geometry = self.geometry[time]
-                diff_map = self.diffuse_map(n_small_suns)
-                sv[0,:] = sun_P[time,:]
-                dir_map = self.direct_map(geometry, sv)
-                self.dir_map[:,:,time] = dir_map[:,:,0]   
-                self.diff_map[:,:,time] = diff_map
-        else:
-            self.diff_map = self.diffuse_map(n_small_suns)
-            self.dir_map = self.direct_map(sun_P)
             
         
-    def Get_direct_map_byFlag(self,Flags):
+    def get_direct_map_by_flag(self,Flags):
         """
         Public method, filter the computed Direct_Map based on flags
         
@@ -503,10 +502,10 @@ class Light_shade_scene:
                                            sun positions (t). If the point does not directly see the sun a value of 0 is given.
         """
 
-        Index = self.mesh.Get_SourcePointsIndex(Flags)
+        Index = self.mesh.get_source_points_index(Flags)
         return self.dir_map[Index,:]
     
-    def Get_diffuse_map_byFlag(self,Flags):
+    def get_diffuse_map_by_flag(self,Flags):
         """
         Public method, filter the computed Diffuse_Map based on flags
         
@@ -519,11 +518,11 @@ class Light_shade_scene:
                                    for each of the "n" source points defined in the mesh
         """
         
-        Index = self.mesh.Get_SourcePointsIndex(Flags)
+        Index = self.mesh.get_source_points_index(Flags)
         return self.diff_map[Index]
     
     
-    def Get_irradiation_map_byFlag(self,Flags):
+    def get_irradiation_map_by_flag(self,Flags):
         """
         Public method, filter the computed Diffuse_Map based on flags
         
@@ -536,7 +535,7 @@ class Light_shade_scene:
                                     for each of the "n" source points defined in the mesh
         """
         
-        Index = self.mesh.Get_SourcePointsIndex(Flags)
+        Index = self.mesh.get_source_points_index(Flags)
         return {y:self.daily_irr_spat[y][:,Index] for y in self.daily_irr_spat}
     
     def direct_map(self, sun_P):
@@ -555,9 +554,9 @@ class Light_shade_scene:
         """
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
         SourcePoints = np.repeat(np.column_stack((
-                                                  self.sourcePoints[:,0],
-                                                  self.sourcePoints[:,1],
-                                                  self.sourcePoints[:,2]
+                                                  self.sourcepoints[:,0],
+                                                  self.sourcepoints[:,1],
+                                                  self.sourcepoints[:,2]
                                                  )),
                                       len(sun_P[:,0]),
                                       axis=0)
