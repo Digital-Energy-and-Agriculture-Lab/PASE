@@ -81,7 +81,7 @@
    Quantity of N in roots              =    44. kg/ha
 
    N content of whole plant            =  1.54 % DM
-   N concentration of grains or fruits =  2.61 % DM
+   N concentration of grains or fruits =  2.62 % DM
    Protein content of grains or fruits =  14.9 % DM
 
    Nitrogen fertiliser efficiency      = 0.60
@@ -89,14 +89,14 @@
 
   Composition of grains or fruits
    Dry matter content                  =   86. % FW
-   Nitrogen content                    =  2.25 % FW
+   Nitrogen content                    =  2.26 % FW
 
  4. WATER and NITROGEN BALANCE over the crop life
  ************************************************
      Cumulative ETMax (eos+eop)     =  292. mm
      Cumulative AET                 =  292. mm
-     Cumulative Evaporation         =  112. mm
-     Cumulative Transpiration       =  181. mm
+     Cumulative Evaporation         =  111. mm
+     Cumulative Transpiration       =  180. mm
      Cumulative Rainfall+irrigation =  585. mm
 
      Water reserve used by plant    =  101. mm
@@ -115,8 +115,8 @@ Nitrogen stress calculated but inactive on the plants
    Potential mineralisation rate = 0.37 kg N/ha/day   or 3.50% per year
 WATER BALANCE  (mm)
      initial water content    194.        final water content      395.
-     rain                     872.        evaporation              144.
-     irrigation                 0.        transpiration            181.
+     rain                     872.        evaporation              143.
+     irrigation                 0.        transpiration            180.
      capillary rise            -0.        runoff                     0.
                                           deep infiltration        310.
                                           mole drainage              0.
@@ -151,7 +151,7 @@ SOIL MINERAL NITROGEN BALANCE (kg N/ha)
      fertiliser              465.        fertiliser immobilisat.   69.
                                          fertiliser volatilisat.   63.
      humus mineralisation     90.        manure N volatilisat.      0.
-     residue mineralisation   -9.        (N2+N2O)-N losses         54.
+     residue mineralisation   -9.        (N2+N2O)-N losses         55.
      ----------------------------        ----------------------------
      TOTAL INITIAL           574.        TOTAL FINAL              574.
 
@@ -167,7 +167,7 @@ SOIL ORGANIC NITROGEN BALANCE (kg N/ha)
      ------- Input fluxes ------         ------ Output fluxes ------
      fertiliser immobilis.      69.
      organic fertiliser         14.
-     crop residues             155.
+     crop residues             154.
      fallen leaves               0.      Priming (PE)               0.
      trimmed leaves              0.      Mineralisation - PE       81.
      dead roots                 44.
@@ -182,12 +182,12 @@ SOIL ORGANIC CARBON BALANCE   (kg C/ha)
      Zymogeneous biomass         0.                               451.
      Organic residues            0.                                 2.
      Deep root residues          0.                               482.
-     Mulch residues              0.                              5557.
-     Total organic pools     37067.                             42979.
+     Mulch residues              0.                              5558.
+     Total organic pools     37067.                             42980.
      ------- Input fluxes ------         ------ Output fluxes ------
      fertiliser immobilis.       0.
      organic fertiliser        840.
-     crop residues            5946.
+     crop residues            5947.
      fallen leaves               0.      Priming (PE)               0.
      trimmed leaves              0.      Mineralisation - PE     1841.
      dead roots                968.
@@ -203,5 +203,5 @@ Cumulative N2O emissions  (kg N/ha): nitrification      =  0.00
                                      denitrification    =  0.00
                                      Total              =  0.00
 
-Aboveground CROP RESIDUES returned to soil:            DM = 14.2 t/ha   C content = 5946. kg/ha   N content =  155. kg/ha   C/N = 38.5
+Aboveground CROP RESIDUES returned to soil:            DM = 14.2 t/ha   C content = 5947. kg/ha   N content =  154. kg/ha   C/N = 38.5
 Total CROP RESIDUES returned to soil:straw+roots       DM = 16.5 t/ha   C content = 6914. kg/ha   N content =  198. kg/ha   C/N = 34.9

@@ -17,7 +17,7 @@ import numpy as np
 import os
 
 from MODULES.user_support_tools import PASE_Logger
-from MODULES.ENVIRONMENT.aerodynamics import get_wind_speed
+from MODULES.ENVIRONMENT.aerodynamics import get_wind_speed_specific_height
 
 
 class Weather_data:
@@ -29,19 +29,19 @@ class Weather_data:
             self.get_n_years_WD_from_csvfile(sim_starting_year,
                                              sim_ending_year,
                                              file)
-            self.get_n_years_daily_WD(len(self.nyears[str(sim_starting_year)]))
+            self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]))
             
         else:
             self.get_n_years_hourly_WD_PVGis(latitude, longitude,
                                              sim_starting_year, sim_ending_year)
-            self.get_n_years_daily_WD(len(self.nyears[str(sim_starting_year)]), 
+            self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]), 
                                       daily_file)
             
         
             
     def get_n_years_hourly_WD_PVGis(self, lat, long, start_year, end_year):
         
-        self.nyears = {}
+        self.nyears_data = {}
     
         for year in range(start_year, end_year+1):
             msg = 'Get hourly weather data for year '+str(year)+' from PvGis'
@@ -60,12 +60,12 @@ class Weather_data:
                 "TAmb": "T2m", "Ws": 'WS10m'}            
             one_year_dataframe = one_year_dataframe.rename(columns=rename_df)
             
-            self.nyears[str(year)] = one_year_dataframe
+            self.nyears_data[str(year)] = one_year_dataframe
             
             
     def get_n_years_WD_from_csvfile(self, start_year, end_year, file):
         
-        self.nyears = {}
+        self.nyears_data = {}
         WD = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', file + '.csv'), delimiter = ',')
         new_index = pd.date_range("01-01-2021 00:00:00", "31-12-2021 23:45:00",
                                   freq='15Min')
@@ -82,13 +82,13 @@ class Weather_data:
         #           (WD['date']<'01-01-'+str(year+1)+' 00:00:00'))            
         #    one_year_df = WD[mask]
             one_year_df = WD
-            self.nyears[str(year)] = one_year_df
+            self.nyears_data[str(year)] = one_year_df
             
             
             
     def get_n_years_daily_WD(self, freq_deter, csv_file=None):
         
-        self.nyears_daily_WD = {}
+        self.nyears_daily_data = {}
         
         if csv_file is not None:
             daily_csv = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', csv_file + '.csv'))
@@ -104,7 +104,7 @@ class Weather_data:
         elif (freq_deter == 52560 or freq_deter == 52704):
             n = 6
 
-        for year in self.nyears.keys():
+        for year in self.nyears_data.keys():
             
             msg = 'Computation of daily weather data for year '+str(year)
             PASE_Logger(msg, 'INFO')
@@ -119,7 +119,7 @@ class Weather_data:
                 max_RH = math.nan
                 mean_RH = math.nan
             
-            data_to_resample = self.nyears[year]
+            data_to_resample = self.nyears_data[year]
             
             new_index = pd.date_range("01-01-"+year+" 00:00:00","31-12-"+year+" 00:00:00", freq='D')
            
@@ -130,7 +130,7 @@ class Weather_data:
             mean_temp = data_to_resample['T2m'].resample('D').mean().tolist()
             mean_CO2 = 5*np.sin(new_index.month*(2*np.pi/12))+(415*np.ones((len(mean_temp))))
             mean_WS = data_to_resample['WS10m'].resample('D').mean().tolist() 
-            WS_crop_2m = get_wind_speed(np.array(mean_WS)).tolist()
+            WS_crop_2m = get_wind_speed_specific_height(np.array(mean_WS)).tolist()
             
             if csv_file is None:
                 min_RH = data_to_resample['RH2m'].resample('D').min().tolist()
@@ -152,7 +152,7 @@ class Weather_data:
                                           'Vap_press':vap_press},
                                          index=new_index)
 
-            self.nyears_daily_WD[year] = daily_weather
+            self.nyears_daily_data[year] = daily_weather
            
             
              

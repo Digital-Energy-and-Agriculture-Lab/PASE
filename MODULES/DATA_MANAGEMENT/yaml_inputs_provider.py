@@ -24,7 +24,7 @@ class YAML_Inputs_provider:
 
             inputs = yaml.load(inputs_file, Loader=yaml.FullLoader)
             
-        self.i = {}
+        self.inputs = {}
    
         for key, data in inputs.items():   
 
@@ -62,7 +62,7 @@ class YAML_Inputs_provider:
             self.error_message(key, data['Type'])
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
-            self.i[key] = data['Value']
+            self.inputs[key] = data['Value']
             
         self.check_limits(key, data, inputs)
                 
@@ -73,7 +73,7 @@ class YAML_Inputs_provider:
             self.error_message(key, data['Type'])
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
-            self.i[key] = data['Value']
+            self.inputs[key] = data['Value']
             
         self.check_limits(key, data, inputs)        
 
@@ -84,7 +84,7 @@ class YAML_Inputs_provider:
             self.error_message(key, data['Type'])
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
-            self.i[key] = data['Value']    
+            self.inputs[key] = data['Value']    
             
 
     def check_value_bool(self, key, data, inputs):
@@ -93,7 +93,7 @@ class YAML_Inputs_provider:
             self.error_message(key, data['Type'])
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
-            self.i[key] = data['Value'] 
+            self.inputs[key] = data['Value'] 
             
     
     def check_value_list(self, key, data, inputs):
@@ -102,7 +102,7 @@ class YAML_Inputs_provider:
             self.error_message(key, data['Type'])
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
-            self.i[key] = data['Value']
+            self.inputs[key] = data['Value']
 
 
     def check_limits(self, key, data, inputs):
@@ -126,7 +126,7 @@ class YAML_Inputs_provider:
                     self.error_message(key, None, data['Limit'])
                     PASE_Logger(self.msg, 'ERROR', 'value')
                 else:
-                    self.i[key] = data['Value']
+                    self.inputs[key] = data['Value']
                     
             elif '/' in data['Limit'][0]:
                 factors = data['Limit'][0].split('*')
@@ -135,14 +135,14 @@ class YAML_Inputs_provider:
                     self.error_message(key, None, data['Limit'])
                     PASE_Logger(self.msg, 'ERROR', 'value')
                 else:
-                    self.i[key] = data['Value']
+                    self.inputs[key] = data['Value']
                 
             else:
                 if data['Value']<inputs[data['Limit'][0]]['Value'] or data['Value']>data['Limit'][1]:                
                     self.error_message(key, None, data['Limit'])
                     PASE_Logger(self.msg, 'ERROR', 'value')
                 else:
-                   self.i[key] = data['Value']
+                   self.inputs[key] = data['Value']
     
         elif ((type(data['Limit'][0]) is not str) and (type(data['Limit'][1]) is str)):
             
@@ -153,7 +153,7 @@ class YAML_Inputs_provider:
                     self.error_message(key, None, data['Limit'])
                     PASE_Logger(self.msg, 'ERROR', 'value')
                 else:
-                    self.i[key] = data['Value']
+                    self.inputs[key] = data['Value']
                     
             elif '/' in data['Limit'][1]:
                 factors = data['Limit'][1].split('*')
@@ -162,21 +162,21 @@ class YAML_Inputs_provider:
                     self.error_message(key, None, data['Limit'])
                     PASE_Logger(self.msg, 'ERROR', 'value')
                 else:
-                    self.i[key] = data['Value']
+                    self.inputs[key] = data['Value']
 
             else:
                 if ((data['Value']<data['Limit'][0]) or (data['Value']>inputs[data['Limit'][1]]['Value'])):               
                     self.error_message(key, None, data['Limit'])
                     PASE_Logger(self.msg, 'ERROR', 'value')
                 else:
-                    self.i[key] = data['Value']
+                    self.inputs[key] = data['Value']
                 
         else:
             if ((data['Value'] > float(data['Limit'][1])) or (data['Value'] < float(data['Limit'][0]))):
                 self.error_message(key, None, data['Limit'])
                 PASE_Logger(self.msg, 'ERROR', 'value')
             else:
-                self.i[key] = data['Value']
+                self.inputs[key] = data['Value']
 
 
 class Inputs_aggregator:

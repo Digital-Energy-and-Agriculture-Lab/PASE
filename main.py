@@ -20,10 +20,10 @@ from MODULES.CROPS.run_crop_simulations import run_crop_simu
 
 PASE_Logger()
 # Import of general parameters
-Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').i
+Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inputs
 # Import PV central and panels parameters
-AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').i
-PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).i
+AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').inputs
+PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
 # Import of weather data and computation of daily weather data
@@ -40,11 +40,11 @@ Sun_positions_samp = Sun_positions_sampled(Loc_1['Latitude'],
                                       Loc_1['Longitude'],
                                       Loc_1['PrecisionLevelOnSunPosition'],
                                       Loc_1['LocationName'],
-                                      len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+                                      len(WD.nyears_data[str(Loc_1['SimulationStartingYear'])]),
                                       Loc_1['TimeZone'])
 Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
                                        Loc_1['Longitude'],
-                                       len(WD.nyears[str(Loc_1['SimulationStartingYear'])]),
+                                       len(WD.nyears_data[str(Loc_1['SimulationStartingYear'])]),
                                        Loc_1['TimeZone'])
 # Creation of the 3D PV central
 PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict, Sun_positions_samp.solar_vector,
@@ -84,7 +84,7 @@ M.Add_Plane_Ground_regular_meshes(Loc_1['Xmin_InterestZone'],
 
 
 # Computation of sun and light data
-Light_instance = Light(WD.nyears, Sun_positions_complete)
+Light_instance = Light(WD.nyears_data, Sun_positions_complete)
 # Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
 L = Light_shade_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central)
 L.get_light_map(180,Sun_positions_samp.solar_vector)
@@ -160,7 +160,7 @@ merged.plot()
 
 # PV production model based on a geometric approach
 PV_central = PV_Production(PV_params_dict)
-PV_central.get_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears)
+PV_central.get_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears_data)
 
 
 
@@ -168,7 +168,7 @@ PV_central.get_electricity_production(Sun_positions_complete, Light_instance.dat
 #Temporary lines, those 2 parameters (crop_model and option_2D) should be in SCENARIOS input files (general parameters)
 crop_model = 2 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
-Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_WD, 
+Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_data, 
                                      L.daily_irr_spat,
                                      Loc_1)
 

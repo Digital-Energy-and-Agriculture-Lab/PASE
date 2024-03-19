@@ -69,7 +69,7 @@
 
    Senescent aerial biomass (0% water) =    1.45 t/ha
 
-   Number of grains or fruits          =  17926. /m2
+   Number of grains or fruits          =  17932. /m2
    Plant density                       =   290.7 /m2
    Grain or fruit weight (13.% water)  =     0.049 g
    Growth rate (lag phase)             =    16.6 mg/m2/j
@@ -182,18 +182,18 @@ SOIL ORGANIC CARBON BALANCE   (kg C/ha)
      Zymogeneous biomass         0.                               456.
      Organic residues            0.                                 2.
      Deep root residues          0.                               597.
-     Mulch residues              0.                              6773.
-     Total organic pools     37067.                             44317.
+     Mulch residues              0.                              6770.
+     Total organic pools     37067.                             44314.
      ------- Input fluxes ------         ------ Output fluxes ------
      fertiliser immobilis.       0.
      organic fertiliser        840.
-     crop residues            7125.
+     crop residues            7122.
      fallen leaves               0.      Priming (PE)               0.
      trimmed leaves              0.      Mineralisation - PE     1902.
      dead roots               1187.
      dead perennial organs       0.
      ----------------------------        ----------------------------
-     TOTAL INITIAL           46219.      TOTAL FINAL            46219.
+     TOTAL INITIAL           46216.      TOTAL FINAL            46216.
 
 Heterotrophic Respiration (kg C/ha): Residues = 1058.
                                      Humus    =  844.
@@ -203,5 +203,5 @@ Cumulative N2O emissions  (kg N/ha): nitrification      =  0.00
                                      denitrification    =  0.00
                                      Total              =  0.00
 
-Aboveground CROP RESIDUES returned to soil:            DM = 17.0 t/ha   C content = 7125. kg/ha   N content =  151. kg/ha   C/N = 47.3
-Total CROP RESIDUES returned to soil:straw+roots       DM = 19.8 t/ha   C content = 8312. kg/ha   N content =  200. kg/ha   C/N = 41.6
+Aboveground CROP RESIDUES returned to soil:            DM = 17.0 t/ha   C content = 7122. kg/ha   N content =  151. kg/ha   C/N = 47.3
+Total CROP RESIDUES returned to soil:straw+roots       DM = 19.8 t/ha   C content = 8309. kg/ha   N content =  200. kg/ha   C/N = 41.6

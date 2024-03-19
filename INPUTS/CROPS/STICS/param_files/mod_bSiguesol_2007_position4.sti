@@ -64,12 +64,12 @@
  **********************************
      15-aug-2007
    Aerial biomass at harvest (0% water)=   24.64 t/ha
-   Grain or fruit Yield   (0% water)   =    7.70 t/ha
-   Grain or fruit Yield (13.% water)   =    8.83 t/ha
+   Grain or fruit Yield   (0% water)   =    7.69 t/ha
+   Grain or fruit Yield (13.% water)   =    8.82 t/ha
 
    Senescent aerial biomass (0% water) =    1.45 t/ha
 
-   Number of grains or fruits          =  17900. /m2
+   Number of grains or fruits          =  17895. /m2
    Plant density                       =   290.7 /m2
    Grain or fruit weight (13.% water)  =     0.049 g
    Growth rate (lag phase)             =    16.6 mg/m2/j
@@ -179,10 +179,10 @@ SOIL ORGANIC CARBON BALANCE   (kg C/ha)
      ------ Initial pools ------         ------- Final pools -------
      Active humified         12973.                             12396.
      Inert humified          24093.                             24093.
-     Zymogeneous biomass         0.                               456.
+     Zymogeneous biomass         0.                               455.
      Organic residues            0.                                 2.
      Deep root residues          0.                               596.
-     Mulch residues              0.                              6762.
+     Mulch residues              0.                              6763.
      Total organic pools     37067.                             44306.
      ------- Input fluxes ------         ------ Output fluxes ------
      fertiliser immobilis.       0.
@@ -204,4 +204,4 @@ Cumulative N2O emissions  (kg N/ha): nitrification      =  0.00
                                      Total              =  0.00
 
 Aboveground CROP RESIDUES returned to soil:            DM = 16.9 t/ha   C content = 7115. kg/ha   N content =  151. kg/ha   C/N = 47.3
-Total CROP RESIDUES returned to soil:straw+roots       DM = 19.8 t/ha   C content = 8300. kg/ha   N content =  200. kg/ha   C/N = 41.6
+Total CROP RESIDUES returned to soil:straw+roots       DM = 19.8 t/ha   C content = 8301. kg/ha   N content =  200. kg/ha   C/N = 41.6

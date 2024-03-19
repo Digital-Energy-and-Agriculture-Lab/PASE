@@ -111,7 +111,7 @@ Nitrogen stress calculated but inactive on the plants
 
  5. WATER, NITROGEN, CARBON BALANCE over the whole simulation period  (461 days)
  *******************************************************************************
-   Normalised days at 15.degree C:    Humus = 245.      Residues = 260.
+   Normalised days at 15.degree C:    Humus = 246.      Residues = 260.
    Potential mineralisation rate = 0.37 kg N/ha/day   or 3.50% per year
 WATER BALANCE  (mm)
      initial water content    194.        final water content      395.
@@ -182,18 +182,18 @@ SOIL ORGANIC CARBON BALANCE   (kg C/ha)
      Zymogeneous biomass         0.                               455.
      Organic residues            0.                                 2.
      Deep root residues          0.                               600.
-     Mulch residues              0.                              6815.
-     Total organic pools     37067.                             44361.
+     Mulch residues              0.                              6816.
+     Total organic pools     37067.                             44362.
      ------- Input fluxes ------         ------ Output fluxes ------
      fertiliser immobilis.       0.
      organic fertiliser        840.
-     crop residues            7165.
+     crop residues            7166.
      fallen leaves               0.      Priming (PE)               0.
      trimmed leaves              0.      Mineralisation - PE     1902.
      dead roots               1192.
      dead perennial organs       0.
      ----------------------------        ----------------------------
-     TOTAL INITIAL           46263.      TOTAL FINAL            46263.
+     TOTAL INITIAL           46264.      TOTAL FINAL            46264.
 
 Heterotrophic Respiration (kg C/ha): Residues = 1057.
                                      Humus    =  844.
@@ -203,5 +203,5 @@ Cumulative N2O emissions  (kg N/ha): nitrification      =  0.00
                                      denitrification    =  0.00
                                      Total              =  0.00
 
-Aboveground CROP RESIDUES returned to soil:            DM = 17.1 t/ha   C content = 7165. kg/ha   N content =  150. kg/ha   C/N = 47.7
-Total CROP RESIDUES returned to soil:straw+roots       DM = 19.9 t/ha   C content = 8356. kg/ha   N content =  199. kg/ha   C/N = 41.9
+Aboveground CROP RESIDUES returned to soil:            DM = 17.1 t/ha   C content = 7166. kg/ha   N content =  150. kg/ha   C/N = 47.7
+Total CROP RESIDUES returned to soil:straw+roots       DM = 19.9 t/ha   C content = 8357. kg/ha   N content =  199. kg/ha   C/N = 41.9
