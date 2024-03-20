@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <usms>
-  <usm nom="Siguesol_2007_position2">
+  <usm nom="Siguesol_2007_position15">
     <datedebut>240</datedebut>
     <datefin>700</datefin>
     <finit>ble_ini.xml</finit>
     <nomsol>solble</nomsol>
     <fstation>climblej_sta.xml</fstation>
-    <fclim1>Siguesol_2006_position2.2006</fclim1>
-    <fclim2>Siguesol_2007_position2.2007</fclim2>
+    <fclim1>Siguesol_2006_position15.2006</fclim1>
+    <fclim2>Siguesol_2007_position15.2007</fclim2>
     <culturean>0</culturean>
     <nbplantes>1</nbplantes>
     <codesimul>0</codesimul>

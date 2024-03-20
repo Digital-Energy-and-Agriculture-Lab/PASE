@@ -373,11 +373,11 @@ class Ray_casting_scene:
         self.mesh = mesh
         self.sourcepoints = self.mesh.get_sourcepoints()
         self.geometry = geometry
-        self.sourceLength = self.sourcepoints.shape[0]
-        self.SourcesDict = mesh.get_sources_flag_dict()
+        self.n_sourcepoints = self.sourcepoints.shape[0]
+        self.sources_flag_dict = mesh.get_sources_flag_dict()
         
         
-    def get_light_map(self, n_small_suns, sun_P):
+    def get_light_maps(self, n_small_suns, sun_P):
     
         if type(self.geometry) == list:
             sv = np.zeros((1,3))
@@ -452,7 +452,7 @@ class Ray_casting_scene:
                                       axis=0)
         
         #Creation of the target points array (Nx3) with N = len(Source) * len(n_small_suns)
-        TargetPoints = np.tile(pTarget,[self.sourceLength,1])
+        TargetPoints = np.tile(pTarget,[self.n_sourcepoints,1])
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
@@ -467,8 +467,8 @@ class Ray_casting_scene:
         #Creation of a vector providing the sourceID from which each ray has been shooted
         
         SourceID = np.repeat(np.linspace(0,
-                                         self.sourceLength-1,
-                                         self.sourceLength),
+                                         self.n_sourcepoints-1,
+                                         self.n_sourcepoints),
                              n_small_suns,
                              axis=0)
         
@@ -479,7 +479,7 @@ class Ray_casting_scene:
         unique, counts = np.unique(Touched, return_counts=True)
         
         #Creation of the empty matrix of sky view
-        Diffu = np.ones(self.sourceLength, dtype=np.float16)
+        Diffu = np.ones(self.n_sourcepoints, dtype=np.float16)
         
         #Transformation of the 1D index to 2D indexes
         #matrix_index = np.unravel_index(unique.astype("int"),Diffu.shape)
@@ -562,7 +562,7 @@ class Ray_casting_scene:
                                       axis=0)
         
         #Creation of the target points array (Nx3) with N = len(Source) * len(sun_positions)
-        TargetPoints = np.tile(sun_P,[self.sourceLength,1])
+        TargetPoints = np.tile(sun_P,[self.n_sourcepoints,1])
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
@@ -581,7 +581,7 @@ class Ray_casting_scene:
         direct_1D_map[id_rays_stopped_filtred] = 0
     
         #Reshape of direct map to get a ID,t map
-        direct_ID_t_map =  direct_1D_map.reshape(self.sourceLength,
+        direct_ID_t_map =  direct_1D_map.reshape(self.n_sourcepoints,
                                              len(sun_P[:,0]))  
     
         return direct_ID_t_map
