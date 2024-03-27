@@ -16,11 +16,10 @@ import numpy as np
 
 class Crop:
     
-    def __init__(self, crop_par=None, crop_init=None):
+    def __init__(self, crop_par=None, crop_inits=None):
         
-        self.P = crop_par
-        self.I = crop_init
-        self.init_crop()       
+        self.params = crop_par
+        self.init_crop(crop_inits)       
         self.nyears_data = {}
         
     def initiate_one_year_data_dictionaries(self):
@@ -45,20 +44,20 @@ class Crop:
         
         self.nyears_data[year] = self.data_dict
         
-    def init_crop(self):
+    def init_crop(self, inits):
         
-        self.LAI = self.I['InitialLAI']
-        self.cum_T = self.I['InitialCumTemp']
-        self.biomass = self.I['InitialBiomass']
+        self.LAI = inits['InitialLAI']
+        self.cum_T = inits['InitialCumTemp']
+        self.biomass = inits['InitialBiomass']
         
     def growth(self, avg_T, max_T, CO2, irrad, ET0, transpi, day_index):
         
-        if str(self.P['I50C']) == 'nan':   
-            I50C = ((self.P['Tsum']
-                     -self.P['I50B']
-                     -self.P['I50A'])/2)+self.P['I50A']   #cum_T où survient fSolar max
+        if str(self.params['I50C']) == 'nan':   
+            I50C = ((self.params['Tsum']
+                     -self.params['I50B']
+                     -self.params['I50A'])/2)+self.params['I50A']   #cum_T où survient fSolar max
         else:
-            I50C = self.P['I50C']
+            I50C = self.params['I50C']
         
         self.get_cum_temp(avg_T)
         fTemp = self.get_fTemp(avg_T)
@@ -71,7 +70,7 @@ class Crop:
         fSolar_Wstressed = self.get_fSolar_water_stressed(fSolar, fWater)
         fCO2 = self.get_fCO2(CO2)
         
-        biomass_rate = (irrad*fSolar*fSolar_Wstressed*self.P['RUE']*fCO2*
+        biomass_rate = (irrad*fSolar*fSolar_Wstressed*self.params['RUE']*fCO2*
                         fTemp*np.minimum(fHeat,fWater))
         
         self.biomass = self.biomass + biomass_rate
@@ -92,8 +91,8 @@ class Crop:
         
     def get_cum_temp(self, avg_T):
         
-        if avg_T > self.P['Tbase'] :
-            delta_T = avg_T - self.P['Tbase']
+        if avg_T > self.params['Tbase'] :
+            delta_T = avg_T - self.params['Tbase']
         else :
             delta_T = 0
 
@@ -103,10 +102,10 @@ class Crop:
         
         # Computation of the impact of temperature on biomass growth (fTemp)
 
-        if avg_T < self.P['Tbase'] :
+        if avg_T < self.params['Tbase'] :
             fTemp = 0
-        elif ((avg_T >= self.P['Tbase']) & (avg_T < self.P['Topt'])) :
-            fTemp = (avg_T-self.P['Tbase'])/(self.P['Topt']-self.P['Tbase'])
+        elif ((avg_T >= self.params['Tbase']) & (avg_T < self.params['Topt'])) :
+            fTemp = (avg_T-self.params['Tbase'])/(self.params['Topt']-self.params['Tbase'])
         else:
             fTemp = 1
             
@@ -116,10 +115,10 @@ class Crop:
         
         # Computation of the heat stress factor (fheat)
 
-        if max_T < self.P['Tmax'] :
+        if max_T < self.params['Tmax'] :
             fHeat = 1
-        elif ((max_T >= self.P['Tmax']) & (max_T < self.P['Text'])) :
-            fHeat = 1 - ((max_T-self.P['Tmax'])/(self.P['Text']-self.P['Tmax']))
+        elif ((max_T >= self.params['Tmax']) & (max_T < self.params['Text'])) :
+            fHeat = 1 - ((max_T-self.params['Tmax'])/(self.params['Text']-self.params['Tmax']))
         else :
             fHeat = 0
     
@@ -128,8 +127,8 @@ class Crop:
     def get_I50B_heat_stressed(self, fHeat):
         
         # Computation of I50B increased by heat stress
-        if self.P['I50B'] != 'NaN' :
-            I50B_Hstressed = self.P['I50B'] + self.P['I50maxH']*(1-fHeat)
+        if self.params['I50B'] != 'NaN' :
+            I50B_Hstressed = self.params['I50B'] + self.params['I50maxH']*(1-fHeat)
         else:
             I50B_Hstressed = 'NaN'
             
@@ -156,7 +155,7 @@ class Crop:
         
         # Computation of impact of soil available water content
 
-        fWater = 1-(self.P['Swater']*ARID)
+        fWater = 1-(self.params['Swater']*ARID)
         
         if type(fWater) is np.float64 or type(fWater) is float:
             if fWater < 0 :
@@ -171,7 +170,7 @@ class Crop:
         
         #Computation of I50B  increased by drought stress
         if I50B_Hstressed != 'NaN' :
-            I50B_Wstressed = I50B_Hstressed+self.P['I50maxW']*(1-fWater)
+            I50B_Wstressed = I50B_Hstressed+self.params['I50maxW']*(1-fWater)
         else:
             I50B_Wstressed = 'NaN'
         
@@ -184,10 +183,10 @@ class Crop:
         fSolar_max = 0.95
         if self.cum_T <= I50C:
             fSolar = fSolar_max/(1+(math.exp(-0.01*(self.cum_T
-                                                    -self.P['I50A']))))
+                                                    -self.params['I50A']))))
         elif self.cum_T > I50C:
             fSolar = fSolar_max/(1+(np.exp(0.01*(self.cum_T
-                                                 -(self.P['Tsum']-I50B_Wstressed)))))
+                                                 -(self.params['Tsum']-I50B_Wstressed)))))
             
         return fSolar
             
@@ -213,33 +212,33 @@ class Crop:
         # Computation of impact of CO2 on radiation use efficiency (fCO2)
 
         if ((CO2 >= 350) & (CO2 < 700)) :
-            fCO2 = 1+self.P['SCO2']*(CO2-350)
+            fCO2 = 1+self.params['SCO2']*(CO2-350)
         elif CO2 >= 700 :
-            fCO2 = 1+self.P['SCO2']*350
+            fCO2 = 1+self.params['SCO2']*350
             
         return fCO2
     
     def get_dry_yield(self):
         
         #Specific potential harvest index
-        dry_yield = self.biomass*self.P['HI']
+        dry_yield = self.biomass*self.params['HI']
 
         return dry_yield
     
     def get_fresh_yield(self, dry_yield):
         
-        fresh_yield = dry_yield*self.P['Fw/Dw']
+        fresh_yield = dry_yield*self.params['Fw/Dw']
     
         return fresh_yield
     
     def get_LAI(self):
         
-        self.LAI = self.P['LAI_a_factor']*self.biomass + self.P['LAI_b_factor']
+        self.LAI = self.params['LAI_a_factor']*self.biomass + self.params['LAI_b_factor']
         
     def get_height(self):
         
         LAI_max = 7
-        height_parameter = self.P['H_max']/LAI_max
+        height_parameter = self.params['H_max']/LAI_max
 
         height = self.LAI*height_parameter
 

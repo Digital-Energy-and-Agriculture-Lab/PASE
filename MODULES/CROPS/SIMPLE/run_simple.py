@@ -16,12 +16,12 @@ from MODULES.CROPS.evapotranspiration_FAO56_PM import get_ET0
 
 def run_independant_years_of_crop(option_2D, WD, daily_irr, lat, alt):
     
-    Crop_init = YAML_Inputs_provider(file = 'CROPS/SIMPLE/crop_init.yaml').i
+    Crop_init = YAML_Inputs_provider(file = 'CROPS/SIMPLE/crop_init.yaml').inputs
     list_rows_to_skip = list(np.arange(1, int(Crop_init['CropID']), 1))
     Crop_param = pd.read_csv('INPUTS/CROPS/SIMPLE/crops_parameters.csv', 
                              skiprows=lambda x: x in list_rows_to_skip, 
                              nrows=1).to_dict('records')[0]
-    Soil_param = YAML_Inputs_provider(file = 'CROPS/SIMPLE/soil_init.yaml').i
+    Soil_param = YAML_Inputs_provider(file = 'CROPS/SIMPLE/soil_init.yaml').inputs
     
     Soil_plot = water_balance.Soil(Soil_param)
     Crop_plot = simple.Crop(Crop_param, 
@@ -31,7 +31,7 @@ def run_independant_years_of_crop(option_2D, WD, daily_irr, lat, alt):
         
         Crop_plot.initiate_one_year_data_dictionaries()
         Soil_plot.initiate_one_year_data_dictionaries()
-        Crop_plot.init_crop()
+        Crop_plot.init_crop(Crop_init)
         Soil_plot.init_soil()
                
         for day in WD[year].index:

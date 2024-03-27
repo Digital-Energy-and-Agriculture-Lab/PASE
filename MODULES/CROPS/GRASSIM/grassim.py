@@ -32,7 +32,7 @@ class Grassland:
             
         '''
         
-        self.I = crop_init
+        self.inits = crop_init
         self.Kc_values = Kc_values
         self.PFT_composition = PFT_composition
         self.PFT_values = PFT_values
@@ -131,7 +131,7 @@ class Grassland:
         self.K = self.PFT_values['K'][0]#parameter for fT RUelle et al. 2018 for soil activity
         self.percentageofNmin = self.PFT_values['percentageofNmin'][0]
         self.NH3volatfactor = self.PFT_values['NH3volatfactor'][0]#The NH3 volat factor depends on the quality of the fertiliser application methods and conditions and is equal to 0.45 if the quality is bad; 0.6 ? 0.45 if it is average, and 0.1 ? 0.45 if it is good
-        self.clay = self.I['clay']
+        self.clay = self.inits['clay']
         self.repartitionN2NO2 = 0.189+(1.171*self.clay/(1+0.136*self.clay))#parameters in Ruelle 2018 for denitrificatoin pathways (N2 vs NO2)
         
     def init_crop(self, daily_irr):
@@ -152,18 +152,18 @@ class Grassland:
         
         #get initial conditions
         # ---------------------
-        self.sward_height = np.full(self.grid_shape, self.I['InitialHeight']) # sward height
-        self.ageGV = np.full(self.grid_shape, self.I['AgeGV']) # age of green vegetative biomass
-        self.ageGR = np.full(self.grid_shape, self.I['AgeGR']) # age of green reproductive biomass
-        self.ageDV = np.full(self.grid_shape, self.I['AgeDV']) # age of dead vegetative biomass
-        self.ageDR = np.full(self.grid_shape, self.I['AgeDR']) # age of dead reproductive biomass
-        self.apex_grazed = np.full(self.grid_shape, self.I['apex_grazed']) #or 1 depending on previous cuts or grazing events
-        self.notRunoff = np.full(self.grid_shape, self.I['notRunoff']) # water that has not run off the soil
-        self.sand = np.full(self.grid_shape, self.I['sand']) # sand fraction of soil
-        self.clay = np.full(self.grid_shape, self.I['clay']) # clay fraction of soil
-        self.org = np.full(self.grid_shape, self.I['org']) # organic matter fraction of soil
-        self.Norg = np.full(self.grid_shape, self.I['Norg']) # Organic Nitrogen in soil
-        self.Nmin = np.full(self.grid_shape, self.I['Nmin']) # Mineral Nitrogen in soil
+        self.sward_height = np.full(self.grid_shape, self.inits['InitialHeight']) # sward height
+        self.ageGV = np.full(self.grid_shape, self.inits['AgeGV']) # age of green vegetative biomass
+        self.ageGR = np.full(self.grid_shape, self.inits['AgeGR']) # age of green reproductive biomass
+        self.ageDV = np.full(self.grid_shape, self.inits['AgeDV']) # age of dead vegetative biomass
+        self.ageDR = np.full(self.grid_shape, self.inits['AgeDR']) # age of dead reproductive biomass
+        self.apex_grazed = np.full(self.grid_shape, self.inits['apex_grazed']) #or 1 depending on previous cuts or grazing events
+        self.notRunoff = np.full(self.grid_shape, self.inits['notRunoff']) # water that has not run off the soil
+        self.sand = np.full(self.grid_shape, self.inits['sand']) # sand fraction of soil
+        self.clay = np.full(self.grid_shape, self.inits['clay']) # clay fraction of soil
+        self.org = np.full(self.grid_shape, self.inits['org']) # organic matter fraction of soil
+        self.Norg = np.full(self.grid_shape, self.inits['Norg']) # Organic Nitrogen in soil
+        self.Nmin = np.full(self.grid_shape, self.inits['Nmin']) # Mineral Nitrogen in soil
         
         #compute initial conditions that depend on PFT parameters
         # -------------------------------------------------------
@@ -207,7 +207,7 @@ class Grassland:
         
 
         
-    def init_dict_one_year(self, year):
+    def initiate_one_year_variables(self, year):
         '''
         Initiate dictionnaries containing values of variables of interest. 
         This list can be extended at will.
@@ -384,7 +384,7 @@ class Grassland:
                     
                     
               
-    def run_grassim_model(self, WD, ET0, irradiation, day):
+    def growth(self, WD, ET0, irradiation, day):
         '''
         GrasSim model (Urbain Kokah)
         Computes new values for crop and soil parameters.

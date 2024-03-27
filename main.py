@@ -136,6 +136,7 @@ time2 = time.time() - start
 print(time2)
 """
 
+"""
 #Example of a way to combine multiple configurations of PV rows and integration of a barrier 
 #(Nicolas started to integrate the combination of mutpliple PV_central files in functions in the MaiBis.py)
 #### TEMPORARY: EXAMPLE OF a .OBJ importation and merging with the PV panels and merge of the 2 PV polydata
@@ -156,23 +157,23 @@ merged = PV_1_3Dconfig.PV_central.merge(structures)
 PV_1_3Dconfig.PV_central.plot()
 structures.plot()
 merged.plot()
-
+"""
 
 # PV production model based on a geometric approach
 PV_central = PV_Production(PV_params_dict)
-PV_central.get_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears_data)
+PV_central.get_several_years_of_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears_data)
 
 
 
 ### CROP MODEL
 #Temporary lines, those 2 parameters (crop_model and option_2D) should be in SCENARIOS input files (general parameters)
-crop_model = 2 # 0 pour pas de crop model, 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
+crop_model = 1 # 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
 Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_data, 
                                      L.daily_irr_spat,
                                      Loc_1)
 
 show_light_map2(L.sourcepoints[:,:-1], 
-                Crop_plot.nyears_data['2007']['Dry_yield'], 
+                Crop_plot.nyears_data['2006']['Dry_yield']['2006-10-10 00:00:00']/100, 
                 PV_1_3Dconfig.PV_central,
-                "Dry yield STICS 2006 [t/ha]")
+                "Dry yield SIMPLE 2006 [t/ha]")

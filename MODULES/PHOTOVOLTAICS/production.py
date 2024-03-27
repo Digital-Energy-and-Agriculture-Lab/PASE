@@ -16,8 +16,6 @@ class PV_Production:
         
         self.bifaciality = inputs['Bifaciality']
         self.bifaciality_factor = inputs['Bifaciality_factor']
-        self.tilt_nonleapY = np.ones(8760)*inputs['TiltY']
-        self.tilt_leapY = np.ones(8784)*inputs['TiltY']
         self.azimut = inputs['CentralAzimut']*np.pi/180
         panel_peak_power = inputs['Panel_Peak_Power']
         self.panel_area = inputs['PanelDimensionX']*inputs['PanelDimensionY']
@@ -29,7 +27,7 @@ class PV_Production:
         self.tiltY = inputs['TiltY']
         
         #Temporary line
-        self.slope_in_rot_axis_direction = 0
+        #self.slope_in_rot_axis_direction = 0
         self.soil_angle = 0
         self.block_dim_x = (inputs['RepetitionDistanceOfPanelsX']*inputs['NumberOfPanelsX']
                             -inputs['RepetitionDistanceOfPanelsX']
@@ -41,7 +39,7 @@ class PV_Production:
                       self.block_space_x)
             
     
-    def get_electricity_production(self, SP, light, WD):
+    def get_several_years_of_electricity_production(self, SP, light, WD):
         
         self.production = {}
         

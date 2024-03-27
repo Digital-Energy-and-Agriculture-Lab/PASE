@@ -13,11 +13,11 @@ from MODULES.CROPS.evapotranspiration_FAO56_PM import get_ET0
 
 def run_independant_years_of_grassland(WD, daily_irr, lat, alt):
     
-    Crop_init = YAML_Inputs_provider(file = 'CROPS/GRASSIM/crop_init_GEMBLOUX.yml').i
-    Kc_values = YAML_Inputs_provider(file = 'CROPS/GRASSIM/Kc_values.yml').i
-    PFT_composition = YAML_Inputs_provider(file = 'CROPS/GRASSIM/PFT_composition.yml').i
+    Crop_init = YAML_Inputs_provider(file = 'CROPS/GRASSIM/crop_init_GEMBLOUX.yml').inputs
+    Kc_values = YAML_Inputs_provider(file = 'CROPS/GRASSIM/Kc_values.yml').inputs
+    PFT_composition = YAML_Inputs_provider(file = 'CROPS/GRASSIM/PFT_composition.yml').inputs
     PFT_values = pd.read_csv('INPUTS/CROPS/GRASSIM/Parameters_values_PFT.csv',header=0, sep=";", decimal='.')
-    Management = YAML_Inputs_provider(file = 'CROPS/GRASSIM/Management.yml').i #need to add duration parameter
+    Management = YAML_Inputs_provider(file = 'CROPS/GRASSIM/Management.yml').inputs #need to add duration parameter
     albedo = 0.2 #needs to be in crop init parameters. Not available for GEMBLOUX crop.
     
     
@@ -26,7 +26,7 @@ def run_independant_years_of_grassland(WD, daily_irr, lat, alt):
     
     for year in WD.keys():
         
-        Crop_plot.init_dict_one_year(year)
+        Crop_plot.initiate_one_year_variables(year)
         Crop_plot.init_crop(daily_irr[year])
     
         for day in WD[year].index:
@@ -53,7 +53,7 @@ def run_independant_years_of_grassland(WD, daily_irr, lat, alt):
                               alt,
                               albedo)
             
-            Crop_plot.run_grassim_model(WD[year].loc[day], ET0, irradiation, day)
+            Crop_plot.growth(WD[year].loc[day], ET0, irradiation, day)
 
             Crop_plot.fill_nyears_data_dict(year)
     

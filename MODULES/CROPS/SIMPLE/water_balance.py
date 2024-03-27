@@ -25,7 +25,7 @@ class Soil:
     
     def __init__(self, soil_par=None):
         
-        self.P = soil_par
+        self.params = soil_par
         self.init_soil()
         self.nyears_data = {}
         
@@ -53,7 +53,7 @@ class Soil:
         
     def init_soil(self):
         
-        self.available_water_RZ_previousday = self.P['InitialAmountOfAvailableWater']
+        self.available_water_RZ_previousday = self.params['InitialAmountOfAvailableWater']
             
     def hydric_balance(self, rain, ET0, irrigation, day_index):
         
@@ -84,7 +84,7 @@ class Soil:
     
     def get_surface_runoff(self, rain):
 
-        potential_maximum_retention = (25400/self.P['RunoffCurveNumber'])-254
+        potential_maximum_retention = (25400/self.params['RunoffCurveNumber'])-254
         initial_abstraction = 0.2*potential_maximum_retention
 
         if rain <= initial_abstraction :
@@ -101,17 +101,17 @@ class Soil:
                                           + rain + irrig - transpi - surf_runoff
         
         if type(available_water_before_drainage) is np.float64:
-            if self.P['WaterHoldingCapacity'] >= (available_water_before_drainage/self.P['RootZoneDepth']) :
+            if self.params['WaterHoldingCapacity'] >= (available_water_before_drainage/self.params['RootZoneDepth']) :
                 deep_drainage = 0
             else :
-                deep_drainage = self.P['DrainageCoeff']*self.P['RootZoneDepth']\
-                    *((available_water_before_drainage/self.P['RootZoneDepth'])
-                      -self.P['WaterHoldingCapacity'])
+                deep_drainage = self.params['DrainageCoeff']*self.params['RootZoneDepth']\
+                    *((available_water_before_drainage/self.params['RootZoneDepth'])
+                      -self.params['WaterHoldingCapacity'])
         else:
             deep_drainage = np.zeros(len(available_water_before_drainage))
-            ind = np.where(self.P['WaterHoldingCapacity'] < (available_water_before_drainage/self.P['RootZoneDepth']))
-            deep_drainage[ind] = self.P['DrainageCoeff']*self.P['RootZoneDepth']\
-                    *((available_water_before_drainage[ind]/self.P['RootZoneDepth'])
-                      -self.P['WaterHoldingCapacity'])         
+            ind = np.where(self.params['WaterHoldingCapacity'] < (available_water_before_drainage/self.params['RootZoneDepth']))
+            deep_drainage[ind] = self.params['DrainageCoeff']*self.params['RootZoneDepth']\
+                    *((available_water_before_drainage[ind]/self.params['RootZoneDepth'])
+                      -self.params['WaterHoldingCapacity'])         
 
         return deep_drainage
