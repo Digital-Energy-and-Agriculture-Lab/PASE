@@ -86,7 +86,7 @@ M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
 # Computation of sun and light data
 Light_instance = Light(WD.nyears_data, Sun_positions_complete)
 # Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
-L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central)
+L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central_PD)
 L.get_light_maps(180,Sun_positions_samp.solar_vector)
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
@@ -100,24 +100,24 @@ j = 5 #day definition
 
 show_light_map2(L.sourcepoints[:,:-1], 
                 L.dir_map[:,3], 
-                PV_1_3Dconfig.PV_central,
+                PV_1_3Dconfig.PV_central_PD,
                 "Direct map [-]")
 
 show_light_map2(L.sourcepoints[:,:-1], 
                 np.array(L.diff_map,dtype=np.float32), 
-                PV_1_3Dconfig.PV_central,
+                PV_1_3Dconfig.PV_central_PD,
                 "Sky visibility map [-]")
 
 show_light_map2(L.sourcepoints[:,:-1], 
                 L.daily_irr_spat['2006'][:,j], 
-                PV_1_3Dconfig.PV_central,
+                PV_1_3Dconfig.PV_central_PD,
                 "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
 
 # Example of visualisation of the meshes generate on both sides of the PV panels to compute light
 """
 import pyvista
 P = pyvista.Plotter()
-P.add_mesh(PV_1_3Dconfig.PV_central)
+P.add_mesh(PV_1_3Dconfig.PV_central_PD)
 P.add_mesh(pyvista.PolyData(TopPoints[:,:-1]),color="blue")
 P.add_mesh(pyvista.PolyData(BotPoints[:,:-1]),color="red")
 P.show()
@@ -153,8 +153,8 @@ GlobalMesh = pyvista.StructuredGrid(x, y, z)
 structures = GlobalMesh.glyph(geom=structure, factor=0.001)
 structures = structures.rotate_z(-AV_1['CentralAzimut'])
 
-merged = PV_1_3Dconfig.PV_central.merge(structures)
-PV_1_3Dconfig.PV_central.plot()
+merged = PV_1_3Dconfig.PV_central_PD.merge(structures)
+PV_1_3Dconfig.PV_central_PD.plot()
 structures.plot()
 merged.plot()
 """
@@ -175,5 +175,5 @@ Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_data
 
 show_light_map2(L.sourcepoints[:,:-1], 
                 Crop_plot.nyears_data['2006']['Dry_yield']['2006-10-10 00:00:00']/100, 
-                PV_1_3Dconfig.PV_central,
+                PV_1_3Dconfig.PV_central_PD,
                 "Dry yield SIMPLE 2006 [t/ha]")
