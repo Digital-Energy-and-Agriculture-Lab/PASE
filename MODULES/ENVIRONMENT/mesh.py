@@ -91,7 +91,7 @@ class Mesh:
     
 
 
-    def add_PV_mesh(self,Geometry,radius = 0.05,flag = "PV"):
+    def add_PV_mesh(self, Geometry, flag="PV"):
         """
         Public method creating a mesh from a Photovoltaic panel geometry
         
@@ -103,13 +103,13 @@ class Mesh:
         Returns:
            
         """
-        coordinates_2d = self.get_surface_sample_points(Geometry,radius)
-        self.add_sourcepoints(coordinates_2d,flag)
-    
-   
-
-    
-
+        
+        #radius = 0.05
+        #coordinates_2d = self.Get_Surface_Sample_Points(Geometry,radius)
+        coordinates = self.get_PV_mesh(Geometry)
+        self.add_sourcepoints(coordinates,flag)
+        
+        
     def add_sensor(self,x,y,z,flag="sensor"):
         """
         Public method creating a sensor located at the x,y,z coordinates
@@ -263,4 +263,23 @@ class Mesh:
             print('Error Filter not correctly set Poisson or Random')
         return pyV.PointSet(vtkPointSet().SafeDownCast(Mask.GetOutputDataObject(0))).points
     
-     
+    def get_PV_mesh(self, Polydata):
+        corners = Polydata.points
+        print(corners)
+        vertex = [0,1,3,2]
+        print(vertex)
+        step = 0.1
+        distA = np.linalg.norm(corners[vertex[0]] - corners[vertex[1]]) 
+        distB = np.linalg.norm(corners[vertex[1]] - corners[vertex[2]]) 
+        
+        dirA = (corners[vertex[0]] - corners[vertex[1]]) / distA
+        dirB = (corners[vertex[1]] - corners[vertex[2]]) / distB
+        
+        spaceA = np.linspace(0,distA,int(distA/step)+1)
+        spaceB = np.linspace(0,distB,int(distB/step)+1)
+        
+        A = dirA.reshape(1,3)*spaceA.reshape(len(spaceA),1)
+        B = dirB.reshape(1,3)*spaceB.reshape(len(spaceB),1)
+        C = np.array([A+b for b in B]).reshape(len(A)*len(B),3)
+        POINTS = corners[vertex[0]]-C
+        return POINTS

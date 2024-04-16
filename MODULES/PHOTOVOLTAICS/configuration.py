@@ -252,14 +252,16 @@ class PV_Configuration_3D:
         xyz_central = np.stack(np.meshgrid(xrng, yrng, zrng),axis = -1).reshape(-1,3)
                 
         PV_central_multiblock = MultiBlock_PASE()  
-        rot_centre_list = []
+        #rot_centre_list = []
         for coord_block in xyz_central:
             for coord_panel in xyz_block:
                 PV_central_multiblock.append(fst_panel.copy().translate(coord_panel)
-                                             .translate(coord_block).rotate_z(-azimut),'PV')
-                rot_centre_list.append(coord_block)
+                                             .translate(coord_block)
+                                             .rotate_y(self.tilt,coord_block,inplace=True)
+                                             .rotate_z(-azimut),'PV')
+                #rot_centre_list.append(coord_block)
         
-        PV_central_multiblock = self.rotation_1st_axis(PV_central_multiblock, self.tilt, rot_centre_list)
+        #PV_central_multiblock = self.rotation_1st_axis(PV_central_multiblock, self.tilt, rot_centre_list)
                 
         
         if self.visualization:

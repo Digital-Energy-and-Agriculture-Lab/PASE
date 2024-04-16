@@ -82,6 +82,8 @@ M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
                                   Loc_1['dY_InterestZone'],
                                   flag="crop")
 
+M.add_PV_mesh(PV_1_3Dconfig.PV_central_MB[3])
+
 
 # Computation of sun and light data
 Light_instance = Light(WD.nyears_data, Sun_positions_complete)
