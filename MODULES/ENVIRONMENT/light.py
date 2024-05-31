@@ -381,25 +381,20 @@ class Ray_casting_scene:
     
         if type(self.geometry) == list:
             sv = np.zeros((1,3))
-            self.dir_map = np.zeros((len(self.meshgrid.X[0,:]),
-                                     len(self.meshgrid.X[:,0]),
-                                     len(sun_P[:,0])))
-            self.diff_map = np.zeros((len(self.meshgrid.X[0,:]),
-                                     len(self.meshgrid.X[:,0]),
-                                     len(sun_P[:,0])))
+            self.dir_map = np.zeros((len(self.sourcepoints),len(sun_P[:,0])))
+            self.diff_map = np.zeros((len(self.sourcepoints),len(sun_P[:,0])))
             
             for time in range(len(sun_P[:,0])):
                 print(time)
                 geometry = self.geometry[time]
-                diff_map = self.diffuse_map(n_small_suns)
+                difff_map = self.diffuse_map(geometry, n_small_suns)
                 sv[0,:] = sun_P[time,:]
-                dir_map = self.direct_map(geometry, sv)
-                self.dir_map[:,:,time] = dir_map[:,:,0]   
-                self.diff_map[:,:,time] = diff_map
+                dirrr_map = self.direct_map(sv, geometry)
+                self.dir_map[:,time] = dirrr_map 
+                self.diff_map[:,time] = difff_map
         else:
-            self.diff_map = self.diffuse_map(n_small_suns)
-            self.dir_map = self.direct_map(sun_P)
-
+            self.diff_map = self.diffuse_map(self.geometry, n_small_suns)
+            self.dir_map = self.direct_map(sun_P, self.geometry)
 
     def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped,tol = 0.01):
         """
@@ -417,12 +412,11 @@ class Ray_casting_scene:
            cleaned id_rays_stopped list where the auto-interception have been removed
         """
         
-        
         delta = np.linalg.norm(intercept_points - SourcePoints[id_rays_stopped,:], axis=1)
         return np.unique(id_rays_stopped[delta>tol])
         
  
-    def diffuse_map(self, n_small_suns=180):
+    def diffuse_map(self, geometry, n_small_suns=180):
         """
         Public method, compute the diffuse light at the point sources defined in the input mesh using
          the approximation of a isotropic half sphere sky. 
@@ -456,7 +450,7 @@ class Ray_casting_scene:
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        intercept_points, id_rays_stopped, _ = self.geometry.multi_ray_trace(SourcePoints,
+        intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
                                                          TargetPoints,
                                                          first_point=False,
                                                          retry=False)
@@ -538,7 +532,7 @@ class Ray_casting_scene:
         Index = self.mesh.get_source_points_index(Flags)
         return {y:self.daily_irr_spat[y][:,Index] for y in self.daily_irr_spat}
     
-    def direct_map(self, sun_P):
+    def direct_map(self, sun_P, geometry):
         """
         Public method, compute the direct light at the point sources defined in the input mesh for
          the positions provide in the sun_P input.
@@ -566,23 +560,30 @@ class Ray_casting_scene:
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        intercept_points, id_rays_stopped, _ = self.geometry.multi_ray_trace(SourcePoints,
+        intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
                                                          TargetPoints,
                                                          first_point=False,
                                                          retry=False)
-        id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
-
         
         #Creation of the initial direct map based on the shape of sun_Positions
         direct_1D_map = np.ones(len(TargetPoints[:,0]), dtype=np.uint16)
-        #Transformation of the 1D index to 3D indexes
+        
+        if len(intercept_points)==0:
+            pass
+        else:
+            id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
+            #Computation of the shade by setting at 0 the locations where rays were intercepted
+            direct_1D_map[id_rays_stopped_filtred] = 0
+        
+        
     
-        #Computation of the shade by setting at 0 the locations where rays were intercepted
-        direct_1D_map[id_rays_stopped_filtred] = 0
-    
+        
+        if type(self.geometry) != list:
         #Reshape of direct map to get a ID,t map
-        direct_ID_t_map =  direct_1D_map.reshape(self.n_sourcepoints,
-                                             len(sun_P[:,0]))  
+            direct_ID_t_map =  direct_1D_map.reshape(self.n_sourcepoints,
+                                                     len(sun_P[:,0]))
+        else:
+            direct_ID_t_map = direct_1D_map
     
         return direct_ID_t_map
     
@@ -658,7 +659,11 @@ class Ray_casting_scene:
 
                 #Calcul de l'irradiation directe et diffuse dans ce jour et injection de la donnee dans le dictionnaire lie
                 irradianceMap_direct[day] = np.sum(self.dir_map[:,list(df_subShade.index)] * df_subShade_merged['BHI'].to_numpy(),axis=1)*10**-6*60*60/n
-                irradianceMap_diffus[day] = np.sum(df_subShade_merged['BHI'].to_numpy())*self.diff_map*10**-6*60*60/n
+                if type(self.geometry) != list:
+                    irradianceMap_diffus[day] = np.sum(df_subShade_merged['DHI'].to_numpy())*self.diff_map*10**-6*60*60/n
+                else:
+                    print('day')
+                    irradianceMap_diffus[day] = np.sum(df_subShade_merged['DHI'].to_numpy()*self.diff_map[:,list(df_subShade.index)], axis=1)*10**-6*60*60/n
             
             #Conversion des dictionnaires en matrice numpy et ajout dans l attribut ad-hoc
             self.daily_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()    + pd.DataFrame.from_dict(irradianceMap_direct).to_numpy() 

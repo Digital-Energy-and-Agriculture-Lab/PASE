@@ -1,28 +1,8 @@
-04:27:02 PM  (INFO)  -  START OF THE SIMULATION
-04:27:02 PM  (INFO)  -  Input values from Siguesol_loc.yaml have been imported successfully
-04:27:02 PM  (INFO)  -  Input values from AV_siguesol.yaml have been imported successfully
-04:27:02 PM  (INFO)  -  Input values from PV_module_SigueSOL.yaml have been imported successfully
-04:27:02 PM  (INFO)  -  Get hourly weather data for year 2006 from PvGis
-04:27:02 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-04:27:02 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 302 0
-04:27:02 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-04:27:02 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 301 None
-04:27:02 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 200 961820
-04:27:03 PM  (INFO)  -  Get hourly weather data for year 2007 from PvGis
-04:27:03 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-04:27:04 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /pvgis5/seriescalc.php?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2007&endyear=2007&components=1&outputformat=json HTTP/1.1" 302 0
-04:27:04 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-04:27:04 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /pvgis5/seriescalc.php?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&useHorizon=1&userHorizon=&startyear=2007&endyear=2007&components=1&outputformat=json HTTP/1.1" 301 None
-04:27:05 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH&startyear=2007&endyear=2007&components=1&outputformat=json HTTP/1.1" 200 960865
-04:27:05 PM  (INFO)  -  Computation of daily weather data for year 2006
-04:27:05 PM  (INFO)  -  Computation of daily weather data for year 2007
-04:27:06 PM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
-04:27:06 PM  (DEBUG)  -  Trying `CDLL(libc.so.6)`
-04:27:06 PM  (DEBUG)  -  Library path: 'libc.so.6'
-04:27:06 PM  (DEBUG)  -  DLL: <CDLL 'libc.so.6', handle 7f8a4d352410 at 0x7f89dd361d60>
-04:27:06 PM  (DEBUG)  -  generating face normals
-04:27:06 PM  (DEBUG)  -  intersects_id executed in 0.3770 seconds.
-04:27:06 PM  (DEBUG)  -  generating face normals
-04:27:07 PM  (DEBUG)  -  intersects_id executed in 0.6157 seconds.
-04:28:39 PM  (INFO)  -  Input values from CROPS/SIMPLE/crop_init.yaml have been imported successfully
-04:28:39 PM  (INFO)  -  Input values from CROPS/SIMPLE/soil_init.yaml have been imported successfully
+10:17:20 AM  (INFO)  -  START OF THE SIMULATION
+10:17:20 AM  (INFO)  -  Input values from Siguesol_loc.yaml have been imported successfully
+10:17:20 AM  (INFO)  -  Input values from AV_siguesol.yaml have been imported successfully
+10:17:20 AM  (INFO)  -  Input values from PV_module_SigueSOL.yaml have been imported successfully
+10:17:20 AM  (INFO)  -  Computation of daily weather data for year 2021
+10:17:21 AM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
+10:18:27 AM  (INFO)  -  Input values from CROPS/SIMPLE/crop_init.yaml have been imported successfully
+10:18:27 AM  (INFO)  -  Input values from CROPS/SIMPLE/soil_init.yaml have been imported successfully

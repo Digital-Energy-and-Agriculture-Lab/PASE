@@ -98,6 +98,7 @@ class PV_Configuration_3D:
                       PV_i['RepetitionDistanceOfPVBlocksX'])
         
         two_facets_rel_position = PV_i['TwoFacetsRelativePosition']
+        self.rot_axis_nbr = PV_i['RotationAxisNumber']
         
         self.visualization = visualization
         
@@ -115,30 +116,30 @@ class PV_Configuration_3D:
         if PV_i['RotationAxisNumber'] == 0:        
             PV_block_PD = self.rotation_1st_axis(PV_block_PD, tilt)
             self.tilt = tilt
-            self.PV_central_PD, self.PV_central_MB = self.create_central(PV_block_PD,
-                                                                         first_panel,
-                                                                         xyz_block,
+            self.PV_central_PD, self.PV_central_MB = self.create_central(PV_block_PD,                                                                         
                                                                          repet_dist_blockX,
                                                                          repet_dist_blockY, 
                                                                          n_blocksX, 
                                                                          n_blocksY, 
                                                                          height,
+                                                                         two_facets_rel_position,
                                                                          azimut,
-                                                                         two_facets_rel_position)
+                                                                         first_panel,
+                                                                         xyz_block)
         else:
-            self.PV_central = []
+            self.PV_central_PD = []
             self.get_tiltY_along_time(sun_vector, azimut, GCR_x)
             for tilt in self.tiltY_along_time:
                 PV_block_tilted = self.rotation_1st_axis(PV_block_PD, tilt)
-                PV_central = self.create_central(PV_block_tilted, 
+                PV_central, PV_central_mb = self.create_central(PV_block_tilted, 
                                                  repet_dist_blockX,
                                                  repet_dist_blockY, 
                                                  n_blocksX, 
                                                  n_blocksY, 
                                                  height,
-                                                 azimut,
-                                                 two_facets_rel_position=0)
-                self.PV_central.append(PV_central)
+                                                 two_facets_rel_position,
+                                                 azimut)
+                self.PV_central_PD.append(PV_central)
             
             
     #Set default parameters in the dict, this avoid error of missing key
@@ -231,9 +232,9 @@ class PV_Configuration_3D:
         
         return PV_polydata_or_multiblock 
         
-    def create_central(self, PV_block_polydata, fst_panel, xyz_block, repet_dist_blockX, 
-                       repet_dist_blockY, n_blocksX, n_blocksY, height, azimut,
-                       two_facets_rel_position):
+    def create_central(self, PV_block_polydata, repet_dist_blockX, 
+                       repet_dist_blockY, n_blocksX, n_blocksY, height,
+                       two_facets_rel_position, azimut, fst_panel=None, xyz_block=None):
         
         xrng = np.arange(repet_dist_blockX*0.5*(1-n_blocksX)+two_facets_rel_position, 
                          repet_dist_blockX*0.5*(n_blocksX+1)+two_facets_rel_position,
@@ -248,21 +249,23 @@ class PV_Configuration_3D:
         PV_central_polydata = GlobalMesh.glyph(geom=PV_block_polydata, factor=1)        
         PV_central_polydata = PV_central_polydata.rotate_z(-azimut)
         
-        #From Stackoverflow 3D coordinates from meshgrid
-        xyz_central = np.stack(np.meshgrid(xrng, yrng, zrng),axis = -1).reshape(-1,3)
-                
-        PV_central_multiblock = MultiBlock_PASE()  
-        #rot_centre_list = []
-        for coord_block in xyz_central:
-            for coord_panel in xyz_block:
-                PV_central_multiblock.append(fst_panel.copy().translate(coord_panel)
-                                             .translate(coord_block)
-                                             .rotate_y(self.tilt,coord_block,inplace=True)
-                                             .rotate_z(-azimut),'PV')
-                #rot_centre_list.append(coord_block)
-        
-        #PV_central_multiblock = self.rotation_1st_axis(PV_central_multiblock, self.tilt, rot_centre_list)
-                
+        if self.rot_axis_nbr == 0:   
+            #From Stackoverflow 3D coordinates from meshgrid
+            xyz_central = np.stack(np.meshgrid(xrng, yrng, zrng),axis = -1).reshape(-1,3)
+                    
+            PV_central_multiblock = MultiBlock_PASE()  
+            #rot_centre_list = []
+            for coord_block in xyz_central:
+                for coord_panel in xyz_block:
+                    PV_central_multiblock.append(fst_panel.copy().translate(coord_panel)
+                                                 .translate(coord_block)
+                                                 .rotate_y(self.tilt,coord_block,inplace=True)
+                                                 .rotate_z(-azimut),'PV')
+                    #rot_centre_list.append(coord_block)
+            
+            #PV_central_multiblock = self.rotation_1st_axis(PV_central_multiblock, self.tilt, rot_centre_list)
+        else:
+            PV_central_multiblock = None
         
         if self.visualization:
             plotter = pyV.Plotter(lighting=None)
@@ -343,10 +346,10 @@ class PV_Configuration_3D:
     
     def get_limitated_angle(self, tiltY):
        
-        ind = np.where(tiltY>np.pi/2)
-        tiltY[ind] = 0
-        ind = np.where(tiltY<-np.pi/2)
-        tiltY[ind] = 0
+        ind = np.where(tiltY>np.pi/3)
+        tiltY[ind] = np.pi/3
+        ind = np.where(tiltY<-np.pi/3)
+        tiltY[ind] = -np.pi/3
                
         return tiltY
         

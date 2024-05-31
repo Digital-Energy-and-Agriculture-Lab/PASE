@@ -21,7 +21,7 @@ from MODULES.CROPS.run_crop_simulations import run_crop_simu
 PASE_Logger()
 # Import of general parameters
 Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inputs
-# Import PV central and panels parameters
+# Import PV system and PV modules parameters
 AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
@@ -82,7 +82,8 @@ M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
                                   Loc_1['dY_InterestZone'],
                                   flag="crop")
 
-M.add_PV_mesh(PV_1_3Dconfig.PV_central_MB[3])
+#Activation of the ray castinf from a PV module of the central (this functionnalities is under construction)
+#M.add_PV_mesh(PV_1_3Dconfig.PV_central_MB[3]) #(This will not work if you are with a PV system with a rotation axis)
 
 
 # Computation of sun and light data
@@ -97,7 +98,8 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP,
 #DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])
 
 
-# Examples of visualisation
+# Examples of visualisation for the direct light map, diffuse light map (sky view factor)
+# and daily irradiation map. Those lines are for PV system with no rotation axis. 
 j = 5 #day definition
 
 show_light_map2(L.sourcepoints[:,:-1], 
@@ -111,9 +113,31 @@ show_light_map2(L.sourcepoints[:,:-1],
                 "Sky visibility map [-]")
 
 show_light_map2(L.sourcepoints[:,:-1], 
-                L.daily_irr_spat['2006'][:,j], 
+                L.daily_irr_spat['2021'][:,j], 
                 PV_1_3Dconfig.PV_central_PD,
                 "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
+
+"""
+# Examples of visualisation for the direct light map, diffuse light map (sky view factor)
+# and daily irradiation map. Those lines are for PV system with ONE rotation axis. 
+j = 5 #Julian day definition
+sun_p = 5 #Index of the sun positions as it is in the Sun_positions_samp.SP attribute
+show_light_map2(L.sourcepoints[:,:-1], 
+                L.dir_map[:,sun_p], 
+                PV_1_3Dconfig.PV_central_PD[sun_p],
+                "Direct map [-]")
+
+show_light_map2(L.sourcepoints[:,:-1], 
+                np.array(L.diff_map[:,sun_p],dtype=np.float32), 
+                PV_1_3Dconfig.PV_central_PD[sun_p],
+                "Sky visibility map [-]")
+
+show_light_map2(L.sourcepoints[:,:-1], 
+                L.daily_irr_spat['2021'][:,j], 
+                PV_1_3Dconfig.PV_central_PD[sun_p],
+                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")"
+"""
+
 
 # Example of visualisation of the meshes generate on both sides of the PV panels to compute light
 """
@@ -176,6 +200,6 @@ Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_data
                                      Loc_1)
 
 show_light_map2(L.sourcepoints[:,:-1], 
-                Crop_plot.nyears_data['2006']['Dry_yield']['2006-10-10 00:00:00']/100, 
+                Crop_plot.nyears_data['2005']['Dry_yield']['2005-10-10 00:00:00']/100, 
                 PV_1_3Dconfig.PV_central_PD,
-                "Dry yield SIMPLE 2006 [t/ha]")
+                "Dry yield SIMPLE 2005 [t/ha]")

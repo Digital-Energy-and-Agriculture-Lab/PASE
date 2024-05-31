@@ -67,7 +67,8 @@ class Weather_data:
         
         self.nyears_data = {}
         WD = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', file + '.csv'), delimiter = ',')
-        new_index = pd.date_range("01-01-2021 00:00:00", "31-12-2021 23:45:00",
+        new_index = pd.date_range("01-01-"+str(start_year)+" 00:00:00",
+                                  "31-12-"+str(end_year)+" 23:45:00",
                                   freq='15Min')
         WD = WD.set_index(new_index)
         #WD['date'] = pd.to_datetime(WD['date'])
@@ -115,9 +116,6 @@ class Weather_data:
                 
                 daily_rain = rain_vap_pressure['PRECIPITATION'][mask].tolist()
                 vap_press = rain_vap_pressure['VAPOR_PRESSURE'][mask].tolist()
-                min_RH = math.nan
-                max_RH = math.nan
-                mean_RH = math.nan
             
             data_to_resample = self.nyears_data[year]
             
@@ -133,16 +131,10 @@ class Weather_data:
             WS_crop_2m = get_wind_speed_specific_height(np.array(mean_WS)).tolist()
             
             if csv_file is None:
-                min_RH = data_to_resample['RH2m'].resample('D').min().tolist()
-                max_RH = data_to_resample['RH2m'].resample('D').max().tolist()
-                mean_RH = data_to_resample['RH2m'].resample('D').mean().tolist()
+                vap_press = data_to_resample['VAPOR_PRESSURE'].resample('D').mean().tolist()
                 daily_rain = data_to_resample['PRECIP'].resample('D').sum()
-                vap_press = math.nan
             
-            daily_weather = pd.DataFrame({'Avg_RH':mean_RH,
-                                          'Min_RH':min_RH,
-                                          'Max_RH':max_RH,
-                                          'Daily_rad':daily_rad,
+            daily_weather = pd.DataFrame({'Daily_rad':daily_rad,
                                           'Avg_temp':mean_temp,
                                           'Min_temp':min_temp,
                                           'Max_temp':max_temp,
