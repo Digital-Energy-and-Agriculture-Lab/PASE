@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Aug 28 11:17:56 2023
 
-@author: roxane
-"""
-
+#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
+#This file is part of the PASE software, and is distributed under the MIT license.
 
 def generate_weather_data_file(WD, irrad, loc_name):
     

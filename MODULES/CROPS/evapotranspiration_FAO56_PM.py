@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Aug 25 13:51:44 2023
 
-@author: roxane
-"""
+#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
+#This file is part of the PASE software, and is distributed under the MIT license.
 
 import numpy as np
 import math

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Aug 11 09:16:49 2023
 
-@author: nicolasdecock
-"""
+#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Author : Nicolas De Cock (nicolas.decock1@gmail.com)
+#This file is part of the PASE software, and is distributed under the MIT license.
+
 
 import numpy as np
 from vtk import vtkPointSet, vtkPoissonDiskSampler, vtkMaskPoints

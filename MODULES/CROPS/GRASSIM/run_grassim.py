@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 26 15:06:53 2023
 
-@author: lloui
-"""
+#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Author : Louis Lemaire (Louis.Lemaire@uliege.be)
+#This file is part of the PASE software, and is distributed under the MIT license.
 
 import pandas as pd
 from MODULES.CROPS.GRASSIM import grassim

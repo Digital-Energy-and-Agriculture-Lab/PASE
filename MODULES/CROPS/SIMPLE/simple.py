@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+
+#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
+#This file is part of the PASE software, and is distributed under the MIT license.
+
 """
-
-Code developped within the agrivoltaic modeling framework project.
-The model calculates the growth of the crop and its yield.
-
 The implemented model was taken from:
 "A SIMPLE crop model (C. Zhao, B. Liu, L. Xiao et al., 2019)"
 

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 23 12:26:28 2023
 
-@author: roxane
-"""
+#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
+#This file is part of the PASE software, and is distributed under the MIT license.
 
 from MODULES.CROPS.SIMPLE.run_simple import run_independant_years_of_crop
 from MODULES.CROPS.STICS.JAVA.run_java_stics import run_independant_usms

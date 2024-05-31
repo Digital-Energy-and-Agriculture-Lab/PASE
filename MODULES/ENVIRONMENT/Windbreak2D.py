@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Feb 28 08:26:50 2023
 
-@author: Nicolas.DeCock
-"""
+#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Author : Nicolas De Cock (nicolas.decock1@gmail.com)
+#This file is part of the PASE software, and is distributed under the MIT license.
 
 import numpy as np
 import matplotlib.pyplot as plt

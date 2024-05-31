@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 26 15:32:38 2023
 
-@author: lloui
-"""
+#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Author : Louis Lemaire (Louis.Lemaire@uliege.be)
+#This file is part of the PASE software, and is distributed under the MIT license.
+
 import numpy as np
 import pandas as pd
 import datetime

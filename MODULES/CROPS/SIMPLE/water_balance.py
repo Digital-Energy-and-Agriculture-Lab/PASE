@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
+#This file is part of the PASE software, and is distributed under the MIT license.
+
 """
-Created on Wed Apr 14 17:08:16 2021
-
-@author: Roxane Bruhwyler
-
 Equations used were entirely taken from "Crop evapotranspiration - Guidelines for computing
 crop water requirements - FAO Irrigation and drainage paper 56" (Allen. R, Pereira. L et al.,1998)
 available at the following link:
@@ -16,7 +17,6 @@ that are used in crop models to reduce growth when root water uptake is not adeq
 to meet the transpiration demand of the atmosphere. It is explained in the paper:
 Agricultural reference index for drought (ARID), Woli, Prem, Jones, James W.,
 Ingram, Keith T. and Fraisse, Clyde W, 2012, Agronomy journal.
-
 """
 # importation of public packages
 import numpy as np

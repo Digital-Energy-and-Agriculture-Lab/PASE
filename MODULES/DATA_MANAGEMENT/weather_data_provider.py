@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Feb 15 13:16:38 2023
 
-@author: roxane
-"""
+#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Authors : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com) and Benoît Stalport
+#This file is part of the PASE software, and is distributed under the MIT license.
 
 from datetime import datetime, timedelta
 import pandas as pd
