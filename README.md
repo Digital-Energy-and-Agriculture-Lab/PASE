@@ -19,3 +19,8 @@ As a user, you should only modify the input files in the INPUTS folder. There is
 # License
 
 This software is available mainly under the MIT license, copyright University of Liège, Digital Energy and Agriculture Lab (DEAL). For a complete list of package dependencies with copyright and license information, please look at the file LICENSE-3RD-PARTY
+
+## JavaStics
+
+As PASE 1.0 is distributed with a MIT license but that JavaStics 1.5.1 redistribution and use are permitted for NON-COMMERCIAL purposes, the JavaStics 1.5.1 executable has been remove from the place it should be: INPUTS/CROPS/STICS.
+If you want to use the crop model STICS for NON-COMMERCIAL purposes, you should download JavaStics 1.5.1 : https://stics.inrae.fr/telechargement and place the executable file at the place detailed just before.
