@@ -49,7 +49,7 @@ class Weather_data:
             pvgis.latitude, pvgis.longitude = lat, long
             pvgis.start_date = datetime(year, 1, 1, 00, 00, 00)
             pvgis.end_date = datetime(year, 12, 31, 23, 59, 59)
-            pvgis.rad_Database = 'PVGIS-SARAH'
+            pvgis.rad_Database = 'PVGIS-SARAH3'
             pvgis.request_hourly_time_series()
             one_year_dataframe = pvgis.pandas_data_frame()
             new_index = pd.date_range("01-01-"+str(year)+" 00:10:00", "31-12-"+str(year)+" 23:10:00",
@@ -151,7 +151,7 @@ class PvGis:
 # Source : https://github.com/MechatronicsBlog/Weather_data_Python_PVGIS/blob/master/PvGis.py    
 
     # Request API
-    API_HOURLY_TIME_SERIES = 'http://re.jrc.ec.europa.eu/pvgis5/seriescalc.php'
+    API_HOURLY_TIME_SERIES = 'http://re.jrc.ec.europa.eu/api/seriescalc'
 
     # API parameters
     PARAM_LATITUDE = 'lat'
@@ -194,7 +194,7 @@ class PvGis:
     # 'PVGIS-NSRDB' for the Americas between 60°N and 20°S
     # 'PVGIS-ERA5' and 'PVGIS-COSMO' for Europe (including high-latitudes)
     # 'PVGIS-CMSAF' for Europe and Africa(will be deprecated)
-    DEF_RAD_DATABASE = 'PVGIS-SARAH'
+    DEF_RAD_DATABASE = 'PVGIS-SARAH3'
     # Calculate taking into account shadows from high horizon. Value of 1 for "yes"
     DEF_AUTO_HORIZON = 1
     # Height of the horizon at equidistant directions around the point of interest, in degrees.

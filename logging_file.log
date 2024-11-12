@@ -1,8 +1,25 @@
-10:17:20 AM  (INFO)  -  START OF THE SIMULATION
-10:17:20 AM  (INFO)  -  Input values from Siguesol_loc.yaml have been imported successfully
-10:17:20 AM  (INFO)  -  Input values from AV_siguesol.yaml have been imported successfully
-10:17:20 AM  (INFO)  -  Input values from PV_module_SigueSOL.yaml have been imported successfully
-10:17:20 AM  (INFO)  -  Computation of daily weather data for year 2021
-10:17:21 AM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
-10:18:27 AM  (INFO)  -  Input values from CROPS/SIMPLE/crop_init.yaml have been imported successfully
-10:18:27 AM  (INFO)  -  Input values from CROPS/SIMPLE/soil_init.yaml have been imported successfully
+08:20:24 AM  (INFO)  -  START OF THE SIMULATION
+08:20:24 AM  (INFO)  -  Input values from Siguesol_loc.yaml have been imported successfully
+08:20:24 AM  (INFO)  -  Input values from AV_siguesol.yaml have been imported successfully
+08:20:24 AM  (INFO)  -  Input values from PV_module_SigueSOL.yaml have been imported successfully
+08:20:24 AM  (INFO)  -  Get hourly weather data for year 2008 from PvGis
+08:20:24 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+08:20:24 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2008&endyear=2008&components=1&outputformat=json HTTP/1.1" 302 0
+08:20:24 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+08:20:25 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2008&endyear=2008&components=1&outputformat=json HTTP/1.1" 200 963131
+08:20:26 AM  (INFO)  -  Get hourly weather data for year 2009 from PvGis
+08:20:26 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+08:20:26 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2009&endyear=2009&components=1&outputformat=json HTTP/1.1" 302 0
+08:20:26 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+08:20:27 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2009&endyear=2009&components=1&outputformat=json HTTP/1.1" 200 961201
+08:20:29 AM  (INFO)  -  Get hourly weather data for year 2010 from PvGis
+08:20:29 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+08:20:29 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2010&endyear=2010&components=1&outputformat=json HTTP/1.1" 302 0
+08:20:29 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+08:20:30 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2010&endyear=2010&components=1&outputformat=json HTTP/1.1" 200 961788
+08:20:31 AM  (INFO)  -  Computation of daily weather data for year 2008
+08:20:31 AM  (INFO)  -  Computation of daily weather data for year 2009
+08:20:31 AM  (INFO)  -  Computation of daily weather data for year 2010
+08:20:31 AM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
+08:20:54 AM  (INFO)  -  Input values from CROPS/SIMPLE/crop_init.yaml have been imported successfully
+08:20:54 AM  (INFO)  -  Input values from CROPS/SIMPLE/soil_init.yaml have been imported successfully

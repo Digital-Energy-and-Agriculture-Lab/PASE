@@ -113,7 +113,7 @@ show_light_map2(L.sourcepoints[:,:-1],
                 "Sky visibility map [-]")
 
 show_light_map2(L.sourcepoints[:,:-1], 
-                L.daily_irr_spat['2021'][:,j], 
+                L.daily_irr_spat['2008'][:,j], 
                 PV_1_3Dconfig.PV_central_PD,
                 "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
 
@@ -200,6 +200,6 @@ Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_data
                                      Loc_1)
 
 show_light_map2(L.sourcepoints[:,:-1], 
-                Crop_plot.nyears_data['2005']['Dry_yield']['2005-10-10 00:00:00']/100, 
+                Crop_plot.nyears_data['2008']['Dry_yield']['2008-10-10 00:00:00']/100, 
                 PV_1_3Dconfig.PV_central_PD,
-                "Dry yield SIMPLE 2005 [t/ha]")
+                "Dry yield SIMPLE 2008 [t/ha]")
