@@ -5,3 +5,12 @@
 *.png
 
 .idea/
+
+*.csv
+
+
+*.sti
+*param_files/*
+*default/*
+*logs/*
+*STICS/*
