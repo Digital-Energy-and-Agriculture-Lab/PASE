@@ -37,7 +37,7 @@ If you haven’t installed Conda, we recommend following the [Conda installation
    pip install pyembree embreex
    ```
 
-4. The framework is now ready for use.
+4. The framework is now ready for use (for advanced crop modeling, see section [Installing JavaStics](#installing-javastics)).
 
 ### Unix-based Installation
 
@@ -53,7 +53,13 @@ If you haven’t installed Conda, we recommend following the [Conda installation
    conda activate pase
    ```
 
-3. The framework is now ready for use.
+3. The framework is now ready for use (for advanced crop modeling, see section [Installing JavaStics](#installing-javastics)).
+
+## Installing JavaStics
+
+Due to license incompatibilities, the JavaStics 1.5.1 executable is not included in the PASE repository.
+
+If you want to use the crop model STICS, download JavaStics 1.5.1 : https://stics.inrae.fr/telechargement and place the executable "JavaSticsCmd.exe" under INPUTS/CROPS/STICS.
 
 ## Getting Started
 
