@@ -95,7 +95,6 @@ class Weather_data:
 
             new_index2 = pd.date_range("01-01-2005 00:00:00","31-12-2015 00:00:00", freq='D')
             rain_vap_pressure = daily_csv.drop(['id','DAY'], axis=1).set_index(new_index2)
-            
                    
         if (freq_deter == 8760 or freq_deter == 8784):
             n = 1
