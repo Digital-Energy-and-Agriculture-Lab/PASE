@@ -130,14 +130,13 @@ class Sun_positions:
     
     
 class Light:
-
-    def __init__(self, WD, SP):
+    def __init__(self, WD, SP, ghi_multiplier=1):
         
         self.data = {}
        
         for year in WD.keys():
             
-            GHI = WD[year]['G(h)'].to_numpy()
+            GHI = WD[year]['G(h)'].to_numpy() * ghi_multiplier
             
             if int(year)%4 == 0:                
                 rad_top_atm = SP.sp_leapY['Top_atm_radiation'].to_numpy()
