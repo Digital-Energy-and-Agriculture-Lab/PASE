@@ -51,23 +51,23 @@ Nmin:
     Unit: kilograms per hectare
     Definition: Mineral nitrogen in soil
 Norg:
-    Value: 8750
+    Value: 3.0896551609039307
     Type: float
     Limit: [0,20000]
     Unit: kilograms per hectare
     Definition: Organic nitrogen in soil
 sand:
-    Value: 70
+    Value: 25.108574
     Type: float
     Limit: [0,100]
     Definition: proportion of sand in the soil
 clay:
-    Value: 20
+    Value: 25.965515
     Type: float
     Limit: [0,100]
     Definition: proportion of clay in the soil
 org:
-    Value: 4
+    Value: 3.0896551609039307
     Type: float
     Limit: [0,100]
     Definition: proportion of organic matter in the soil
@@ -90,4 +90,10 @@ Tlim:
     Value : 18
     Type: float
     Limit: [0,100]
-    Definition : Air temperature at which growth ends
+    Definition : Air temperature at which growth endsss
+
+soil_depth:
+    Value: 1000
+    Type: float
+    Limit: [0,2000]
+    Definition: soil depth in mm

@@ -177,9 +177,14 @@ class Grassland:
         self.diffBMDV = self.BMDV
         self.diffBMDR = self.BMDR
         self.diffBM = self.BM
-        self.WaterCapacity = (0.2576-0.002*self.sand+0.0036*self.clay+0.0299*self.org)*1000 
-        self.WaterSaturation = 100/88*self.WaterCapacity
-        self.Wiltingpoint = (0.026+0.005*self.clay+0.0158*self.org)*1000
+        if self.inits['soil_depth'] >= 1000:
+            self.WaterCapacity = (0.2576 - 0.002 * self.sand + 0.0036 * self.clay + 0.0299 * self.org) * 1000
+            self.Wiltingpoint = (0.026 + 0.005 * self.clay + 0.0158 * self.org) * 1000
+        else:
+            self.WaterCapacity = (0.2576 - 0.002 * self.sand + 0.0036 * self.clay + 0.0299 * self.org) * self.inits[
+                'soil_depth']
+            self.Wiltingpoint = (0.026 + 0.005 * self.clay + 0.0158 * self.org) * self.inits['root_depth']
+        self.WaterSaturation = 100 / 88 * self.WaterCapacity
         
         #initial water content is arbitrarily set to soil water capacity
         self.water = self.WaterCapacity
@@ -212,6 +217,8 @@ class Grassland:
         Initiate dictionnaries containing values of variables of interest. 
         This list can be extended at will.
         '''
+        self.days_since_cut = None
+        
         self.dict_sward_height = {}
         self.dict_BMGV = {}
         self.dict_BMGR = {}
@@ -264,7 +271,7 @@ class Grassland:
         
         #get management_input
         # -------------------
-        self.get_management_input(year)
+        self.get_management_input()
         
         
     def fill_nyears_data_dict(self, year):
@@ -330,7 +337,7 @@ class Grassland:
         
         self.nyears_data[year] = self.data_dict
         
-    def get_management_input(self, year):
+    def get_management_input(self):
         '''
         Get management inputs with type of management and date of application
         
@@ -340,49 +347,11 @@ class Grassland:
             - organic fertilization
         '''
         
-        list_grazing_days = pd.to_datetime(self.management['CutDays'], format='%d-%m-%Y')
-        list_cut_height = self.management['CutHeight']
-        list_FertlizationDateMin = pd.to_datetime(self.management['FertlizationDateMin'], format='%d-%m-%Y')
-        list_FertlizationQuantityMin = self.management['FertlizationQuantityMin']
-        list_FertlizationDateOrg = pd.to_datetime(self.management['FertlizationDateOrg'], format='%d-%m-%Y')
-        list_FertlizationQuantityOrg = self.management['FertlizationQuantityOrg']
-        
-        #CREATE DICTIONNARY FOR 1 YEAR
-        if calendar.isleap(int(year)):
-            ndays = 366
-        else:
-            ndays = 365
-        
-        start = datetime.date(int(year), 1, 1)
-        
-        zeros = [{'cut_height':0, 'fert_min':0, 'fert_org':0} for x in range(ndays)]        
-        dates = [start + datetime.timedelta(days=x) for x in range(ndays)]
-        '''
-        for i, dict_values in enumerate(zeros):
-            
-            for j, date in enumerate(list_grazing_days):
-                if dates[i] == date.date():
-                    zeros[i]['cut_height'] = list_cut_height[j]
-
-        '''
-        self.dict_management = dict(zip(dates, zeros))
-        
-        
-        for key in self.dict_management:
-            
-            for index, value in enumerate(list_grazing_days):         
-                if key == value.date():
-                    self.dict_management[key]['cut_height'] = list_cut_height[index]
-                    
-            for index, value in enumerate(list_FertlizationDateMin):
-                if key == value.date():
-                    self.dict_management[key]['fert_min'] = list_FertlizationQuantityMin[index]
-                    
-            for index, value in enumerate(list_FertlizationDateOrg):
-                if key == value.date():
-                    self.dict_management[key]['fert_org'] = list_FertlizationQuantityOrg[index]
-                    
-                    
+        self.cutHeight = self.management['cutHeight']
+        self.maxHeight = self.management['maxHeight']
+        self.cutToFertDays = self.management['cutToFertDays']
+        self.fertOrg = self.management['fertOrg']
+        self.fertMin = self.management['fertMin']
               
     def growth(self, WD, ET0, irradiation, day):
         '''
@@ -402,11 +371,31 @@ class Grassland:
         day : datetime Timestamp 
             day of simulation
 
-        '''  
+        '''
+        
+        # Management variables setting 
+        self.mean_sward_height = np.mean(self.sward_height)
+        
+        ## cut decision
+        if self.mean_sward_height > self.maxHeight :
+            cut_height = self.cutHeight
+            self.days_since_cut = 0
+        else :
+            cut_height = 0
+        ## fertilization decision
+        if self.days_since_cut == self.cutToFertDays:
+            fert_org = self.fertOrg
+            fert_min = self.fertMin
+        else :
+            fert_org = 0
+            fert_min = 0
+        
+        if self.days_since_cut != None:
+            self.days_since_cut += 1
+            
+        
         self.irradiation = irradiation
 
-        management = self.dict_management[day.date()]
-        cut_height = management['cut_height']
         
         self.day = day
         
@@ -658,9 +647,9 @@ class Grassland:
         #The effect of N status on RUE (fN)(adapted from CATIMO model)
         #--------------------------
         
-        fN = 0.99*(1-(3.78*np.exp(-5.36*RNC)))
-        fN = fN.clip(min=0, max=1)
-        
+        # fN = 0.99*(1-(3.78*np.exp(-5.36*RNC)))
+        # fN = fN.clip(min=0, max=1)
+        fN=0.8
         #Environmental limitations
         #----------------------
         fWfN = np.where(fW<fN, fW, fN)
@@ -798,10 +787,9 @@ class Grassland:
           
         #Soil N
         #------
-        self.Norg = self.Norg + immobilization - mineralisation + (1-self.percentageofNmin)*management["fert_org"] + Nplantlitter# the N content of dead material was ascribed the fixed value of 8 g N/kg DM (Delagarde et al., 2000).(DOI: 10.1080/01431160110114529 and Leconte et Laissus, 1985)  
-        self.Nmin = self.Nmin + Nfromrain + mineralisation + management["fert_min"] + self.percentageofNmin*(1-self.NH3volatfactor)*management["fert_org"] - immobilization - Nuptake - NLeached
-        
-        print(management["fert_org"], management["fert_min"])
+        self.Norg = self.Norg + immobilization - mineralisation + (1-self.percentageofNmin)*fert_org + Nplantlitter# the N content of dead material was ascribed the fixed value of 8 g N/kg DM (Delagarde et al., 2000).(DOI: 10.1080/01431160110114529 and Leconte et Laissus, 1985)  
+        self.Nmin = self.Nmin + Nfromrain + mineralisation + fert_min + self.percentageofNmin*(1-self.NH3volatfactor)*fert_org - immobilization - Nuptake - NLeached
+
         # Cut day conditions
         #-------------------    
         cutBMGV = cut_height*10*self.BDGV
