@@ -183,7 +183,7 @@ class Grassland:
         else:
             self.WaterCapacity = (0.2576 - 0.002 * self.sand + 0.0036 * self.clay + 0.0299 * self.org) * self.inits[
                 'soil_depth']
-            self.Wiltingpoint = (0.026 + 0.005 * self.clay + 0.0158 * self.org) * self.inits['root_depth']
+            self.Wiltingpoint = (0.026 + 0.005 * self.clay + 0.0158 * self.org) * self.inits['soil_depth']
         self.WaterSaturation = 100 / 88 * self.WaterCapacity
         
         #initial water content is arbitrarily set to soil water capacity
