@@ -651,6 +651,7 @@ class Grassland:
         
         # fN = 0.99*(1-(3.78*np.exp(-5.36*RNC)))
         # fN = fN.clip(min=0, max=1)
+        #According to model developers, fN (Nitrogen stress factor) calculation need a rework. For now, it is set to a fixed 0.8 value.
         fN=0.8
         #Environmental limitations
         #----------------------
