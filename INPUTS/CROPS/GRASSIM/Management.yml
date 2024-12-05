@@ -2,7 +2,7 @@ maxHeight:
     Value: 0.35
     Type: float
     Unit: m
-    Description: maximum mean sward height before cuttig
+    Description: maximum mean sward height before cutting
     Limit:  [0.05, 2]
 cutHeight:
     Value: 0.05

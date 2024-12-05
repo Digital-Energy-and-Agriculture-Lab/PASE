@@ -177,7 +177,9 @@ class Grassland:
         self.diffBMDV = self.BMDV
         self.diffBMDR = self.BMDR
         self.diffBM = self.BM
-        if self.inits['soil_depth'] >= 1000:
+        #Maximum relevant soil depth for grassland water dynamics is 1 meter.
+
+        if self.inits['soil_depth'] >= self.inits['max_soil_depth']:
             self.WaterCapacity = (0.2576 - 0.002 * self.sand + 0.0036 * self.clay + 0.0299 * self.org) * 1000
             self.Wiltingpoint = (0.026 + 0.005 * self.clay + 0.0158 * self.org) * 1000
         else:
@@ -376,13 +378,13 @@ class Grassland:
         # Management variables setting 
         self.mean_sward_height = np.mean(self.sward_height)
         
-        ## cut decision
+        ## cut decision based on sward height
         if self.mean_sward_height > self.maxHeight :
             cut_height = self.cutHeight
             self.days_since_cut = 0
         else :
             cut_height = 0
-        ## fertilization decision
+        ## fertilization decision base on number of days since last cut
         if self.days_since_cut == self.cutToFertDays:
             fert_org = self.fertOrg
             fert_min = self.fertMin

@@ -97,3 +97,9 @@ soil_depth:
     Type: float
     Limit: [0,2000]
     Definition: soil depth in mm
+
+max_soil_depth:
+    Value: 1000
+    Type: float
+    Limit: [0,2000]
+    Definition: maximum relevant soil depth in mm. It should be set at 1 meter.
