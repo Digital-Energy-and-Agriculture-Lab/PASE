@@ -1,28 +1,31 @@
-CutDays:
-    Value: [18-05-2005, 23-06-2005, 17-07-2005, 18-09-2005, 14-11-2005]
-    Type: list
-    Description: Date of grass cutting
-CutHeight:
-    Value: [0.05, 0.05, 0.05, 0.05, 0.05]
-    Type: list
+maxHeight:
+    Value: 0.35
+    Type: float
+    Unit: m
+    Description: maximum mean sward height before cutting
+    Limit:  [0.05, 2]
+cutHeight:
+    Value: 0.05
+    Type: float
     Unit: m
     Description: remaining grass height
-FertlizationDateMin:
-    Value: [03-04-2005, 20-05-2005, 28-06-2005]
-    Type: list
-    Description: Date of mineral fertilisation
-FertlizationQuantityMin: 
-    Value: [80, 60, 60]
-    Type: list
+    Limit: [0.01, 1]
+cutToFertDays:
+    Value: 3
+    Type: integer
+    Unit: day
+    Description: time between cut and fertilization
+    Limit: [0, 365]
+fertMin: 
+    Value: 60
+    Type: float
     Unit: KgN/ha
     Description: Amount of mineral fertilizer applied
-FertlizationDateOrg:
-    Value: []
-    Type: list
-    Description: Date of organic fertilisation
-FertlizationQuantityOrg: 
-    Value: []
-    Type: list
+    Limit: [0, 999]
+fertOrg: 
+    Value: 0
+    Type: float
     Unit: KgN/ha
-    Description: Amount oforganic fertilizer applied
+    Description: Amount of organic fertilizer applied
+    Limit: [0, 999]
     
