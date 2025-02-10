@@ -1,0 +1,14 @@
+soil_variables:
+- Norg
+- Nmin
+- immobilization
+- mineralization
+- Vp
+
+crop_variables:
+- N_uptake
+- QNGV
+- FNH
+- GRO
+- GROGV
+- SENGV

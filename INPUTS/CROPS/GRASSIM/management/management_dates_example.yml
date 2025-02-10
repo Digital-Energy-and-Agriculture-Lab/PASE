@@ -1,0 +1,30 @@
+maxHeight:
+    Value: 0.35
+    Type: float
+    Unit: m
+    Description: maximum mean sward height before cutting
+    Limit:  [0.05, 2]
+cutHeight:
+    Value: 0.05
+    Type: float
+    Unit: m
+    Description: remaining grass height
+    Limit: [0.01, 1]
+cutToFertDays:
+    Value: 3
+    Type: integer
+    Unit: day
+    Description: time between cut and fertilization
+    Limit: [0, 365]
+fert_min: 
+    Value: 0
+    Type: float
+    Unit: KgN/ha
+    Description: Amount of mineral fertilizer applied
+    Limit: [0, 999]
+fert_org: 
+    Value: 0
+    Type: float
+    Unit: KgN/ha
+    Description: Amount of organic fertilizer applied
+    Limit: [0, 999]
