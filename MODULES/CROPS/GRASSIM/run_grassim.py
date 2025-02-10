@@ -4,56 +4,119 @@
 #Author : Louis Lemaire (Louis.Lemaire@uliege.be)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
+import os
 import pandas as pd
-from MODULES.CROPS.GRASSIM import grassim
+import yaml
+from MODULES.CROPS.GRASSIM.plants.plants import Plants
+from MODULES.CROPS.GRASSIM.soil.soil import Soil
+from MODULES.CROPS.GRASSIM.management.management import Management
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.CROPS.evapotranspiration_FAO56_PM import get_ET0
 
+def run_grassim(WD, daily_irr, lat, alt):
+    
+    crop_init = YAML_Inputs_provider(file='CROPS/GRASSIM/crop/crop_init_example.yml').inputs
+    kc_values = YAML_Inputs_provider(file='CROPS/GRASSIM/crop/Kc_values.yml').inputs
+    pft_composition = YAML_Inputs_provider(file='CROPS/GRASSIM/PFT_composition.yml').inputs
+    pft_values = pd.read_csv('INPUTS/CROPS/GRASSIM/Parameters_values_PFT.csv',header=0, sep=";", decimal='.')
+    management = YAML_Inputs_provider(file='CROPS/GRASSIM/management/management_dates_example.yml').inputs
+    soil_init = YAML_Inputs_provider(file='CROPS/GRASSIM/soil/soil_init_example.yml').inputs
+    with open("INPUTS/CROPS/GRASSIM/variables_to_save.yml", "r") as file:
+        variables_to_save = yaml.safe_load(file)
 
-def run_independant_years_of_grassland(WD, daily_irr, lat, alt):
-    
-    Crop_init = YAML_Inputs_provider(file = 'CROPS/GRASSIM/crop_init_GEMBLOUX.yml').inputs
-    Kc_values = YAML_Inputs_provider(file = 'CROPS/GRASSIM/Kc_values.yml').inputs
-    PFT_composition = YAML_Inputs_provider(file = 'CROPS/GRASSIM/PFT_composition.yml').inputs
-    PFT_values = pd.read_csv('INPUTS/CROPS/GRASSIM/Parameters_values_PFT.csv',header=0, sep=";", decimal='.')
-    Management = YAML_Inputs_provider(file = 'CROPS/GRASSIM/Management.yml').inputs #need to add duration parameter
-    albedo = 0.2 #needs to be in crop init parameters. Not available for GEMBLOUX crop.
-    
-    
-    Soil_plot = 0 #for now, all of the output is stored in Crop_plot
-    Crop_plot = grassim.Grassland(crop_init=Crop_init, Kc_values=Kc_values, PFT_composition=PFT_composition, PFT_values=PFT_values, Management=Management)
-    
-    for year in WD.keys():
-        
-        Crop_plot.initiate_one_year_variables(year)
-        Crop_plot.init_crop(daily_irr[year])
-    
-        for day in WD[year].index:
-            
-            if day.day_of_year==366:
-                break
+    simulation_dates = get_sim_dates(WD)
 
-            irradiation = daily_irr[year][:,day.day_of_year-1]
-            
-            if 'ET0' in WD[year].columns:
-                ET0 = WD[year]['ET0'][day]
-            else :
-                #[FIX] column indexes are not right
-                ET0 = get_ET0(WD[year]['Avg_temp'][day],
-                              WD[year]['Min_temp'][day],
-                              WD[year]['Max_temp'][day],
-                              WD[year]['Avg_WS_2m'][day],
-                              WD[year]['Vap_press'][day],
-                              irradiation,
-                              Crop_plot.LAI,
-                              day.day_of_year,
-                              len(WD[year]['Avg_temp']),
-                              lat,
-                              alt,
-                              albedo)
-            
-            Crop_plot.growth(WD[year].loc[day], ET0, irradiation, day)
+    grid = get_grid_shape(daily_irr)
+    soil = Soil(grid=grid, inits=soil_init, variables_to_save=variables_to_save['soil_variables'])
+    crop = Plants(grid=grid, pft_composition=pft_composition, inits=crop_init, kc_values=kc_values, pft_values=pft_values, variables_to_save=variables_to_save['crop_variables'])
+    management = Management(grid=grid, config=management, variables_to_save=variables_to_save['management_variables'])
 
-            Crop_plot.fill_nyears_data_dict(year)
+    for year in simulation_dates.keys():
+        for day in simulation_dates[year]:
+            day_irr = daily_irr[year][:,day.dayofyear-1]
+            ET0 = get_ET0(WD[year]['Avg_temp'][day],
+                                WD[year]['Min_temp'][day],
+                                WD[year]['Max_temp'][day],
+                                WD[year]['Avg_WS_2m'][day],
+                                WD[year]['Vap_press'][day],
+                                day_irr,
+                                crop.LAI,
+                                day.day_of_year,
+                                len(WD[year]['Avg_temp']),
+                                lat,
+                                alt,
+                                soil.albedo)
+
+            run_daily_loop(day, ET0, WD[year].loc[day], day_irr, soil, crop, management)
+
+    return soil, (crop, management)
+
+
+def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
+
+    crop.init_daily_loop(day=day, WD=WD, ET0=ET0, day_irr=day_irr)
+    soil.init_daily_loop(day=day)
+    management.init_daily_loop(day=day, crop=crop, soil=soil)
+    # computation sequence : equivalent of grassim.py
+    crop.compute_aet() # Uses Kc (BMGV in the future), needed for soil water balance
+    crop.compute_potential_growth()
+
+    crop.compute_st()
+    crop.compute_fAge() # need st, used for SEN & ABS
+    crop.compute_senescence_abscission()
+    crop.compute_N_plant_litter
+
+    crop.compute_fT()
+    crop.compute_fPARi()
+    crop.compute_fW(soil.W)
+    crop.compute_N_supply(Nmin=soil.Nmin, FNAmax=0.07, NSc=270)
+    crop.compute_fN()
+    crop.compute_N_demand()
+    crop.compute_N_uptake()
+    crop.compute_N_plant_litter()
+    crop.compute_environmental_stress() # fPAR*fT*fWfN, used for GRO
+    crop.compute_seasonal_effect() # need st, used for GRO
+
+    crop.compute_actual_growth()
+    crop.update() # update BM compartments, OMD, sward height, age, based on actual growth
+
+    soil.compute_water_balance(PP=crop.PP, AET=crop.AET)
+    soil.compute_N_mineralization(K=crop.K, Tref=crop.Tref, Temp=crop.Temp) # parameters for soil activity (Ruelle et al., 2018)
+    soil.compute_N_immobilization()
+    soil.compute_N_leached()
+    soil.compute_N2O_emissions()
+    soil.compute_N_from_rain(crop.PP)
+    soil.compute_Norg(percentageofNmin=crop.percentageofNmin, N_plant_litter=crop.N_plant_litter, fert_org=management.fert_org)
+    soil.compute_Nmin(percentageofNmin=crop.percentageofNmin, NH3volatfactor=crop.NH3volatfactor, N_uptake=crop.N_uptake, fert_org=management.fert_org, fert_min=management.fert_min)
+
+    crop.save_variables()
+    soil.save_variables()
+    management.save_variables()
+
+
+def get_sim_dates(weather_data):
+    """
+    weather_data : Weather_data object from weather_data_provider
     
-    return Soil_plot, Crop_plot
+    returns : 
+        simulation_dates : list of simulation days
+    """
+    simulation_dates = {}
+
+    for year in weather_data.keys():
+        simulation_dates[year] = []
+        for day in weather_data[year].index:
+            simulation_dates[year].append(day)
+
+    return simulation_dates
+
+
+def get_yaml_params(filename):
+    return YAML_Inputs_provider(file=filename).inputs
+
+
+def get_grid_shape(daily_irradiance):
+    """
+    daily irradiance : daily_irr_spat dictionnary attribut from Ray_casting_scene object
+    """
+    return daily_irradiance[next(iter(daily_irradiance))].shape[0]
