@@ -1,0 +1,8 @@
+crop_model: grassim
+crop_init: crop_init_example.yml
+soil_init: soil_init_example.yml
+PFT_composition: PFT_composition.yml
+PFT_values: Parameters_values_PFT.csv
+Kc_values: Kc_values.yml
+management: management_frequency_example.yml
+variables_to_save: variables_to_save.yml

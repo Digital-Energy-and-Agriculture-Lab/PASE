@@ -13,15 +13,16 @@ from MODULES.CROPS.GRASSIM.management.management import Management
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.CROPS.evapotranspiration_FAO56_PM import get_ET0
 
-def run_grassim(WD, daily_irr, lat, alt):
+def run_grassim(config, WD, daily_irr, lat, alt):
+
+    soil_init = YAML_Inputs_provider(file=f"CROPS/GRASSIM/soil/{config['soil_init']}").inputs
+    crop_init = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['crop_init']}").inputs
+    kc_values = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['Kc_values']}").inputs
+    pft_composition = YAML_Inputs_provider(file=f"CROPS/GRASSIM/{config['PFT_composition']}").inputs
+    pft_values = pd.read_csv(f"INPUTS/CROPS/GRASSIM/{config['PFT_values']}",header=0, sep=";", decimal='.')
+    management = YAML_Inputs_provider(file=f"CROPS/GRASSIM/management/{config['management']}").inputs
     
-    crop_init = YAML_Inputs_provider(file='CROPS/GRASSIM/crop/crop_init_example.yml').inputs
-    kc_values = YAML_Inputs_provider(file='CROPS/GRASSIM/crop/Kc_values.yml').inputs
-    pft_composition = YAML_Inputs_provider(file='CROPS/GRASSIM/PFT_composition.yml').inputs
-    pft_values = pd.read_csv('INPUTS/CROPS/GRASSIM/Parameters_values_PFT.csv',header=0, sep=";", decimal='.')
-    management = YAML_Inputs_provider(file='CROPS/GRASSIM/management/management_dates_example.yml').inputs
-    soil_init = YAML_Inputs_provider(file='CROPS/GRASSIM/soil/soil_init_example.yml').inputs
-    with open("INPUTS/CROPS/GRASSIM/variables_to_save.yml", "r") as file:
+    with open(f"INPUTS/CROPS/GRASSIM/{config['variables_to_save']}", "r") as file:
         variables_to_save = yaml.safe_load(file)
 
     simulation_dates = get_sim_dates(WD)

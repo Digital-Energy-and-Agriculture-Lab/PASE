@@ -13,14 +13,14 @@ from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.CROPS.evapotranspiration_FAO56_PM import get_ET0
 
 
-def run_independant_years_of_crop(option_2D, WD, daily_irr, lat, alt):
+def run_independant_years_of_crop(config, option_2D, WD, daily_irr, lat, alt):
     
-    Crop_init = YAML_Inputs_provider(file = 'CROPS/SIMPLE/crop_init.yaml').inputs
+    Crop_init = YAML_Inputs_provider(file = f"CROPS/SIMPLE/{config['crop_init']}").inputs
     list_rows_to_skip = list(np.arange(1, int(Crop_init['CropID']), 1))
-    Crop_param = pd.read_csv('INPUTS/CROPS/SIMPLE/crops_parameters.csv', 
+    Crop_param = pd.read_csv(f"INPUTS/CROPS/SIMPLE/{config['crop_parameters']}", 
                              skiprows=lambda x: x in list_rows_to_skip, 
                              nrows=1).to_dict('records')[0]
-    Soil_param = YAML_Inputs_provider(file = 'CROPS/SIMPLE/soil_init.yaml').inputs
+    Soil_param = YAML_Inputs_provider(file = f"CROPS/SIMPLE/{config['soil_init']}").inputs
     
     Soil_plot = water_balance.Soil(Soil_param)
     Crop_plot = simple.Crop(Crop_param, 
