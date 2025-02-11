@@ -1,0 +1,4 @@
+crop_model: simple
+crop_init: crop_init.yaml
+soil_init: soil_init.yaml
+crop_parameters: crops_parameters.csv

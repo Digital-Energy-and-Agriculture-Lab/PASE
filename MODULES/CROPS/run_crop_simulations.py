@@ -11,21 +11,21 @@ from MODULES.CROPS.GRASSIM.run_grassim import run_grassim
 
 
 
-def run_crop_simu(crop_model, option_2D, WD, daily_irr, scenario_P):
+def run_crop_simu(config, option_2D, WD, daily_irr, scenario_P):
         
-    if crop_model == 1:
+    if config['crop_model'] == 'simple':
         
-        Soil_plot, Crop_plot = run_independant_years_of_crop(option_2D, WD, daily_irr, 
+        Soil_plot, Crop_plot = run_independant_years_of_crop(config, option_2D, WD, daily_irr, 
                                                              scenario_P['Latitude'],
                                                              scenario_P['Altitude'])
         
-    if crop_model == 2:
+    if config['crop_model'] == 'stics':
 
-        Soil_plot, Crop_plot = run_independant_usms(WD, daily_irr, scenario_P)        
+        Soil_plot, Crop_plot = run_independant_usms(config, WD, daily_irr, scenario_P)        
         
-    if crop_model == 3:
+    if config['crop_model'] == 'grassim':
         
-        Soil_plot, Crop_plot = run_grassim(WD, daily_irr, scenario_P['Latitude'], scenario_P['Altitude'])
+        Soil_plot, Crop_plot = run_grassim(config, WD, daily_irr, scenario_P['Latitude'], scenario_P['Altitude'])
         
     
     return Soil_plot, Crop_plot

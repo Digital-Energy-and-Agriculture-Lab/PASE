@@ -1,0 +1,2 @@
+crop_model: stics
+simu_init: simu_init.yaml

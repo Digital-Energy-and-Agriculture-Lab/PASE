@@ -6,9 +6,13 @@ soil_variables:
 - Vp
 
 crop_variables:
+- BM
 - N_uptake
 - QNGV
 - FNH
 - GRO
 - GROGV
 - SENGV
+
+management_variables:
+- exported_BM
