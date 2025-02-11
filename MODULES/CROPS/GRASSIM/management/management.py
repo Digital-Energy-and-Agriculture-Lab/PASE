@@ -196,7 +196,8 @@ class Management():
                     else:
                         self.days_since_rotation = 1
                         return True
-                return False
+            self.days_since_rotation += 1
+            return False
                     
         elif self.config['rotationType'] == "sward_height":
             mean_paddock_sward_height = np.mean(crop.sward_height[self.current_mask])
