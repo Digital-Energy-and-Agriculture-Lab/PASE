@@ -12,6 +12,7 @@ import pvlib.solarposition as pvlibSP
 import matplotlib.pyplot as plt
 import os
 
+import MODULES.conversion_functions as cf
 
 
 def fibonacci_half_sphere(samples=18):
