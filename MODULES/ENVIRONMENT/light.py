@@ -466,23 +466,32 @@ class Ray_casting_scene:
                              axis=0)
         
         #Touched provide a list with the sourceID of the intercept ray
-        #Then the number of time a ray from a position has been intercepted is count
+        #Then the number of time a ray from a position has been intercepted is counted
         # and given in the counts variable
         Touched = SourceID[id_rays_stopped_filtred]
         unique, counts = np.unique(Touched, return_counts=True)
-        
+
+        # Compute the cos(zenith angle) of all the small suns for the normalization
+        _, _zenith_angle_all = cf.get_zenith_angle_from_cart(TargetPoints)
+        _cos_zenith_angle_all = np.cos(_zenith_angle_all).reshape(self.n_sourcepoints, n_small_suns)
+
+        # Compute the cos(zenith angle) of the small suns that do NOT contribute to the diffuse map
+        # (i.e. rays that were intercepted)
+
+        _mask = np.ones(_cos_zenith_angle_all.size, bool)
+        _mask[id_rays_stopped_filtred] = 0
+        _cos_zenith_angle_blocked = _cos_zenith_angle_all.copy()
+        _mask = _mask.reshape(self.n_sourcepoints, n_small_suns)
+        _cos_zenith_angle_blocked[_mask] = 0
+
         #Creation of the empty matrix of sky view
         Diffu = np.ones(self.n_sourcepoints, dtype=np.float16)
-        
-        #Transformation of the 1D index to 2D indexes
-        #matrix_index = np.unravel_index(unique.astype("int"),Diffu.shape)
-        
+
         #Computation of the sky view by removing the fraction of intercepted ray at each location
-        Diffu[unique.astype("int")] = 1 - counts/n_small_suns
-        
+        Diffu[unique.astype("int")] = 1 - np.sum(_cos_zenith_angle_blocked[unique.astype("int"), :], axis=1)/np.sum(_cos_zenith_angle_all[unique.astype("int"), :], axis=1)
+
         return Diffu
-            
-        
+
     def get_direct_map_by_flag(self,Flags):
         """
         Public method, filter the computed Direct_Map based on flags
