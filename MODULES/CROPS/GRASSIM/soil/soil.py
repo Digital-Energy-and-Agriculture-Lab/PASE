@@ -8,9 +8,10 @@ class Soil():
         Set the grid, the initial variables, the variables to save. 
         Initialize the output dictionary and initialize the spatialized soil.
 
-        grid -- tuple of (x, y), shape of the grid
-        inits -- dictionary of initial variables
-        variables_to_save -- list of strings of variables to save
+        Args:
+            grid: tuple of (x, y), shape of the grid
+            inits: dictionary of initial variables
+            variables_to_save: list of strings of variables to save
         """
         self.grid = grid
         self.inits = inits
@@ -46,7 +47,8 @@ class Soil():
         Set the day, and the year.
         If the first day of the year initialize the output dictionary for the year.
 
-        day -- datetime object
+        Args:
+            day: datetime object
         """
         self.day = day
         self.year = str(day.year)

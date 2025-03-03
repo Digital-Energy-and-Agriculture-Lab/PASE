@@ -7,12 +7,13 @@ class Plants():
         Initialize the plants.
         Set the grid, the PFT composition, the initial variables, the Kc values, the PFT values, and the variables to save.
 
-        grid -- tuple of (x, y), shape of the grid
-        pft_composition -- dictionary of PFT composition
-        inits -- dictionary of initial variables
-        kc_values -- dictionary of Kc values
-        pft_values -- pandas DataFrame of PFT values
-        variables_to_save -- list of strings of variables to save
+        Args:
+            grid: tuple of (x, y), shape of the grid
+            pft_composition: dictionary of PFT composition
+            inits: dictionary of initial variables
+            kc_values: dictionary of Kc values
+            pft_values: pandas DataFrame of PFT values
+            variables_to_save: list of strings of variables to save
         """
 
         self.nyears_data = {}
@@ -100,10 +101,11 @@ class Plants():
         Initialize the daily loop. Set the day, the year, the weather data, today's irradiance and the potential evapotranspiration. 
         If the first day of the year, reset ST to zero and initialize the output dictionary for the year.
 
-        day -- datetime object
-        WD -- dictionary with the weather data (Rain [mm], Avg_temp [°C])
-        ET0 -- potential evapotranspiration [mm]
-        day_irr -- today's irradiance [MJ/m²]
+        Args:
+            day: datetime object
+            WD: dictionary with the weather data (Rain [mm], Avg_temp [°C])
+            ET0: potential evapotranspiration [mm]
+            day_irr: today's irradiance [MJ/m²]
         """
         self.day = day
         self.year = str(day.year)
