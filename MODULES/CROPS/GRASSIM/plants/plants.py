@@ -17,7 +17,7 @@ class Plants():
 
 
     def compute_pft_params(self):
-        # Weighted sum of PFT parameters based on PFT composition
+        """ Compute the weighted sum of PFT parameters based on PFT composition. """
         self.pft_values['Weight'] = self.pft_values['PFT'].map(self.pft_composition)
         self.pft_params = self.pft_values.drop(columns=['PFT']).multiply(self.pft_values['Weight'], axis=0).sum().to_dict()
         self.pft_params.pop('Weight', None)
@@ -26,6 +26,14 @@ class Plants():
 
 
     def init_spatialized_crop(self):
+        """
+        Initialize the crop at the start of the simulation.
+        If the biomass initialization type is "InitialHeight", the crop biomass is initialized with the initial height using init_with_height().
+        If the biomass initialization type is "InitialBM", the crop biomass is initialized with the initial biomass using init_with_BM().
+        for each variable, a numpy array is created with the same size as the grid.
+        Compute organic matter digestability [-], N content [kgN/ha], N concentration [kgN/kgDM]
+        Compute Leaf Area Index [-] based on surface area [m²/gDM], green vegetative biomass [kgDM/ha], unit correction factor [1/10 = (1000 [g/kg]) / (10000 [m²/ha])], percentage of leaf area in the total surface area.
+        """
         if self.inits['BM_init_type'] == "InitialHeight":
             self.init_with_height()
         elif self.inits['BM_init_type'] == "InitialBM":
@@ -43,22 +51,24 @@ class Plants():
         #we assume that at the beginning of the season the plant has at least the minimum amount of N needed for maximum growth
         self.Nconc = self.a_Ncrit*0.01 #*(BMGV+BMGR/1000)^-b_Ncrit
 
-        #We assume that at the beginning of the season the N concentration is the same for the green compartments. The same for the dead ones
+        #We assume that at the beginning of the season the N concentration is the same for the both green compartments. Same for the dead ones.
         self.QNGV = self.Nconc*self.BMGV
         self.QNGR = self.Nconc*self.BMGR
-        self.QNDV = 0.008*self.BMDV
+        self.QNDV = 0.008*self.BMDV # TODO: Ad the 0.008 factor as a parameter (dead biomass nitrogen content)
         self.QNDR = 0.008*self.BMDR
-
-        self.LAI = (self.SLA*self.BMGV/10*self.percentageLAM)
 
         self.NGV = np.divide(self.QNGV, self.BMGV, where=self.BMGV > 0, out=np.zeros_like(self.BMGV)) # GV grass N concentration (kg N/kgDM)
         self.NGR = np.divide(self.QNGR, self.BMGR, where=self.BMGR > 0, out=np.zeros_like(self.BMGR)) # GR grass N concentration (kg N/kgDM)
         self.NDV = np.divide(self.QNDV, self.BMDV, where=self.BMDV > 0, out=np.zeros_like(self.BMDV)) # DV grass N concentration (kg N/kgDM)
         self.NDR = np.divide(self.QNDR, self.BMDR, where=self.BMDR > 0, out=np.zeros_like(self.BMDR)) # DR grass N concentration (kg N/kgDM)
+        
+        self.LAI = (self.SLA*self.BMGV/10*self.percentageLAM)
+
         self.ST = np.zeros(self.grid)
 
 
     def init_with_height(self):
+        """ Initialize the crop biomass with the initial height [m]. """
         self.sward_height = np.full(self.grid, self.inits['InitialHeight']) # sward height
         self.BMGV = self.sward_height*10*self.BDGV # Green vegetative biomass
         self.BMGR = self.sward_height*10*self.BDGR  # Green reproductive biomass
@@ -67,6 +77,7 @@ class Plants():
 
 
     def init_with_BM(self):
+        """ Initialize the crop biomass with the initial biomass [kgDM/ha]. """
         self.BMGV = np.full(self.grid, self.inits['BMGV'])
         self.BMDV = np.full(self.grid, self.inits['BMDV'])
         self.BMGR = np.full(self.grid, self.inits['BMGR'])
@@ -80,6 +91,15 @@ class Plants():
 
 
     def init_daily_loop(self, day, WD, ET0, day_irr):
+        """ 
+        Initialize the daily loop. Get the day, the weather data, the potential evapotranspiration, today's irradiance. 
+        If the first day of the year, reset ST to zero and initialize the output dictionary for the year.
+
+        day -- datetime object
+        WD -- dictionary with the weather data (Rain [mm], Avg_temp [°C])
+        ET0 -- potential evapotranspiration [mm]
+        day_irr -- today's irradiance [MJ/m²]
+        """
         self.day = day
         self.year = str(day.year)
         self.PP = np.full(self.grid, WD['Rain'])
@@ -94,6 +114,7 @@ class Plants():
 
 
     def init_one_year_variables(self):
+        """ Initialize the output dictionary of each variable to save for the year. """
         for var in self.variables_to_save:
             self.nyears_data[self.year][var] = {}
 
