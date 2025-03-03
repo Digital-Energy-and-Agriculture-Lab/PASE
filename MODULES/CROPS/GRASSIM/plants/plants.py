@@ -92,7 +92,7 @@ class Plants():
 
     def init_daily_loop(self, day, WD, ET0, day_irr):
         """ 
-        Initialize the daily loop. Get the day, the weather data, the potential evapotranspiration, today's irradiance. 
+        Initialize the daily loop. Set the day, the year, the weather data, today's irradiance and the potential evapotranspiration. 
         If the first day of the year, reset ST to zero and initialize the output dictionary for the year.
 
         day -- datetime object
@@ -395,6 +395,7 @@ class Plants():
 
 
     def save_variables(self):
+        """ Save the variables in the output dictionary. """
         for var in self.variables_to_save:
             try:
                 self.nyears_data[self.year][var][self.day] = copy.deepcopy(getattr(self, var))
