@@ -102,10 +102,14 @@ class Plants():
         If the first day of the year, reset ST to zero and initialize the output dictionary for the year.
 
         Args:
-            day: datetime object
-            WD: dictionary with the weather data (Rain [mm], Avg_temp [°C])
+            day: today's date
+            day type: datetime object
+            WD: weather data (Rain [mm], Avg_temp [°C])
+            WD type: dictionary
             ET0: potential evapotranspiration [mm]
+            ET0 type: float
             day_irr: today's irradiance [MJ/m²]
+            day_irr type: numpy array of shape grid
         """
         self.day = day
         self.year = str(day.year)
