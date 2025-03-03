@@ -3,12 +3,17 @@ import copy
 
 class Plants():
     def __init__(self, grid, pft_composition, inits, kc_values, pft_values, variables_to_save):
-        self.grid = grid
-        self.pft_composition = pft_composition
-        self.inits = inits
-        self.kc_values = kc_values
-        self.pft_values = pft_values
-        self.variables_to_save = variables_to_save
+        """
+        Initialize the plants.
+        Set the grid, the PFT composition, the initial variables, the Kc values, the PFT values, and the variables to save.
+
+        grid -- tuple of (x, y), shape of the grid
+        pft_composition -- dictionary of PFT composition
+        inits -- dictionary of initial variables
+        kc_values -- dictionary of Kc values
+        pft_values -- pandas DataFrame of PFT values
+        variables_to_save -- list of strings of variables to save
+        """
 
         self.nyears_data = {}
         
