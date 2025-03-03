@@ -6,6 +6,19 @@ import copy
 
 class Management():
     def __init__(self, grid, config, variables_to_save):
+        """
+        Initialize the management object.
+        Set the grid, the config, the variables to save, the years data, the paddock ids and masks, the current paddock id and mask.
+        Check the mandatory parameters depending on the config values.
+
+        Args:
+            grid: shape of the grid
+            grid type: tuple (x, y)
+            config: config of the management
+            config type: dictionary
+            variables_to_save: names of variables to save in the output dictionary
+            variables_to_save type: list
+        """
         self.grid = grid
         self.config = config
         self.variables_to_save = variables_to_save
@@ -54,7 +67,8 @@ class Management():
 
     def validate_management_options(self):
         """
-        Check mandatory parameters depending on config values
+        Check mandatory parameters depending on config values and the MANDATORY_PARAMETERS dictionary.
+        Raise an error if missing parameters.
         """
         missing_params = []
 
@@ -92,6 +106,20 @@ class Management():
         
 
     def init_daily_loop(self, day, crop, soil):
+        """
+        Initialize the daily loop.
+        Set the day and the year.
+        Initialize the fertilization and exported quantities.
+        If the first day of the year, initialize the output dictionary for the year.
+        Compute the cutting, rotation and fertilization decisions for today.
+        Args:
+            day: today's date
+            day type: datetime object
+            crop: spatialized crop 
+            crop type: Plants object
+            soil: spatialized soil
+            soil type: Soil object
+        """
         self.day = day
         self.year = day.year
         self.fert_org = 0
@@ -124,11 +152,23 @@ class Management():
 
 
     def init_one_year_variables(self):
+        """ Initialize the output dictionary of each variable to save for the year. """
         for var in self.variables_to_save:
             self.nyears_data[self.year][var] = {}
 
 
     def cut_today(self, day, crop) -> bool:
+        """
+        Compute the cutting decision for today depending on the config values.
+        Args:
+            day: today's date
+            day type: datetime object
+            crop: spatialized crop 
+            crop type: Plants object
+        Returns:
+            cutting decision for today
+            cutting decision type: boolean
+        """
         if self.config['cutDecisionType'] == "None":
             return False
         
@@ -176,6 +216,17 @@ class Management():
 
 
     def rotate_today(self, day, crop) -> bool:
+        """
+        Compute the rotation decision for today depending on the config values.
+        Args:
+            day: today's date
+            day type: datetime object
+            crop: spatialized crop 
+            crop type: Plants object
+        Returns:
+            rotation decision for today
+            rotation decision type: boolean
+        """
         if self.config['rotationType'] == "None":
             return False
         
@@ -209,6 +260,15 @@ class Management():
             
 
     def fert_today(self, day) -> bool:
+        """
+        Compute the fertilization decision for today depending on the config values.
+        Args:
+            day: today's date
+            day type: datetime object
+        Returns:
+            fertilization decision for today
+            fertilization decision type: boolean
+        """
         if self.config['fertilizationType'] == "None":
             return False
         
@@ -233,6 +293,9 @@ class Management():
             
 
     def get_cut_dates(self):
+        """
+        Get the cutting dates.
+        """
         if self.config['cutDecisionType'] == "dates":
             return pd.to_datetime([d + '-' + str(self.year) for d in self.config['cut_dates']], format='%d-%m-%Y')
         else:
@@ -240,6 +303,9 @@ class Management():
         
 
     def get_rotation_dates(self):
+        """
+        Get the rotation dates.
+        """
         if self.config['rotationType'] == "dates":
             return pd.to_datetime([d + '-' + str(self.year) for d in self.config['rotation_dates']], format='%d-%m-%Y')
         else:
@@ -247,6 +313,9 @@ class Management():
         
 
     def get_fert_dates(self):
+        """
+        Get the fertilization dates.
+        """
         if self.config['fertilizationType'] == "dates":
             return pd.to_datetime([d + '-' + str(self.year) for d in self.config['fert_dates']], format='%d-%m-%Y')
         else:
@@ -254,6 +323,9 @@ class Management():
         
     
     def get_cut_periods(self):
+        """
+        Get the cutting periods.
+        """
         cut_periods = {}
         cut_periods['start'] = {}
         cut_periods['end'] = {}
@@ -271,6 +343,9 @@ class Management():
         return cut_periods
     
     def get_rotation_periods(self):
+        """
+        Get the rotation periods.
+        """
         rotation_periods = {}
         rotation_periods['start'] = {}
         rotation_periods['end'] = {}
@@ -288,24 +363,30 @@ class Management():
         return rotation_periods
     
     def get_fert_periods(self):
-        rotation_periods = {}
-        rotation_periods['start'] = {}
-        rotation_periods['end'] = {}
-        rotation_periods['frequency'] = {}
+        """
+        Get the fertilization periods.
+        """
+        fert_periods = {}
+        fert_periods['start'] = {}
+        fert_periods['end'] = {}
+        fert_periods['frequency'] = {}
 
         if self.config['fertilizationType'] == "frequency":
             for n in range(1, self.config['number_of_fert_periods'] + 1):
                 start = self.config['fert_start_'+str(n)]
                 end = self.config['fert_end_'+str(n)]
 
-                rotation_periods['start'][n] = pd.to_datetime(start + '-' + str(self.year), format='%d-%m-%Y')
-                rotation_periods['end'][n] = pd.to_datetime(end + '-' + str(self.year), format='%d-%m-%Y')
-                rotation_periods['frequency'][n] = self.config['fertilization_frequency_'+str(n)]
+                fert_periods['start'][n] = pd.to_datetime(start + '-' + str(self.year), format='%d-%m-%Y')
+                fert_periods['end'][n] = pd.to_datetime(end + '-' + str(self.year), format='%d-%m-%Y')
+                fert_periods['frequency'][n] = self.config['fertilization_frequency_'+str(n)]
 
-        return rotation_periods
+        return fert_periods
     
 
     def create_paddock_masks(self):
+        """
+        Create the paddock masks based on the paddock map.
+        """
         if "paddock_map" in self.config:
             paddock_map = np.array(self.config["paddock_map"])  # ex [1, 1, 1, 2, 2, 2]
             paddock_ids = np.unique(paddock_map)
@@ -314,6 +395,9 @@ class Management():
     
 
     def update_paddock(self):
+        """
+        Rotation : Update the current paddock.
+        """
         paddock_ids = sorted(self.paddock_masks.keys())
         current_index = paddock_ids.index(self.current_paddock_id)
         self.current_paddock_id = paddock_ids[(current_index + 1) % len(paddock_ids)]
@@ -321,6 +405,17 @@ class Management():
 
 
     def cut(self, crop, soil):
+        """
+        Cut the crop depending on the config values. 
+        If the biomass removal type is 'cut_height', the crop is cut to the cut_height.
+        If the biomass removal type is 'max_BM', a maximum biomass is removed with the subtract_with_min_values() function.
+
+        Args:
+            crop: spatialized crop
+            crop type: Plants object
+            soil: spatialized soil
+            soil type: Soil object
+        """
         compartments = ['GV', 'DV', 'DR', 'GR']
         if self.config['biomassRemovalType'] == 'cut_height':
             for compartment in compartments:
@@ -377,6 +472,9 @@ class Management():
 
 
     def fertilize(self):
+        """
+        Fertilize the crop depending on the config values.
+        """
         if "fert_org" in self.config:
             self.fert_org += self.config['fert_org']
         if "fert_min" in self.config:
@@ -387,5 +485,8 @@ class Management():
 
 
     def save_variables(self):
+        """
+        Save the variables in the output dictionary.
+        """
         for var in self.variables_to_save:
             self.nyears_data[self.year][var][self.day] = copy.deepcopy(getattr(self, var))
