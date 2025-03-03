@@ -11,6 +11,11 @@ class Soil():
 
 
     def init_spatialized_soil(self):
+        """
+        Initialize the soil at the start of the simulation.
+        Create a numpy array attribute for each init variable.
+        Compute the N2/N2O repartition [-], the water capacity [mm], the wilting point [mm], the water saturation [mm], the water content [mm], the water content relative to the water capacity [-].
+        """
         for key, value in self.inits.items():
             setattr(self, key, np.full(self.grid, value))
 
@@ -27,6 +32,13 @@ class Soil():
 
 
     def init_daily_loop(self, day):
+        """
+        Initialize the daily loop.
+        Set the day, and the year.
+        If the first day of the year initialize the output dictionary for the year.
+
+        day -- datetime object
+        """
         self.day = day
         self.year = str(day.year)
 
@@ -36,6 +48,7 @@ class Soil():
 
 
     def init_one_year_variables(self):
+        """ Initialize the output dictionary of each variable to save for the year. """
         for var in self.variables_to_save:
             self.nyears_data[self.year][var] = {}
 
@@ -102,5 +115,6 @@ class Soil():
         
 
     def save_variables(self):
+        """ Save the variables in the output dictionary. """
         for var in self.variables_to_save:
             self.nyears_data[self.year][var][self.day] = copy.deepcopy(getattr(self, var))
