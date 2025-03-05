@@ -27,6 +27,7 @@ Loc_1 = YAML_Inputs_provider(file='Example1_loc.yaml', subpath='SCENARIOS').inpu
 # Import PV system and PV modules parameters
 AV_1 = YAML_Inputs_provider(file='Example1_AV.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='Example1_PV_Module.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
+crop_config = YAML_Inputs_provider(file='simple_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
 ##################
@@ -117,11 +118,10 @@ for _ in ['2005', '2006', '2007']:
     print(f'PV production for year 2005: {PV_prod["P_central"].sum():.2f} MW·h')
 
 # Crop model
-# Temporary lines, those 2 parameters (crop_model and option_2D) will be in
-# SCENARIOS input files (general parameters)
-crop_model = 1 # 1 for SIMPLE, 2 for STICS JAVA and 3 for GRASSIM
+#Temporary line, this parameter (option_2D) should be in SCENARIOS input files (general parameters)
 option_2D = 1 # 0: no 2D-spatialization ; 1 : 2D spatialization
-Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_data, 
+
+Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      L.daily_irr_spat,
                                      Loc_1)
 

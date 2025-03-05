@@ -1,4 +1,17 @@
-crop_model: simple
-crop_init: crop_init.yaml
-soil_init: soil_init.yaml
-crop_parameters: crops_parameters.csv
+CropModel:
+  Value: simple
+  Type: string
+  Possibilities: stics, grassim, simple
+  Definition: Name of the crop model to use
+CropInit:
+  Value: crop_init.yaml
+  Type: string
+  Definition: Name of the file containing the model initialization values for the crop.
+SoilInit:
+  Value: soil_init.yaml
+  Type: string
+  Definition: Name of the file containing the model initialization values for the soil.
+CropParameters:
+  Value: crops_parameters.csv
+  Type: string
+  Definition: Name of the file containing the crop parameters.

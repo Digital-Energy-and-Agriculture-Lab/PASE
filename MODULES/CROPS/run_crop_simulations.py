@@ -13,17 +13,17 @@ from MODULES.CROPS.GRASSIM.run_grassim import run_grassim
 
 def run_crop_simu(config, option_2D, WD, daily_irr, scenario_P):
         
-    if config['crop_model'] == 'simple':
+    if config['CropModel'] == 'simple':
         
         Soil_plot, Crop_plot = run_independant_years_of_crop(config, option_2D, WD, daily_irr, 
                                                              scenario_P['Latitude'],
                                                              scenario_P['Altitude'])
         
-    if config['crop_model'] == 'stics':
+    if config['CropModel'] == 'stics':
 
         Soil_plot, Crop_plot = run_independant_usms(config, WD, daily_irr, scenario_P)        
         
-    if config['crop_model'] == 'grassim':
+    if config['CropModel'] == 'grassim':
         
         Soil_plot, Crop_plot = run_grassim(config, WD, daily_irr, scenario_P['Latitude'], scenario_P['Altitude'])
         
