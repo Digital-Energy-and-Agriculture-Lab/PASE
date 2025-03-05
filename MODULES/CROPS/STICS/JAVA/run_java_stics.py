@@ -18,7 +18,7 @@ import numpy as np
 
 def run_independant_usms(config, WD, daily_irr, scenario_P):
     
-    Simu_init = YAML_Inputs_provider(f"CROPS/STICS/{config['simu_init']}").inputs
+    Simu_init = YAML_Inputs_provider(f"CROPS/STICS/{config['SimuInit']}").inputs
     
     WD_files_dict = generate_weather_data_file(WD, daily_irr,
                                                scenario_P['LocationName'])

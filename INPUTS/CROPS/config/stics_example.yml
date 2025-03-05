@@ -1,2 +1,9 @@
-crop_model: stics
-simu_init: simu_init.yaml
+CropModel:
+  Value: stics
+  Type: string
+  Possibilities: stics, grassim, simple
+  Definition: Name of the crop model to use
+SimuInit:
+  Value: simu_init.yaml
+  Type: string
+  Definition: Name of the file containing the model initialization values.

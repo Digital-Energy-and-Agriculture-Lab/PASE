@@ -5,10 +5,11 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
+from datetime import datetime
 import numpy as np
 import os
 import pickle
-import yaml
+
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
@@ -25,6 +26,7 @@ Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inpu
 # Import PV system and PV modules parameters
 AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
+crop_config = YAML_Inputs_provider(file='simple_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
 # Import of weather data and computation of daily weather data
@@ -191,17 +193,14 @@ PV_central.get_several_years_of_electricity_production(Sun_positions_complete, L
 
 
 ### CROP MODEL
-#Temporary line, this parameters (option_2D) should be in SCENARIOS input files (general parameters)
+#Temporary line, this parameter (option_2D) should be in SCENARIOS input files (general parameters)
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
 
-with open('INPUTS/CROPS/config/grassim_example.yml', 'r') as file:
-    config_1 = yaml.safe_load(file)
-    
-Soil_plot, Crop_plot = run_crop_simu(config_1, option_2D, WD.nyears_daily_data, 
+Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      L.daily_irr_spat,
                                      Loc_1)
 
 show_light_map2(L.sourcepoints[:,:-1], 
-                Crop_plot[0].nyears_data['2008']['BM']['2008-10-10 00:00:00']/100, 
+                Crop_plot[0].nyears_data['2008']['BM'][datetime.strptime('2008-10-10 00:00:00', '%Y-%m-%d %H:%M:%S')]/100,
                 PV_1_3Dconfig.PV_central_PD,
                 "Biomass Gras-Sim 2008 [t/ha]")
