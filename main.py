@@ -5,9 +5,11 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
+from datetime import datetime
 import numpy as np
 import os
 import pickle
+
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
@@ -24,6 +26,7 @@ Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inpu
 # Import PV system and PV modules parameters
 AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
+crop_config = YAML_Inputs_provider(file='simple_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
 # Import of weather data and computation of daily weather data
@@ -96,7 +99,6 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP,
                             Light_instance.data)
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
 #DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])
-
 
 # Examples of visualisation for the direct light map, diffuse light map (sky view factor)
 # and daily irradiation map. Those lines are for PV system with no rotation axis. 
@@ -190,16 +192,15 @@ PV_central = PV_Production(PV_params_dict)
 PV_central.get_several_years_of_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears_data)
 
 
-
 ### CROP MODEL
-#Temporary lines, those 2 parameters (crop_model and option_2D) should be in SCENARIOS input files (general parameters)
-crop_model = 1 # 1 pour SIMPLE, 2 pour STICS JAVA et 3 pour GRASSIM
+#Temporary line, this parameter (option_2D) should be in SCENARIOS input files (general parameters)
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
-Soil_plot, Crop_plot = run_crop_simu(crop_model, option_2D, WD.nyears_daily_data, 
+
+Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      L.daily_irr_spat,
                                      Loc_1)
 
 show_light_map2(L.sourcepoints[:,:-1], 
-                Crop_plot.nyears_data['2008']['Dry_yield']['2008-10-10 00:00:00']/100, 
+                Crop_plot[0].nyears_data['2008']['BM'][datetime.strptime('2008-10-10 00:00:00', '%Y-%m-%d %H:%M:%S')]/100,
                 PV_1_3Dconfig.PV_central_PD,
-                "Dry yield SIMPLE 2008 [t/ha]")
+                "Biomass Gras-Sim 2008 [t/ha]")

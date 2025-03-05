@@ -7,25 +7,25 @@
 
 from MODULES.CROPS.SIMPLE.run_simple import run_independant_years_of_crop
 from MODULES.CROPS.STICS.JAVA.run_java_stics import run_independant_usms
-from MODULES.CROPS.GRASSIM.run_grassim import run_independant_years_of_grassland
+from MODULES.CROPS.GRASSIM.run_grassim import run_grassim
 
 
 
-def run_crop_simu(crop_model, option_2D, WD, daily_irr, scenario_P):
+def run_crop_simu(config, option_2D, WD, daily_irr, scenario_P):
         
-    if crop_model == 1:
+    if config['CropModel'] == 'simple':
         
-        Soil_plot, Crop_plot = run_independant_years_of_crop(option_2D, WD, daily_irr, 
+        Soil_plot, Crop_plot = run_independant_years_of_crop(config, option_2D, WD, daily_irr, 
                                                              scenario_P['Latitude'],
                                                              scenario_P['Altitude'])
         
-    if crop_model == 2:
+    if config['CropModel'] == 'stics':
 
-        Soil_plot, Crop_plot = run_independant_usms(WD, daily_irr, scenario_P)        
+        Soil_plot, Crop_plot = run_independant_usms(config, WD, daily_irr, scenario_P)        
         
-    if crop_model == 3:
+    if config['CropModel'] == 'grassim':
         
-        Soil_plot, Crop_plot = run_independant_years_of_grassland(WD, daily_irr, scenario_P['Latitude'], scenario_P['Altitude'])
+        Soil_plot, Crop_plot = run_grassim(config, WD, daily_irr, scenario_P['Latitude'], scenario_P['Altitude'])
         
     
     return Soil_plot, Crop_plot

@@ -149,7 +149,22 @@ class PV_Production:
             
     def compute_global_tilted_irradiance(self, Rb, GHI_ground, albedo, BHI,
                                          DHI, Ai, f, SF, tiltY):
-        
+        """
+
+        Args:
+            Rb: TODO
+            GHI_ground: GHI reaching the ground [W/m²]
+            albedo: albedo [-]
+            BHI: Beam Horizontal Irradiance [W/m²]
+            DHI: Diffuse Horizontal Irradiance [W/m²]
+            Ai: Anisotropy index
+            f: modulating factor
+            SF: ? TODO
+            tiltY: panel inclination [?] TODO
+
+        Returns:
+            GTI: Global Tilted Irradiance [W/m²]
+        """
         one = np.ones((len(Ai)))
         zero_vector = np.zeros((len(Ai)))  # TODO   remove ? this is unused
         
