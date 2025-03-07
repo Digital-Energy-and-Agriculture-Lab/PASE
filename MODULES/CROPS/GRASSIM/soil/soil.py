@@ -69,6 +69,16 @@ class Soil():
 
 
     def compute_water_balance(self, PP, AET):
+        """Compute water balance (water) [mm] and water stress (W) [%].
+
+        From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+
+        Args:
+            PP: daily precipitations [mm].
+            PP type:
+            AET: daily actual evapotranspiration [mm].
+            AET type:
+        """
         self.water += PP - AET + self.not_runoff
         self.water_leached = np.where(self.water < self.water_capacity, 0, 0.2*(self.water - self.water_capacity))
         self.not_runoff = np.where(self.water < self.water_saturation, 0, 0.2*(self.water - self.water_saturation))
@@ -83,7 +93,18 @@ class Soil():
 
     
     def compute_N_mineralization(self, K, Tref, Temp):
-        # Ruelle et al., 2018
+        """Compute nitrogen mineralization based on water stress (W) air temperature (Temp) and soil organic nitrogen (Norg) [kgNorg ha^-1].
+
+        From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+
+        Args:
+            K: parameter influencing temperature influence on mineralization [-].
+            K type:
+            Tref: reference temperature for mineralization [°C].
+            Tref type:
+            Temp: average daily temperature [°C].
+            Temp type:
+        """
         self.g0 = (1 - 0.2) * self.W + 0.2
         self.fT_nitro = np.exp(K * (Temp - Tref))
         self.Vp = (0.0929 + (0.1833-0.0929) * np.exp(-0.2173*self.Norg/1000)) * (self.Norg/1000)
@@ -91,26 +112,52 @@ class Soil():
 
 
     def compute_N_immobilization(self):
+        """Compute nitrogen immobilization based on water stress (W), air temperature (Temp) and soil mineral nitrogen (Nmin) [kgN ha^-1].
+
+        From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+        """
         self.Ip = 4. * self.Nmin / 1000
         self.Ip = self.Ip.clip(0, None)
         self.immobilization = self.g0 * self.fT_nitro * self.Ip
 
 
     def compute_N_leached(self):
+        """Compute nitrogen leaching (N_leached) [kgN ha^-1] based on proportion of water leached [mm].
+
+        From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+        """
         self.N_leached = self.Nmin * (self.water_leached / self.water)
 
 
     def compute_N2O_emissions(self):
+        """ Compute nitrogen dioxide emission based on mineral nitrogen (Nmin), water stress (W) and temperature (Temp) influencing denitrification.
+
+         From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+        """
         self.globalemission = (self.Nmin/1000) * self.fT_nitro * self.g0
         self.N2Oemisson  =  (1 - self.repartitionN2N2O) * self.globalemission
         self.N2Oemisson = self.N2Oemisson.clip(0, None)
     
 
     def compute_N_from_rain(self, PP):
+        """Compute nitrogen suplly through rain (N_from_rain) [kgN ha^-1].
+
+        From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+        """
         self.N_from_rain = 0.009 * PP
 
 
     def compute_Norg(self, percentageofNmin, N_plant_litter, fert_org):
+        """Compute soil organic nitrogen balance with inputs and outputs.
+
+        Args:
+            percentageofNmin: part of mineral nitrogen in organic fertilizer [-].
+            percentageofNmin type:
+            N_plant_litter: amount of organic nitrogen coming from material undergoing abscission [kgNorg ha^-1].
+            N_plant_litter type:
+            fert_org: amount of nitrogen in organic fertilizer [kgN ha^-1].
+            fert_org type:
+        """
         self.Norg += \
                     self.immobilization \
                     - self.mineralization \
@@ -119,6 +166,20 @@ class Soil():
 
 
     def compute_Nmin(self, percentageofNmin, NH3volatfactor, N_uptake, fert_org, fert_min):
+        """Compute soil mineral nitrogen balance with inputs and outputs.
+
+        Args:
+            percentageofNmin: part of mineral nitrogen in organic fertilizer [-].
+            percentageofNmin type:
+            NH3volatfactor: factor allowing to consider amount of N lost by volatilization [-].
+            NH3volatfactor type:
+            N_uptake: mineral nitrogen absorbed by plants [kgN ha^-1].
+            N_uptake type:
+            fert_org: amount of nitrogen in organic fertilizer [kgN ha^-1].
+            fert_org type:
+            fert_min: amount of mineral nitrogen from mineral fertilization [kgN ha^-1].
+            fert_min type:
+        """
         self.Nmin += \
                     self.mineralization \
                     - self.immobilization \

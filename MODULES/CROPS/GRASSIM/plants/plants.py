@@ -131,7 +131,11 @@ class Plants():
 
 
     def compute_aet(self):
-        # get today's Kc value
+        """Compute actual evapotranspiration (AET) [mm].
+
+        Multiply potential evapotranspiration (ET0) [mm] by an average monthly crop coefficient (Kc) [-].
+        From Liu et al. (2017), http://dx.doi.org/10.5194/hess-2016-237.
+        """
         month = self.day.month_name()
         self.kc = self.kc_values[month]
 
@@ -139,11 +143,21 @@ class Plants():
 
 
     def compute_potential_growth(self):
+        """Compute potential growth of the crop (PGRO) [kgDM ha^-1].
+
+        Multiply incident photosynthetically active radiation (PARi, MJ m^-2) by maximal radiation use efficiency (RUEmax)  [g DM MJ^-1]
+        and a function of leaf area index (LAI) [m^2 m^-2].
+        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+        """
         self.PGRO = self.PARi*self.RUEmax*(1-np.exp(-0.6*self.LAI))*10
 
 
     def compute_st(self):
-        # For spatialized temperatures : use numpy masks
+        """Compute sum of temperature (ST) [°C day] from January 1.
+
+        Tmin = minimal temperature for plant growth [°C]. Temp below Tmin do not influence ST.
+        Tmax= maximal temperature for plant growth [°C]. Temp above Tmax do not influence ST.
+        """
         mask_in_range = (self.Temp >= self.Tmin) & (self.Temp <= self.Tmax)
         mask_above_Tmax = (self.Temp > self.Tmax)
 
@@ -152,6 +166,10 @@ class Plants():
     
 
     def compute_fAge(self):
+        """Compute a function (fage) representing the effect of compartment age (AGE) [°C day] on senescence (SEN) and abscission (ABS) functions.
+
+        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+        """
         ratioGV = self.ageGV / self.LLS
         conditions_GV = [ratioGV < 1/3, ratioGV < 1]
         values_GV = [1, 3 * ratioGV]
@@ -174,6 +192,12 @@ class Plants():
 
 
     def compute_senescence_abscission(self):
+        """Compute senescence functions (SEN) [kg DM ha^-1] and abscission functions (ABS) [kg DM ha^-1].
+
+        Multiply biomass (BM) [kgDM ha^-1] by basic senescence/abscission rate (K or Kl) [°C^-1], daily mean temperature (Temp) [°C]
+        and a function representing the effect of age (fage).
+        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+        """
         conditions_ABS = [self.Temp > 0]
         values_ABSDV = [self.KlDV * self.BMDV * self.Temp * self.fageDV]
         values_ABSDR = [self.KlDR * self.BMDR * self.Temp * self.fageDR]
@@ -196,10 +220,19 @@ class Plants():
 
 
     def compute_N_plant_litter(self):
+        """Compute nitrogen content [kgN ha-1] of vegetation undergoing abscission.
+
+        Assume that N concentration of dead material is 0.008 kgN kgDM-1.
+        From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+        """
         self.N_plant_litter = (self.ABSDV + self.ABSDR) * 0.008
 
 
     def compute_fT(self):
+        """Compute a growth reduction function (fT) based on daily mean temperature (Temp) [°C].
+
+        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+        """
         conditions_fT = [
         self.Temp <= self.T0,                     # Temp <= T0
         self.Temp <= self.T1,                     # Temp <= T1
@@ -218,6 +251,10 @@ class Plants():
 
 
     def compute_fPARi(self):
+        """Compute a growth reduction function (fPARi) based on photosynthetically active radiation (PARi) [MJ m^-2].
+
+        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+        """
         conditions_fPARi = [self.PARi <= 5]
 
         values_fPARi = [
@@ -227,6 +264,14 @@ class Plants():
         self.fPARi = np.select(conditions_fPARi, values_fPARi, default=(1 / 22 * -self.PARi) + 27 / 22)
 
     def compute_fW(self, W):
+        """Compute a growth reduction function (fW) based on water stress (W) [-].
+
+        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+
+        Args:
+            W: water stress
+            W type: Numpy array of shape (grid)
+        """
         conditions_fW = [
             self.ET0 < 3.81,                        # ET0 < 3.81
             (self.ET0 >= 3.81) & (self.ET0 < 6.35),  # 3.81 <= ET0 < 6.35
@@ -269,6 +314,18 @@ class Plants():
     
 
     def compute_N_supply(self, Nmin, FNAmax, NSc):
+        """Compute potential nitrogen supply of the soil [kgN ha^-1].
+
+        From Bonesmo et Bélanger (2002), https://doi.org/10.2134/agronj2002.3450.
+
+        Args:
+            Nmin: soil mineral nitrogen [kgN ha^-1]
+            Nmin type:
+            FNAmax: maximal soil nitrogen availability factor [-]
+            FNAmax type:
+            NSc: soil mineral nitrogen content for maximal N availability [kgN ha^-1]
+            NSc type:
+        """
         FNA = FNAmax*(Nmin/NSc)
         FNA = np.clip(FNA, a_min=None, a_max=FNAmax)
         
@@ -276,6 +333,17 @@ class Plants():
 
 
     def compute_fN(self):
+        """Compute a growth reduction function (fN) based on crop N status (RNC) [-].
+
+        Compute critical nitrogen plant concentration (Ncrit) [kgN kgDM^-1]
+        From Lemaire et al. (1984), http://dx.doi.org/10.1051/agro:19840503.
+        Compute maximal nitrogen plant concentration (Nmax) [kgN kgDM^-1]
+        From Marino et al. (2004), https://doi.org/10.2134/agronj2004.0601.
+        Compute actual nitrogen plant concentration (Nact) [kgN kgDM^-1].
+        Compute nitrogen status (RNC) [-] as the ratio of Nact to Ncrit.
+        Compute the fN function from the RNC.
+        From Bonesmo et Bélanger (2002), https://doi.org/10.2134/agronj2002.3450.
+        """
         cut_off_BMGV = 0.05*10*self.BDGV
         cut_off_BMDV = 0.05*10*self.BDGR
         cut_off_BMGR = 0.05*10*self.BDDV
@@ -309,20 +377,36 @@ class Plants():
 
 
     def compute_N_demand(self):
+        """Compute nitrogen demand (N_demand) [kgN ha^-1].
+
+        Compute fraction of N absorbed remaining in above-ground biomass (FNH) [-].
+        Compute N_demand based on the difference between Nmax and Nact.
+        From Bonesmo et Bélanger (2002), https://doi.org/10.2134/agronj2002.3450.
+        """
         FNHmax = 0.8
         self.FNH = FNHmax * np.maximum(self.FNH_coef1, self.FNH_coef2 * (1 + self.RNC))
         self.N_demand = self.BMover5 * (self.Nmax - self.Nact) / self.FNH
 
 
     def compute_N_uptake(self):
+        """Compute nitrogen uptake (N_uptake) [kgN ha^-1] as the minimum between N_demand and N_supply.
+        """
         self.N_uptake = np.minimum(self.N_demand, self.N_supply)
 
 
     def compute_environmental_stress(self):
+        """Compute environmental stress function (ENV) influencing actual growth.
+
+        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+        """
         self.fWfN = np.minimum(self.fN, self.fW)
         self.ENV = self.fPARi * self.fT * self.fWfN
 
     def compute_seasonal_effect(self):
+        """Compute the seasonal effect (SEA) influencing actual growth.
+
+        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+        """
         conditions_SEA = [
             self.ST < self.STmin,                                       # ST < STmin
             (self.ST >= self.STmin) & (self.ST <= self.ST1 - 200),      # STmin <= ST <= ST1 - 200
@@ -340,6 +424,11 @@ class Plants():
         self.SEA = np.select(conditions_SEA, values_SEA, default=self.minSEA)
 
     def compute_actual_growth(self):
+        """Compute actual growth (GRO) [kgDM ha^-1]
+
+        Multiply potential growth (PGRO) by the environmental stress function (ENV) and the seasonal effect (SEA).
+        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+        """
         self.GRO = self.PGRO * self.ENV * self.SEA
 
         conditions_REP = [
@@ -358,6 +447,16 @@ class Plants():
         self.GROGR = self.GRO * self.REP
             
     def update(self):
+        """Update state and auxiliary variables.
+
+        Update green biomass with actual growth (GRO) [kgDM ha^-1] and senescence (SEN) [kgDM ha^-1].
+        Update dead biomass with senescence (SEN) [kgDM ha^-1] and abscission (ABS) [kgDM ha^-1].
+        Compute sward height [m] from biomass and bulk density (BD) [g m^-3].
+        Update digestibility (OMD) [g g^-1] with age of vegetation (age) [°C day].
+        Compute digestible organic matter [kgDM ha^-1].
+        Update nitrogen content (QN) [kgN ha^-1].
+        Update nitrogen concentration (N) [kgN kgDM^-1].
+        """
         self.BMGV += self.GROGV - self.SENGV
         self.BMGR += self.GROGR - self.SENGR
         self.BMDV += (1-self.sigmaGV) * self.SENGV - self.ABSDV
