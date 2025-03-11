@@ -13,6 +13,7 @@ import pickle
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from MODULES.DATA_MANAGEMENT.output.save_csv import save_csv
 from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
 from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from MODULES.ENVIRONMENT.light import show_light_map2, Ray_casting_scene
@@ -199,6 +200,8 @@ option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du mod
 Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      L.daily_irr_spat,
                                      Loc_1)
+
+save_csv('mean_data.csv', Crop_plot.nyears_data, ['Biomass', 'Dry_yield'])
 
 show_light_map2(L.sourcepoints[:,:-1], 
                 Crop_plot[0].nyears_data['2008']['BM'][datetime.strptime('2008-10-10 00:00:00', '%Y-%m-%d %H:%M:%S')]/100,
