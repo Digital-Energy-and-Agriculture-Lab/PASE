@@ -33,7 +33,7 @@ class Weather_data:
         else:
             self.get_n_years_hourly_WD_PVGis(latitude, longitude,
                                              sim_starting_year, sim_ending_year)
-            self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]), 
+            self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]),
                                       daily_file)
             
         
@@ -86,15 +86,15 @@ class Weather_data:
             
             
             
-    def get_n_years_daily_WD(self, freq_deter, start_year, end_year, csv_file=None):
+    def get_n_years_daily_WD(self, freq_deter, csv_file=None):
         
         self.nyears_daily_data = {}
         
         if csv_file is not None:
             daily_csv = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', csv_file + '.csv'))
 
-            new_index2 = pd.date_range("01-01-"+str(start_year)+" 00:00:00",
-                                       "31-12-"+str(end_year)+" 00:00:00",
+            new_index2 = pd.date_range("01-01-"+str(2005)+" 00:00:00",
+                                       "31-12-"+str(2015)+" 00:00:00",
                                        freq='D')
             rain_vap_pressure = daily_csv.drop(['id','DAY'], axis=1).set_index(new_index2)
                    
