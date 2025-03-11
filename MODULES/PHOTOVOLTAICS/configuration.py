@@ -280,7 +280,11 @@ class PV_Configuration_3D:
             
             grnd = pyV.PolyData(ground, ground_m)
             
-            plotter.add_mesh(grnd, color='green')
+            plotter.add_mesh(grnd, color='green', opacity=0.5)
+
+            labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)',
+                          ylabel='Y (NORTH)')
+            plotter.add_axes(**labels)
             
             light = pyV.Light()
             light.set_direction_angle(30, 45)    

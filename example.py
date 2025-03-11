@@ -58,8 +58,9 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
                                        Loc_1['TimeZone'])
 
 # Instantiation of the 3D PV central
-PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict, Sun_positions_samp.solar_vector,
-                                    visualization=False)                        # !!!! Problem with rotation angle that are negative
+PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
+                                    Sun_positions_samp.solar_vector,
+                                    visualization=True)  # !!!! Problem with rotation angle that are negative
 
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
