@@ -51,8 +51,9 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
                                        len(WD.nyears_data[str(Loc_1['SimulationStartingYear'])]),
                                        Loc_1['TimeZone'])
 # Creation of the 3D PV central
-PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict, Sun_positions_samp.solar_vector,
-                                    visualization=False)                        # !!!! Problem with rotation angle that are negative
+PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
+                                    Sun_positions_samp.solar_vector,
+                                    visualization=True)  # !!!! Problem with rotation angle that are negative
 
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
@@ -203,7 +204,15 @@ Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_dat
 
 save_csv('mean_data.csv', Crop_plot.nyears_data, ['Biomass', 'Dry_yield'])
 
-show_light_map2(L.sourcepoints[:,:-1], 
-                Crop_plot[0].nyears_data['2008']['BM'][datetime.strptime('2008-10-10 00:00:00', '%Y-%m-%d %H:%M:%S')]/100,
-                PV_1_3Dconfig.PV_central_PD,
-                "Biomass Gras-Sim 2008 [t/ha]")
+crop_display_year = str(Loc_1['SimulationEndingYear'])
+if crop_config['CropModel'] == 'grassim':
+    show_light_map2(L.sourcepoints[:,:-1],
+                    Crop_plot[0].nyears_data[crop_display_year]['BM'][datetime.strptime(crop_display_year+'-10-10 00:00:00', '%Y-%m-%d %H:%M:%S')]/100,
+                    PV_1_3Dconfig.PV_central_PD,
+                    "Biomass Gras-Sim "+crop_display_year+" [t/ha]")
+elif crop_config['CropModel'] == 'simple':
+    show_light_map2(L.sourcepoints[:, :-1],
+                    Crop_plot.nyears_data[crop_display_year]['Dry_yield'][
+                        crop_display_year+'-10-10 00:00:00'] / 100,
+                    PV_1_3Dconfig.PV_central_PD,
+                    "Dry yield SIMPLE "+crop_display_year+" [t/ha]")

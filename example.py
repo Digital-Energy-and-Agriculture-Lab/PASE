@@ -5,9 +5,11 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
+from datetime import datetime
 import numpy as np
 import os
 import pickle
+
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
@@ -58,8 +60,9 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
                                        Loc_1['TimeZone'])
 
 # Instantiation of the 3D PV central
-PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict, Sun_positions_samp.solar_vector,
-                                    visualization=False)                        # !!!! Problem with rotation angle that are negative
+PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
+                                    Sun_positions_samp.solar_vector,
+                                    visualization=True)  # !!!! Problem with rotation angle that are negative
 
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
@@ -126,7 +129,14 @@ Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_dat
                                      Loc_1)
 
 # Display spatialized dry yield
-show_light_map2(L.sourcepoints[:,:-1],
-                Crop_plot.nyears_data['2005']['Dry_yield']['2005-10-10 00:00:00']/100,
-                PV_1_3Dconfig.PV_central_PD,
-                "Dry yield SIMPLE 2005 [t/ha]")
+crop_display_year = str(Loc_1['SimulationEndingYear'])
+if crop_config['CropModel'] == 'grassim':
+    show_light_map2(L.sourcepoints[:, :-1],
+                    Crop_plot[0].nyears_data[crop_display_year]['BM'][datetime.strptime(crop_display_year+'-10-10 00:00:00', '%Y-%m-%d %H:%M:%S')]/100,
+                    PV_1_3Dconfig.PV_central_PD,
+                    "Biomass Gras-Sim "+crop_display_year+" [t/ha]")
+elif crop_config['CropModel'] == 'simple':
+    show_light_map2(L.sourcepoints[:, :-1],
+                    Crop_plot.nyears_data[crop_display_year]['Dry_yield'][crop_display_year+'-10-10 00:00:00']/100,
+                    PV_1_3Dconfig.PV_central_PD,
+                    "Dry yield SIMPLE 2005 [t/ha]")
