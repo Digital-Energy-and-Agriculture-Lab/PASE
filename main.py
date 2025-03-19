@@ -95,8 +95,10 @@ M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
 Light_instance = Light(WD.nyears_data, Sun_positions_complete)
 # Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
 L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central_PD)
-L.get_light_maps(180,Sun_positions_samp.solar_vector)
-# Integration of irradiation along days
+L.get_light_maps(Sun_positions_samp.solar_vector,
+                 scheme=Loc_1['SkyDiscretizationScheme'],
+                 MF=Loc_1['MF'],
+                 n_small_suns=Loc_1['FibonacciSamples'])# Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
                             Light_instance.data)
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])

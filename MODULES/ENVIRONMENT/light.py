@@ -5,6 +5,7 @@
 #Authors : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com) and Nicolas De Cock (nicolas.decock1@gmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
+import logging
 import numpy as np
 import pandas as pd
 import pyvista as pyV
@@ -13,7 +14,9 @@ import matplotlib.pyplot as plt
 import os
 
 import MODULES.conversion_functions as cf
+from MODULES.ENVIRONMENT.sky_model import ReinhartSky
 
+logger = logging.getLogger(__name__)
 
 def fibonacci_half_sphere(samples=18):
     """
@@ -376,7 +379,7 @@ class Ray_casting_scene:
         self.sources_flag_dict = mesh.get_sources_flag_dict()
         
         
-    def get_light_maps(self, n_small_suns, sun_P):
+    def get_light_maps(self, sun_P, scheme='Reinhart', MF=1, n_small_suns=180):
     
         if type(self.geometry) == list:
             sv = np.zeros((1,3))
@@ -386,13 +389,19 @@ class Ray_casting_scene:
             for time in range(len(sun_P[:,0])):
                 print(time)
                 geometry = self.geometry[time]
-                difff_map = self.diffuse_map(geometry, n_small_suns)
+                difff_map = self.diffuse_map(geometry,
+                                             scheme=scheme,
+                                             MF=MF,
+                                             n_small_suns=n_small_suns)
                 sv[0,:] = sun_P[time,:]
                 dirrr_map = self.direct_map(sv, geometry)
                 self.dir_map[:,time] = dirrr_map 
                 self.diff_map[:,time] = difff_map
         else:
-            self.diff_map = self.diffuse_map(self.geometry, n_small_suns)
+            self.diff_map = self.diffuse_map(self.geometry,
+                                             scheme=scheme,
+                                             MF=MF,
+                                             n_small_suns=n_small_suns)
             self.dir_map = self.direct_map(sun_P, self.geometry)
 
     def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped,tol = 0.01):
@@ -415,7 +424,7 @@ class Ray_casting_scene:
         return np.unique(id_rays_stopped[delta>tol])
         
  
-    def diffuse_map(self, geometry, n_small_suns=180):
+    def diffuse_map(self, geometry, scheme='Reinhart', MF=1, n_small_suns=180):
         """
         Public method, compute the diffuse light at the point sources defined in the input mesh using
          the approximation of a isotropic half sphere sky. 
@@ -432,7 +441,16 @@ class Ray_casting_scene:
       
     
         #Get direction of ray to reach the small suns and compute the sky view of each point
-        pTarget = fibonacci_half_sphere(n_small_suns)
+        if scheme.lower() == 'reinhart':
+            sky = ReinhartSky(MF=MF)
+            pTarget = np.column_stack([sky.reinhart_patches.x,
+                                       sky.reinhart_patches.y,
+                                       sky.reinhart_patches.z])
+            n_small_suns = len(sky.reinhart_patches)
+        elif scheme.lower() == 'fibonacci':
+            pTarget = fibonacci_half_sphere(n_small_suns)
+        else:
+            raise NotImplementedError('Unrecognized sky discretization scheme')
         
         
         #Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
