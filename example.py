@@ -81,7 +81,10 @@ Light_instance = Light(WD.nyears_data, Sun_positions_complete)
 
 # Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
 L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central_PD)
-L.get_light_maps(180,Sun_positions_samp.solar_vector)
+L.get_light_maps(Sun_positions_samp.solar_vector,
+                 scheme=Loc_1['SkyDiscretizationScheme'],
+                 MF=Loc_1['MF'],
+                 n_small_suns=Loc_1['FibonacciSamples'])
 
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
@@ -118,7 +121,7 @@ PV_central.get_several_years_of_electricity_production(Sun_positions_complete, L
 
 for _ in ['2005', '2006', '2007']:
     PV_prod = PV_central.production[_]
-    print(f'PV production for year 2005: {PV_prod["P_central"].sum():.2f} MW·h')
+    print(f'PV production for year {_}: {PV_prod["P_central"].sum():.2f} MW·h')
 
 # Crop model
 #Temporary line, this parameter (option_2D) should be in SCENARIOS input files (general parameters)
