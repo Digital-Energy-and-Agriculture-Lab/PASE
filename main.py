@@ -13,6 +13,7 @@ import pickle
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from MODULES.DATA_MANAGEMENT.output.save_csv import save_csv
 from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
 from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from MODULES.ENVIRONMENT.light import show_light_map2, Ray_casting_scene
@@ -50,8 +51,9 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
                                        len(WD.nyears_data[str(Loc_1['SimulationStartingYear'])]),
                                        Loc_1['TimeZone'])
 # Creation of the 3D PV central
-PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict, Sun_positions_samp.solar_vector,
-                                    visualization=False)                        # !!!! Problem with rotation angle that are negative
+PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
+                                    Sun_positions_samp.solar_vector,
+                                    visualization=True)  # !!!! Problem with rotation angle that are negative
 
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
@@ -93,8 +95,10 @@ M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
 Light_instance = Light(WD.nyears_data, Sun_positions_complete)
 # Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
 L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central_PD)
-L.get_light_maps(180,Sun_positions_samp.solar_vector)
-# Integration of irradiation along days
+L.get_light_maps(Sun_positions_samp.solar_vector,
+                 scheme=Loc_1['SkyDiscretizationScheme'],
+                 MF=Loc_1['MF'],
+                 n_small_suns=Loc_1['FibonacciSamples'])# Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
                             Light_instance.data)
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
@@ -200,7 +204,17 @@ Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_dat
                                      L.daily_irr_spat,
                                      Loc_1)
 
-show_light_map2(L.sourcepoints[:,:-1], 
-                Crop_plot[0].nyears_data['2008']['BM'][datetime.strptime('2008-10-10 00:00:00', '%Y-%m-%d %H:%M:%S')]/100,
-                PV_1_3Dconfig.PV_central_PD,
-                "Biomass Gras-Sim 2008 [t/ha]")
+save_csv('mean_data.csv', Crop_plot.nyears_data, ['Biomass', 'Dry_yield'])
+
+crop_display_year = str(Loc_1['SimulationEndingYear'])
+if crop_config['CropModel'] == 'grassim':
+    show_light_map2(L.sourcepoints[:,:-1],
+                    Crop_plot[0].nyears_data[crop_display_year]['BM'][datetime.strptime(crop_display_year+'-10-10 00:00:00', '%Y-%m-%d %H:%M:%S')]/100,
+                    PV_1_3Dconfig.PV_central_PD,
+                    "Biomass Gras-Sim "+crop_display_year+" [t/ha]")
+elif crop_config['CropModel'] == 'simple':
+    show_light_map2(L.sourcepoints[:, :-1],
+                    Crop_plot.nyears_data[crop_display_year]['Dry_yield'][
+                        crop_display_year+'-10-10 00:00:00'] / 100,
+                    PV_1_3Dconfig.PV_central_PD,
+                    "Dry yield SIMPLE "+crop_display_year+" [t/ha]")

@@ -47,7 +47,7 @@ class Soil():
 
         self.water -= self.water_leached
         # water content limits
-        self.water = self.water.clip(self.wilting_point, self.water_saturation)
+        self.water = self.water.clip(0, self.water_saturation)
 
         # Water (%)
         self.W = (self.water - self.wilting_point) / (self.water_capacity - self.wilting_point)

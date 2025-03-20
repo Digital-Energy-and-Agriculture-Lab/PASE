@@ -110,6 +110,7 @@ class Management():
             self.rotation_periods = self.get_rotation_periods()
             self.fert_dates = self.get_fert_dates()
             self.fert_periods = self.get_fert_periods()
+            self.cum_exported_BM = np.zeros(self.grid)
 
         self.cut_today_ = self.cut_today(day, crop)
         self.fert_today_ = self.fert_today(day)
@@ -196,7 +197,8 @@ class Management():
                     else:
                         self.days_since_rotation = 1
                         return True
-                return False
+            self.days_since_rotation += 1
+            return False
                     
         elif self.config['rotationType'] == "sward_height":
             mean_paddock_sward_height = np.mean(crop.sward_height[self.current_mask])
@@ -356,7 +358,8 @@ class Management():
         self.exported_BM = crop.BMGV - crop.resBMGV + crop.BMDV - crop.resBMDV + crop.BMGR - crop.resBMGR + crop.BMDR - crop.resBMDR
         self.exported_digestibleOM = (crop.BMGV - crop.resBMGV)*crop.OMDGV + (crop.BMDV - crop.resBMDV)*crop.OMDDV + (crop.BMGR - crop.resBMGR)*crop.OMDGR + (crop.BMDR - crop.resBMDR)*crop.OMDDR
         self.exported_N = crop.QNGV - crop.resQNGV + crop.QNDV - crop.resQNDV + crop.QNGR - crop.resQNGR + crop.QNDR - crop.resQNDR
-
+        self.cum_exported_BM += self.exported_BM
+        
         for compartment in compartments:
             setattr(crop, f'BM{compartment}', getattr(crop, f'resBM{compartment}')) # update BM of compartments
             setattr(crop, f'QN{compartment}', getattr(crop, f'resQN{compartment}')) # update QN of compartments
