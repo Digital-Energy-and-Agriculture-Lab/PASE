@@ -21,6 +21,8 @@ Ingram, Keith T. and Fraisse, Clyde W, 2012, Agronomy journal.
 # importation of public packages
 import numpy as np
 
+from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+
 class Soil:
     
     def __init__(self, soil_par=None):
@@ -115,3 +117,37 @@ class Soil:
                       -self.params['WaterHoldingCapacity'])         
 
         return deep_drainage
+    
+    def visualize_map_of_a_variable(self, variable, scene_3D, meshes, year, MM_DD=None, unit=''):
+        """
+        Visualize a specific spatialized variable in the 3D scene.
+
+        Parameters
+        ----------
+        variable : string
+            Name of the variable to visualize.
+        scene_3D : Pyvista Polydata
+            3D scene as a pyvista polydata.
+        meshes : Mesh object
+            Mesh object containing the coordinates of the points of interest.
+        year : int
+            Year fo which results will be visualized.
+        MM_DD : string
+            Date as a format 'MM-DD'
+        unit : string
+            Unit of the variable to visualize.
+
+        Returns
+        -------
+        None.
+
+        """        
+        if type(scene_3D) == list:
+            geo = scene_3D[0]
+        else:
+            geo = scene_3D
+        
+        open_pyvista_3D_visualization(meshes.sourcepoints[:,:-1], 
+                                      self.nyears_data[str(year)][variable][str(year)+'-'+MM_DD+' 00:00:00'], 
+                                      geo,
+                                      variable+' map SIMPLE '+str(year)+'-'+MM_DD+' ['+unit+']')

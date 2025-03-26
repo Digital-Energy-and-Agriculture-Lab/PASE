@@ -13,9 +13,10 @@ import pickle
 from MODULES.user_support_tools import PASE_Logger
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
 from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
-from MODULES.ENVIRONMENT.light import show_light_map2, Ray_casting_scene
+from MODULES.ENVIRONMENT.light import Ray_casting_scene
 from MODULES.ENVIRONMENT.mesh import Mesh
 from MODULES.PHOTOVOLTAICS.production import PV_Production
 from MODULES.CROPS.run_crop_simulations import run_crop_simu
@@ -84,31 +85,17 @@ L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central_PD)
 L.get_light_maps(Sun_positions_samp.solar_vector,
                  scheme=Loc_1['SkyDiscretizationScheme'],
                  MF=Loc_1['MF'],
-                 n_small_suns=Loc_1['FibonacciSamples'])
+                 n_small_suns=Loc_1['FibonacciSamples'],
+                 True,
+                 3)
 
 # Integration of irradiation along days
-L.get_daily_irradiation_map(Sun_positions_samp.SP,
-                            Light_instance.data)
+L.get_daily_irradiation_map(Sun_positions_samp.SP, Light_instance.data, True,
+                            2005, 5)
 
-
-# Examples of visualisation for the direct light map, diffuse light map (sky view factor)
-# and daily irradiation map. Those lines are for PV system with no rotation axis. 
-j = 5 #  julian day of the year
-
-show_light_map2(L.sourcepoints[:,:-1], 
-                L.dir_map[:,3], 
-                PV_1_3Dconfig.PV_central_PD,
-                "Direct map [-]")
-
-show_light_map2(L.sourcepoints[:,:-1], 
-                np.array(L.diff_map,dtype=np.float32), 
-                PV_1_3Dconfig.PV_central_PD,
-                "Sky visibility map [-]")
-
-show_light_map2(L.sourcepoints[:,:-1], 
-                L.daily_irr_spat['2005'][:,j],
-                PV_1_3Dconfig.PV_central_PD,
-                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
+L.visualize_direct_light_map(1)
+L.visualize_diffuse_light_map()
+L.visualize_daily_irrad_map(2007, 150)
 
 
 ##############
@@ -130,16 +117,10 @@ option_2D = 1 # 0: no 2D-spatialization ; 1 : 2D spatialization
 Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      L.daily_irr_spat,
                                      Loc_1)
-
 # Display spatialized dry yield
-crop_display_year = str(Loc_1['SimulationEndingYear'])
-if crop_config['CropModel'] == 'grassim':
-    show_light_map2(L.sourcepoints[:, :-1],
-                    Crop_plot[0].nyears_data[crop_display_year]['BM'][datetime.strptime(crop_display_year+'-10-10 00:00:00', '%Y-%m-%d %H:%M:%S')]/100,
-                    PV_1_3Dconfig.PV_central_PD,
-                    "Biomass Gras-Sim "+crop_display_year+" [t/ha]")
-elif crop_config['CropModel'] == 'simple':
-    show_light_map2(L.sourcepoints[:, :-1],
-                    Crop_plot.nyears_data[crop_display_year]['Dry_yield'][crop_display_year+'-10-10 00:00:00']/100,
-                    PV_1_3Dconfig.PV_central_PD,
-                    "Dry yield SIMPLE 2005 [t/ha]")
+if crop_config['CropModel'] == ('simple' or 'stics'):
+    Crop_plot.visualize_map_of_a_variable('Fresh_yield', PV_1_3Dconfig.PV_central_PD, 
+                                          M, 2006, MM_DD='10-10', unit='g/m²')
+else:
+    Crop_plot[0].visualize_map_of_a_variable('BM', PV_1_3Dconfig.PV_central_PD, 
+                                             M, 2006, MM_DD='10-10', unit='t/ha')
