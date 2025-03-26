@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import os
 
 import MODULES.conversion_functions as cf
+from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 from MODULES.ENVIRONMENT.sky_model import ReinhartSky
 
 logger = logging.getLogger(__name__)
@@ -379,7 +380,7 @@ class Ray_casting_scene:
         self.sources_flag_dict = mesh.get_sources_flag_dict()
         
         
-    def get_light_maps(self, sun_P, scheme='Reinhart', MF=1, n_small_suns=180):
+    def get_light_maps(self, sun_P, scheme='Reinhart', MF=1, n_small_suns=180, visualization=False, Sun_P_map_to_visualize=None):
     
         if type(self.geometry) == list:
             sv = np.zeros((1,3))
@@ -403,6 +404,14 @@ class Ray_casting_scene:
                                              MF=MF,
                                              n_small_suns=n_small_suns)
             self.dir_map = self.direct_map(sun_P, self.geometry)
+            
+            
+        if visualization == True:
+            self.visualize_direct_light_map(Sun_P_map_to_visualize)
+            self.visualize_diffuse_light_map(Sun_P_map_to_visualize)
+        else:
+            pass
+        
 
     def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped,tol = 0.01):
         """
@@ -615,7 +624,7 @@ class Ray_casting_scene:
     
        
     
-    def get_daily_irradiation_map(self, SP_sampled, light_data):
+    def get_daily_irradiation_map(self, SP_sampled, light_data, visualization=False, year=None, julian_day=None):
         """
         Public method, compute the daily diffuse direct and total irradiation for each location of the input mesh.
         The results are written as an attribute of the class instance
@@ -623,6 +632,9 @@ class Ray_casting_scene:
         Parameters:
             SP_sampled (df): dataframe with sun positions
             light_data (df): dataframe with meterological data
+            visualization (bool): boolean True/False to activate/desactivate the automatic visualization of results
+            year (int): year on which visualizing the results of daily irradiation
+            julian_day (int): julian day on which visualizing the daily irradiation map
 
         Returns:
            None
@@ -694,77 +706,97 @@ class Ray_casting_scene:
             #Conversion des dictionnaires en matrice numpy et ajout dans l attribut ad-hoc
             self.daily_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()    + pd.DataFrame.from_dict(irradianceMap_direct).to_numpy() 
             self.daily_dir_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_direct).to_numpy()    
-            self.daily_diff_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()     
+            self.daily_diff_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()
+            
+            
+        if visualization == True:
+            self.visualize_daily_irrad_map(year, julian_day)
+        else:
+            pass
+            
 
-    
+    def visualize_direct_light_map(self, Sun_P_map_to_visualize):
+        """
+        Open the visualization of the direct light map for a specific 
+        sun position corresponding to the sun positions sampled vector
 
-def show_light_map(light_matrix, msh_grid, PV_central, lim_min, lim_max, lgd_title):
-    
-    grid = pyV.StructuredGrid(msh_grid.X, msh_grid.Y, np.ones((len(msh_grid.X[:,0]),len(msh_grid.X[0,:])))*0.05)
+        Parameters
+        ----------
+        Sun_P_map_to_visualize : integer
+            id of the sun position in the sun positions sampled vector
 
-    test1 = light_matrix.ravel()
-    
-    labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)', ylabel='Y (NORTH)')
-    
-    plotter = pyV.Plotter()
+        Returns
+        -------
+        None.
 
-    plotter.add_mesh(PV_central, color='black')
-    ground = np.array([[-100, 100, 0],
-                       [100, 100, 0],
-                       [-100, -100, 0],
-                       [100, -100, 0]])
+        """
+        
+        if type(self.geometry) == list:
+            geo = self.geometry[Sun_P_map_to_visualize]
+        else:
+            geo = self.geometry
+        
+        open_pyvista_3D_visualization(self.sourcepoints[:,:-1], 
+                                      self.dir_map[:,Sun_P_map_to_visualize], 
+                                      geo,
+                                      "Direct map [-]")
+        
 
-    ground_m = np.hstack([[3, 0, 1, 2],    
-                          [3, 1, 2, 3],])
+    def visualize_diffuse_light_map(self, Sun_P_map_to_visualize=None):
+        """
+        Open the visualization of the diffuse light map for a specific 
+        tilt of the PV modules if there is a rotation axis
+        (corresponding to a sun position from the sun positions sampled vector)
 
-    grnd = pyV.PolyData(ground, ground_m)
+        Parameters
+        ----------
+        Sun_P_map_to_visualize : integer
+            id of the sun position in the sun positions sampled vector
 
-    plotter.add_mesh(grnd, color='green')
-    #plotter.show_axes()
-    plotter.add_axes(**labels)
+        Returns
+        -------
+        None.
 
-    plotter.add_mesh(
-        grid,
-        scalars=test1,
-        lighting=False,
-        show_edges=False,
-        scalar_bar_args={"title": lgd_title},
-        clim=[lim_min, lim_max])
-    
-    plotter.camera.position = (30, 60, 40)
-    plotter.camera.focal_point = (0,10,0)
+        """
+        
+        if type(self.geometry) == list:
+            geo = self.geometry[Sun_P_map_to_visualize]
+            diff_map = self.diff_map[:,Sun_P_map_to_visualize]
+        else:
+            geo = self.geometry
+            diff_map = self.diff_map
+        
+        open_pyvista_3D_visualization(self.sourcepoints[:,:-1], 
+                                      np.array(diff_map, dtype=np.float32), 
+                                      geo,
+                                      "Sky visibility map [-]")
 
-    plotter.show()
-    
-    
-def show_light_map2(source_points, light_at_source_points, scene, lgd_title):
-    
-    labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)', ylabel='Y (NORTH)')
-    
-    plotter = pyV.Plotter()
+            
+    def visualize_daily_irrad_map(self, year, julian_day):
+        """
+        Open the visualization of the daily irradiation map 
+        for a specific year and julian day
 
-    plotter.add_mesh(scene, color='black')
-    ground = np.array([[-100, 100, 0],
-                       [100, 100, 0],
-                       [-100, -100, 0],
-                       [100, -100, 0]])
+        Parameters
+        ----------
+        year : integer
+            year on which to visualize daily irradiation
+        julian_day : integer
+            julian day on which to visualize daily irradiation
 
-    ground_m = np.hstack([[3, 0, 1, 2],    
-                          [3, 1, 2, 3],])
+        Returns
+        -------
+        None.
 
-    grnd = pyV.PolyData(ground, ground_m)
-    
-    plotter.add_mesh(grnd, color='green')
-    
-    plotter.add_axes(**labels)
-    
-    plotter.add_mesh(source_points,
-                     scalars=light_at_source_points,
-                     point_size=10,
-                     lighting=False,
-                     show_edges=False,
-                     scalar_bar_args={"title": lgd_title},
-                     clim=[light_at_source_points.min(), 
-                           light_at_source_points.max()])
-    
-    plotter.show()
+        """
+      
+        if type(self.geometry) == list:
+            geo = self.geometry[0]
+        else:
+            geo = self.geometry
+        
+        open_pyvista_3D_visualization(self.sourcepoints[:,:-1], 
+                                      self.daily_irr_spat[str(year)][:,julian_day], 
+                                      geo,
+                                      "Total irradiation reaching the ground on the julian day "+str(julian_day)+" of "+ str(year) +" [MJ/m²]")
+
