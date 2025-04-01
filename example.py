@@ -86,8 +86,8 @@ L.get_light_maps(Sun_positions_samp.solar_vector,
                  scheme=Loc_1['SkyDiscretizationScheme'],
                  MF=Loc_1['MF'],
                  n_small_suns=Loc_1['FibonacciSamples'],
-                 True,
-                 3)
+                 visualization=False,
+                 Sun_P_map_to_visualize=3)
 
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP, Light_instance.data, True,

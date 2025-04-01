@@ -1,26 +1,29 @@
-09:41:20 AM  (INFO)  -  START OF THE SIMULATION
-09:41:20 AM  (INFO)  -  Input values from Example1_loc.yaml have been imported successfully
-09:41:20 AM  (INFO)  -  Input values from Example1_AV.yaml have been imported successfully
-09:41:20 AM  (INFO)  -  Input values from Example1_PV_Module.yaml have been imported successfully
-09:41:20 AM  (INFO)  -  Input values from simple_example.yml have been imported successfully
-09:41:20 AM  (INFO)  -  Get hourly weather data for year 2005 from PvGis
-09:41:20 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-09:41:21 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 302 0
-09:41:21 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-09:41:22 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 200 961476
-09:41:23 AM  (INFO)  -  Get hourly weather data for year 2006 from PvGis
-09:41:23 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-09:41:23 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 302 0
-09:41:23 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-09:41:24 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 200 961912
-09:41:25 AM  (INFO)  -  Get hourly weather data for year 2007 from PvGis
-09:41:25 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-09:41:25 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2007&endyear=2007&components=1&outputformat=json HTTP/1.1" 302 0
-09:41:25 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-09:41:26 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2007&endyear=2007&components=1&outputformat=json HTTP/1.1" 200 961132
-09:41:27 AM  (INFO)  -  Computation of daily weather data for year 2005
-09:41:27 AM  (INFO)  -  Computation of daily weather data for year 2006
-09:41:27 AM  (INFO)  -  Computation of daily weather data for year 2007
-09:41:27 AM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
-09:41:44 AM  (INFO)  -  Input values from CROPS/SIMPLE/crop_init.yaml have been imported successfully
-09:41:44 AM  (INFO)  -  Input values from CROPS/SIMPLE/soil_init.yaml have been imported successfully
+08:41:33 AM  (INFO)  -  START OF THE SIMULATION
+08:41:33 AM  (INFO)  -  Input values from Example1_loc.yaml have been imported successfully
+08:41:33 AM  (INFO)  -  Input values from Example1_AV.yaml have been imported successfully
+08:41:33 AM  (INFO)  -  Input values from Example1_PV_Module.yaml have been imported successfully
+08:41:33 AM  (INFO)  -  Input values from simple_example.yml have been imported successfully
+08:41:33 AM  (INFO)  -  Get hourly weather data for year 2005 from PvGis
+08:41:33 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+08:41:33 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 302 0
+08:41:33 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+08:41:38 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 200 961476
+08:41:39 AM  (INFO)  -  Get hourly weather data for year 2006 from PvGis
+08:41:39 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+08:41:40 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 302 0
+08:41:40 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+08:41:45 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 200 961912
+08:41:47 AM  (INFO)  -  Get hourly weather data for year 2007 from PvGis
+08:41:47 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+08:41:47 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2007&endyear=2007&components=1&outputformat=json HTTP/1.1" 302 0
+08:41:47 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+08:41:52 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2007&endyear=2007&components=1&outputformat=json HTTP/1.1" 200 961132
+08:41:58 AM  (INFO)  -  Computation of daily weather data for year 2005
+08:41:58 AM  (INFO)  -  Computation of daily weather data for year 2006
+08:41:58 AM  (INFO)  -  Computation of daily weather data for year 2007
+08:42:05 AM  (DEBUG)  -  Sum of solid angles = 2.004 * pi
+08:42:05 AM  (WARNING)  -  Sum of solid angles seems off, check the sky discretization scheme
+08:42:05 AM  (WARNING)  -  Sum of solid angles = 2.004 * pi
+08:42:05 AM  (DEBUG)  -  Sum of surface areas = 1.002
+08:42:37 AM  (INFO)  -  Input values from CROPS/SIMPLE/crop_init.yaml have been imported successfully
+08:42:37 AM  (INFO)  -  Input values from CROPS/SIMPLE/soil_init.yaml have been imported successfully
