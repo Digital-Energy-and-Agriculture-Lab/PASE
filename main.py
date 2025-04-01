@@ -99,8 +99,8 @@ L.get_light_maps(Sun_positions_samp.solar_vector,
                  scheme=Loc_1['SkyDiscretizationScheme'],
                  MF=Loc_1['MF'],
                  n_small_suns=Loc_1['FibonacciSamples'],
-                 True,
-                 3)
+                 visualization=False,
+                 Sun_P_map_to_visualize=3)
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
                             Light_instance.data)
@@ -214,11 +214,13 @@ Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_dat
                                      L.daily_irr_spat,
                                      Loc_1)
 
-save_csv('mean_data.csv', Crop_plot.nyears_data, ['Biomass', 'Dry_yield'])
+
 
 if crop_config['CropModel'] == ('simple' or 'stics'):
     Crop_plot.visualize_map_of_a_variable('Fresh_yield', PV_1_3Dconfig.PV_central_PD, 
                                           M, 2008, MM_DD='10-10', unit='g/m²')
+    save_csv('mean_data.csv', Crop_plot.nyears_data, ['Dry_yield', 'Biomass'])
 else:
     Crop_plot[0].visualize_map_of_a_variable('BM', PV_1_3Dconfig.PV_central_PD, 
                                              M, 2008, MM_DD='10-10', unit='t/ha')
+    save_csv('mean_data.csv', Crop_plot[0].nyears_data, ['BM', 'GRO'])
