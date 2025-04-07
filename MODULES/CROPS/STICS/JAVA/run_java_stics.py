@@ -53,8 +53,8 @@ def run_independant_usms(config, WD, daily_irr, scenario_P):
                     subprocess.call(["java", "-jar","JavaSticsCmd.exe",
                                      "--run", "param_files", WD_file])
                 else : 
-                    subprocess.call(["java", "-jar","JavaSticsCmd.exe",
-                                     "--run", "param_files", WD_file], shell=True)
+                    subprocess.call(["JavaSticsCmd.exe", "--run", "param_files",
+                                     WD_file], shell=True)
                 
                 
                 daily_results_stics = pd.read_csv('param_files/mod_s'+WD_file+'.sti', sep=';', decimal='.')
