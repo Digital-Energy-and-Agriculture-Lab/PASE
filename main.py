@@ -19,7 +19,7 @@ from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Ligh
 from MODULES.ENVIRONMENT.light import Ray_casting_scene
 from MODULES.ENVIRONMENT.mesh import Mesh
 from MODULES.PHOTOVOLTAICS.production import PV_Production
-from MODULES.CROPS.run_crop_simulations import run_crop_simu
+from MODULES.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
 
 PASE_Logger()
 # Import of general parameters
@@ -210,19 +210,18 @@ PV_central.get_several_years_of_electricity_production(Sun_positions_complete, L
 ### CROP MODEL
 #Temporary line, this parameter (option_2D) should be in SCENARIOS input files (general parameters)
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
-results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
+agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      L.daily_irr_spat,
                                      Loc_1)
 
 
-
-# Code below obsolete since issue 126 (crop model outputs refactor)
-"""
 if crop_config['CropModel'] == ('simple' or 'stics'):
-    Crop_plot.visualize_map_of_a_variable('Fresh_yield', PV_1_3Dconfig.PV_central_PD, 
-                                          M, 2008, MM_DD='10-10', unit='g/m²')
-    save_csv('mean_data.csv', Crop_plot.nyears_data, ['Dry_yield', 'Biomass'])
+    visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
+                                PV_1_3Dconfig.PV_central_PD, M, 2008, 
+                                MM_DD='10-10', unit='g/m²')
+    save_csv('mean_data.csv', agro_results, ['Dry_yield', 'Biomass'])
 else:
-    Crop_plot[0].visualize_map_of_a_variable('BM', PV_1_3Dconfig.PV_central_PD, 
-                                             M, 2008, MM_DD='10-10', unit='t/ha')
-"""
+    visualize_map_of_a_variable(crop_config, agro_results,'BM',
+                                PV_1_3Dconfig.PV_central_PD, M, 2008,
+                                MM_DD='10-10', unit='t/ha')
+    save_csv('mean_data.csv', agro_results, ['BM'])

@@ -8,6 +8,8 @@
 from MODULES.CROPS.SIMPLE.run_simple import run_independant_years_of_crop
 from MODULES.CROPS.STICS.JAVA.run_java_stics import run_independant_usms
 from MODULES.CROPS.GRASSIM.run_grassim import run_grassim
+from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from datetime import datetime
 
 
 
@@ -41,3 +43,52 @@ def merge_results(objects):
             merged_dict.update(object.nyears_data[year])
         results[year] = merged_dict
     return results
+
+
+def visualize_map_of_a_variable(config, results, variable, scene_3D, meshes, year, MM_DD=None, unit=''):
+    """
+    Visualize a specific spatialized variable in the 3D scene.
+
+    Parameters
+    ----------
+    config : dict
+        Dictionnary with the configuration parameters of the crop model
+    results : dict
+        Dictionnary with the output of the crop model
+    variable : string
+        Name of the variable to visualize.
+    scene_3D : Pyvista Polydata
+        3D scene as a pyvista polydata.
+    meshes : Mesh object
+        Mesh object containing the coordinates of the points of interest.
+    year : int
+        Year fo which results will be visualized.
+    MM_DD : string
+        Date as a format 'MM-DD'
+    unit : string
+        Unit of the variable to visualize.
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    if type(scene_3D) == list:
+        geo = scene_3D[0]
+    else:
+        geo = scene_3D
+        
+    if config['CropModel'] == 'simple':
+        data = results[str(year)][variable][str(year)+'-'+MM_DD+' 00:00:00']
+        
+    if config['CropModel'] == 'grassim':
+        data = results[str(year)][variable][datetime.strptime(str(year)+'-'+MM_DD+' 00:00:00', '%Y-%m-%d %H:%M:%S')]
+        
+    if config['CropModel'] == 'stics':
+        data = results[str(year)][variable]
+    
+    open_pyvista_3D_visualization(meshes.sourcepoints[:,:-1], 
+                                  data, 
+                                  geo,
+                                  variable+' map '+ config['CropModel']+' '+ str(year)+'-'+MM_DD+' ['+unit+']')
