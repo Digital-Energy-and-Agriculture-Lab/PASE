@@ -95,7 +95,6 @@ def run_independant_usms(config, WD, daily_irr, scenario_P):
                 
             Crop_plot.fill_dict_variables_for_each_year(year)
     
-    Soil_plot = object()
     
-    return Soil_plot, Crop_plot
+    return Crop_plot
         

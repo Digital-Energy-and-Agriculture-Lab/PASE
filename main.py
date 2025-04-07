@@ -210,12 +210,14 @@ PV_central.get_several_years_of_electricity_production(Sun_positions_complete, L
 ### CROP MODEL
 #Temporary line, this parameter (option_2D) should be in SCENARIOS input files (general parameters)
 option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
-Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
+results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      L.daily_irr_spat,
                                      Loc_1)
 
 
 
+# Code below obsolete since issue 126 (crop model outputs refactor)
+"""
 if crop_config['CropModel'] == ('simple' or 'stics'):
     Crop_plot.visualize_map_of_a_variable('Fresh_yield', PV_1_3Dconfig.PV_central_PD, 
                                           M, 2008, MM_DD='10-10', unit='g/m²')
@@ -223,4 +225,4 @@ if crop_config['CropModel'] == ('simple' or 'stics'):
 else:
     Crop_plot[0].visualize_map_of_a_variable('BM', PV_1_3Dconfig.PV_central_PD, 
                                              M, 2008, MM_DD='10-10', unit='t/ha')
-    save_csv('mean_data.csv', Crop_plot[0].nyears_data, ['BM', 'GRO'])
+"""
