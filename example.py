@@ -19,7 +19,7 @@ from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Ligh
 from MODULES.ENVIRONMENT.light import Ray_casting_scene
 from MODULES.ENVIRONMENT.mesh import Mesh
 from MODULES.PHOTOVOLTAICS.production import PV_Production
-from MODULES.CROPS.run_crop_simulations import run_crop_simu
+from MODULES.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
 
 PASE_Logger()
 
@@ -114,13 +114,15 @@ for _ in ['2005', '2006', '2007']:
 #Temporary line, this parameter (option_2D) should be in SCENARIOS input files (general parameters)
 option_2D = 1 # 0: no 2D-spatialization ; 1 : 2D spatialization
 
-Soil_plot, Crop_plot = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
+agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      L.daily_irr_spat,
                                      Loc_1)
 # Display spatialized dry yield
 if crop_config['CropModel'] == ('simple' or 'stics'):
-    Crop_plot.visualize_map_of_a_variable('Fresh_yield', PV_1_3Dconfig.PV_central_PD, 
-                                          M, 2006, MM_DD='10-10', unit='g/m²')
+    visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
+                                PV_1_3Dconfig.PV_central_PD, M, 2006, 
+                                MM_DD='10-10', unit='g/m²')
 else:
-    Crop_plot[0].visualize_map_of_a_variable('BM', PV_1_3Dconfig.PV_central_PD, 
-                                             M, 2006, MM_DD='10-10', unit='t/ha')
+    visualize_map_of_a_variable(crop_config, agro_results,'BM',
+                                PV_1_3Dconfig.PV_central_PD, M, 2006,
+                                MM_DD='10-10', unit='t/ha')
