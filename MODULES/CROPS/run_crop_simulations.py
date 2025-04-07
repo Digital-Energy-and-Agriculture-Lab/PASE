@@ -12,20 +12,32 @@ from MODULES.CROPS.GRASSIM.run_grassim import run_grassim
 
 
 def run_crop_simu(config, option_2D, WD, daily_irr, scenario_P):
+
+    results = {}
         
     if config['CropModel'] == 'simple':
-        
         Soil_plot, Crop_plot = run_independant_years_of_crop(config, option_2D, WD, daily_irr, 
                                                              scenario_P['Latitude'],
                                                              scenario_P['Altitude'])
+        results = merge_results([Soil_plot, Crop_plot])
         
     if config['CropModel'] == 'stics':
-
-        Soil_plot, Crop_plot = run_independant_usms(config, WD, daily_irr, scenario_P)        
+        Crop_plot = run_independant_usms(config, WD, daily_irr, scenario_P)  
+        results = Crop_plot.nyears_data      
         
     if config['CropModel'] == 'grassim':
-        
-        Soil_plot, Crop_plot = run_grassim(config, WD, daily_irr, scenario_P['Latitude'], scenario_P['Altitude'])
-        
+        Soil_plot, Crop_plot, Management_plot = run_grassim(config, WD, daily_irr, scenario_P['Latitude'], scenario_P['Altitude'])
+        results = merge_results([Soil_plot, Crop_plot, Management_plot])
     
-    return Soil_plot, Crop_plot
+    return results
+
+
+def merge_results(objects):
+    results = {}
+    years = objects[0].nyears_data.keys()
+    for year in years:
+        merged_dict = {}
+        for object in objects:
+            merged_dict.update(object.nyears_data[year])
+        results[year] = merged_dict
+    return results

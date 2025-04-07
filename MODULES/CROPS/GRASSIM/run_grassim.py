@@ -50,7 +50,7 @@ def run_grassim(config, WD, daily_irr, lat, alt):
 
             run_daily_loop(day, ET0, WD[year].loc[day], day_irr, soil, crop, management)
 
-    return soil, (crop, management)
+    return soil, crop, management
 
 
 def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):

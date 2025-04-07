@@ -95,7 +95,7 @@ class Management():
 
     def init_daily_loop(self, day, crop, soil):
         self.day = day
-        self.year = day.year
+        self.year = str(day.year)
         self.fert_org = 0
         self.fert_min = 0
         self.exported_BM = np.zeros(self.grid)
