@@ -14,6 +14,16 @@ from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from MODULES.CROPS.evapotranspiration_FAO56_PM import get_ET0
 
 def run_grassim(config, WD, daily_irr, lat, alt):
+    """
+    Run the GRASSIM model.
+
+    Args:
+        config: dictionary of configuration filenames
+        WD: dictionary of daily weather data
+        daily_irr: dictionary of daily irradiance [MJ/m²]
+        lat: latitude [°] for ET0 computation
+        alt: altitude [m] for ET0 computation
+    """
 
     soil_init = YAML_Inputs_provider(file=f"CROPS/GRASSIM/soil/{config['SoilInit']}").inputs
     crop_init = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['CropInit']}").inputs
@@ -54,6 +64,18 @@ def run_grassim(config, WD, daily_irr, lat, alt):
 
 
 def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
+    """
+    Run the daily loop.
+
+    Args:
+        day: datetime object
+        ET0: potential evapotranspiration [mm]
+        WD: weather data
+        day_irr: numpy array of today's spatialized irradiance [MJ/m²]
+        soil: soil object
+        crop: crop object
+        management: management object
+    """
 
     crop.init_daily_loop(day=day, WD=WD, ET0=ET0, day_irr=day_irr)
     soil.init_daily_loop(day=day)
@@ -97,10 +119,13 @@ def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
 
 def get_sim_dates(weather_data):
     """
-    weather_data : Weather_data object from weather_data_provider
-    
-    returns : 
-        simulation_dates : list of simulation days
+    Get the simulation dates.
+
+    Args:
+        weather_data: Weather_data object from weather_data_provider
+
+    Returns:
+        simulation_dates: list of simulation days
     """
     simulation_dates = {}
 
@@ -113,11 +138,26 @@ def get_sim_dates(weather_data):
 
 
 def get_yaml_params(filename):
+    """
+    Get the parameters from a YAML file.
+
+    Args:
+        filename: string of the filename
+
+    Returns:
+        parameters: dictionary of parameters
+    """
     return YAML_Inputs_provider(file=filename).inputs
 
 
 def get_grid_shape(daily_irradiance):
     """
-    daily irradiance : daily_irr_spat dictionnary attribut from Ray_casting_scene object
+    Get the shape of the grid.
+
+    Args:
+        daily_irradiance: dictionary of daily irradiance [MJ/m²]
+
+    Returns:
+        grid_shape: shape of the grid
     """
     return daily_irradiance[next(iter(daily_irradiance))].shape[0]
