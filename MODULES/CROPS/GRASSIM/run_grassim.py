@@ -87,7 +87,7 @@ def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
     crop.compute_st()
     crop.compute_fAge() # need st, used for SEN & ABS
     crop.compute_senescence_abscission()
-    crop.compute_N_plant_litter
+    crop.compute_N_plant_litter()
 
     crop.compute_fT()
     crop.compute_fPARi()
