@@ -3,6 +3,11 @@ DOI: 10.1016/j.jafr.2023.100875
 
 # Configuration Guide
 
+## Save variables
+Runtime objects are not saved in the results dictionnaries. Only variables specified in https://gitlab.uliege.be/deal-public/pase/-/blob/main/INPUTS/CROPS/GRASSIM/variables_to_save.yml (or other path specified in [the config file](https://gitlab.uliege.be/deal-public/pase/-/blob/main/INPUTS/CROPS/config/grassim_example.yml)) will be saved.
+
+`variables_to_save.yml` should have 3 fields : `soil_variables`, `crop_variables` and `management_variables`, containing attribute names of classes `Soil`, `Plants` and `Management`, respectively.
+
 ## Management Configuration (Refer to `management_dates_example.yml`)
 This YAML file defines management practices such as cutting, rotation, and fertilization.
 
