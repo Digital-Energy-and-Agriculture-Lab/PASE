@@ -19,6 +19,13 @@ class Plants():
             variables_to_save: list of strings of variables to save
         """
 
+        self.grid = grid
+        self.pft_composition = pft_composition
+        self.inits = inits
+        self.kc_values = kc_values
+        self.pft_values = pft_values
+        self.variables_to_save = variables_to_save
+
         self.nyears_data = {}
         
         self.compute_pft_params()
