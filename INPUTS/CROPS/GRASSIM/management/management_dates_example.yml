@@ -1,30 +1,36 @@
-maxHeight:
-    Value: 0.35
-    Type: float
-    Unit: m
-    Description: maximum mean sward height before cutting
-    Limit:  [0.05, 2]
-cutHeight:
+cutType:
+    Value: graze
+    Type: string
+    Limit: ['None', 'graze', 'mow']
+    Description: Determines how biomass is removed
+cutDecisionType:
+    Value: dates
+    Type: string
+    Limit: ['None', 'dates', 'sward_height', 'frequency']
+    Description: Specifies when cutting takes place
+biomassRemovalType:
+    Value: cut_height
+    Type: string
+    Limit: ['None', 'max_BM', 'cut_height']
+    Description: Defines the extent of biomass removal
+rotationType:
+    Value: None
+    Type: string
+    Limit: ['None', 'dates', 'sward_height', 'frequency']
+    Description: Specifies when rotation occurs
+fertilizationType:
+    Value: None
+    Type: string
+    Limit: ['None', 'dates', 'days_after_cut']
+    Description: Specifies when fertilization occurs
+
+cut_dates:
+    Value: ['15-04', '15-05', '15-06']
+    Type: list
+    Description: Cuting dates for all simulation years. List of strings in dd-mm format.
+
+cut_height:
     Value: 0.05
     Type: float
-    Unit: m
-    Description: remaining grass height
-    Limit: [0.01, 1]
-cutToFertDays:
-    Value: 3
-    Type: integer
-    Unit: day
-    Description: time between cut and fertilization
-    Limit: [0, 365]
-fert_min: 
-    Value: 0
-    Type: float
-    Unit: KgN/ha
-    Description: Amount of mineral fertilizer applied
-    Limit: [0, 999]
-fert_org: 
-    Value: 0
-    Type: float
-    Unit: KgN/ha
-    Description: Amount of organic fertilizer applied
-    Limit: [0, 999]
+    Limit: [0.01, 2]
+    Description: remaining sward height after cut.
