@@ -101,7 +101,7 @@ def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
     crop.compute_seasonal_effect() # need st, used for GRO
 
     crop.compute_actual_growth()
-    crop.update() # update BM compartments, OMD, sward height, age, based on actual growth
+    crop.update_balance() # update BM compartments, OMD, sward height, age, based on actual growth
 
     soil.compute_water_balance(PP=crop.PP, AET=crop.AET)
     soil.compute_N_mineralization(K=crop.K, Tref=crop.Tref, Temp=crop.Temp) # parameters for soil activity (Ruelle et al., 2018)

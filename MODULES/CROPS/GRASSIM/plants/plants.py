@@ -456,62 +456,95 @@ class Plants():
         self.GROGV = self.GRO * (1 - self.REP)
         self.GROGR = self.GRO * self.REP
             
-    def update(self):
-        """Update state and auxiliary variables.
+    def update_balance(self):
+        """Update state and auxiliary variables."""
+        self.update_green_biomass()
+        self.update_dead_biomass()
+        self.update_total_biomass_and_sward_height()
+        self.update_digestibility()
+        self.compute_digestible_organic_matter()
+        self.update_nitrogen_content()
+        self.update_nitrogen_concentration()
 
-        Update green biomass with actual growth (GRO) [kgDM ha^-1] and senescence (SEN) [kgDM ha^-1].
-        Update dead biomass with senescence (SEN) [kgDM ha^-1] and abscission (ABS) [kgDM ha^-1].
-        Compute sward height [m] from biomass and bulk density (BD) [g m^-3].
-        Update digestibility (OMD) [g g^-1] with age of vegetation (age) [°C day].
-        Compute digestible organic matter [kgDM ha^-1].
-        Update nitrogen content (QN) [kgN ha^-1].
-        Update nitrogen concentration (N) [kgN kgDM^-1].
-        """
+    def update_green_biomass(self):
+        """Update green biomass with growth and senescence [kgDM ha^-1]."""
         self.BMGV += self.GROGV - self.SENGV
         self.BMGR += self.GROGR - self.SENGR
-        self.BMDV += (1-self.sigmaGV) * self.SENGV - self.ABSDV
-        self.BMDR += (1-self.sigmaGR) * self.SENGR - self.ABSDR
+
+    def update_dead_biomass(self):
+        """Update dead biomass with senescence and abscission [kgDM ha^-1]."""
+        self.BMDV += (1 - self.sigmaGV) * self.SENGV - self.ABSDV
+        self.BMDR += (1 - self.sigmaGR) * self.SENGR - self.ABSDR
+
+    def update_total_biomass_and_sward_height(self):
+        """Update total biomass and compute sward height [m] from biomass and bulk density [g m^-3]."""
         self.BM = self.BMGV + self.BMGR + self.BMDV + self.BMDR
-        self.sward_height =  np.maximum.reduce([self.BMGV/10/self.BDGV,
-                                                self.BMGR/10/self.BDGR,
-                                                self.BMDV/10/self.BDDV,
-                                                self.BMDR/10/self.BDDR])
-        
+        self.sward_height = np.maximum.reduce([
+            self.BMGV / 10 / self.BDGV,
+            self.BMGR / 10 / self.BDGR,
+            self.BMDV / 10 / self.BDDV,
+            self.BMDR / 10 / self.BDDR
+        ])
+
+    def update_digestibility(self):
+        """Update digestibility (OMD) [g g^-1] based on age and seasonal temperature."""
         self.OMDGV = self.maxOMDGV - (self.ageGV * (self.maxOMDGV - self.minOMDGV)) / self.LLS
-        
+
         conditions_OMDGR = [
-            self.ST < self.ST1,  # ST < ST1
-            self.ST > self.ST2,  # ST > ST2
+            self.ST < self.ST1,
+            self.ST > self.ST2,
         ]
 
         values_OMDGR = [
-            self.maxOMDGR,  # Case: ST < ST1
-            self.minOMDGR,  # Case: ST > ST2
+            self.maxOMDGR,
+            self.minOMDGR,
         ]
 
-        self.OMDGR = np.select(conditions_OMDGR, values_OMDGR, default=self.maxOMDGR - (self.ageGR * (self.maxOMDGR - self.minOMDGR) / (self.ST2 - self.ST1)))
+        self.OMDGR = np.select(
+            conditions_OMDGR,
+            values_OMDGR,
+            default=self.maxOMDGR - (self.ageGR * (self.maxOMDGR - self.minOMDGR) / (self.ST2 - self.ST1))
+        )
 
-        self.digestibleOM = self.BMGV * self.OMDGV + self.BMGR * self.OMDGR + self.BMDV * self.OMDDV + self.BMDR * self.OMDDR
+    def compute_digestible_organic_matter(self):
+        """Compute digestible organic matter [kgDM ha^-1] from biomass and OMD."""
+        self.digestibleOM = (
+            self.BMGV * self.OMDGV +
+            self.BMGR * self.OMDGR +
+            self.BMDV * self.OMDDV +
+            self.BMDR * self.OMDDR
+        )
 
-        self.QNDV += ((1-self.sigmaGV) * self.SENGV - self.ABSDV) * 0.008
-        self.QNDR += ((1-self.sigmaGR) * self.SENGR - self.ABSDR) * 0.008
-        mask = self.GRO > 0.0001  # Create a boolean mask
-        self.QNGV[mask] += (self.N_uptake[mask] * self.FNH * self.GROGV[mask] / self.GRO[mask]) - self.SENGV[mask] * 0.008
+    def update_nitrogen_content(self):
+        """Update nitrogen content (QN) [kgN ha^-1] based on senescence and abscission."""
+        self.QNDV += ((1 - self.sigmaGV) * self.SENGV - self.ABSDV) * 0.008
+        self.QNDR += ((1 - self.sigmaGR) * self.SENGR - self.ABSDR) * 0.008
+
+        mask = self.GRO > 0.0001
+        self.QNGV[mask] += (
+            self.N_uptake[mask] * self.FNH * self.GROGV[mask] / self.GRO[mask]
+            - self.SENGV[mask] * 0.008
+        )
         self.QNGV[~mask] -= self.SENGV[~mask] * 0.008
 
-        self.QNGR[mask] += (self.N_uptake[mask] * self.FNH * self.GROGR[mask] / self.GRO[mask]) - self.SENGR[mask] * 0.008
+        self.QNGR[mask] += (
+            self.N_uptake[mask] * self.FNH * self.GROGR[mask] / self.GRO[mask]
+            - self.SENGR[mask] * 0.008
+        )
         self.QNGR[~mask] -= self.SENGR[~mask] * 0.008
 
-        self.QNGV = self.QNGV.clip(min=0)  
+        self.QNGV = self.QNGV.clip(min=0)
         self.QNGR = self.QNGR.clip(min=0)
 
-        TotalplantN = self.QNDV + self.QNDR + self.QNGV + self.QNGR 
-        self.PropNplant = TotalplantN/self.BM # kg N/kg DM
-        
-        self.NGV = np.divide(self.QNGV, self.BMGV, where=self.BMGV > 0, out=np.zeros_like(self.BMGV)) # GV grass N concentration (kg N/kgDM)
-        self.NGR = np.divide(self.QNGR, self.BMGR, where=self.BMGR > 0, out=np.zeros_like(self.BMGR)) # GR grass N concentration (kg N/kgDM)
-        self.NDV = np.divide(self.QNDV, self.BMDV, where=self.BMDV > 0, out=np.zeros_like(self.BMDV)) # DV grass N concentration (kg N/kgDM)
-        self.NDR = np.divide(self.QNDR, self.BMDR, where=self.BMDR > 0, out=np.zeros_like(self.BMDR)) # DR grass N concentration (kg N/kgDM)
+        TotalplantN = self.QNDV + self.QNDR + self.QNGV + self.QNGR
+        self.PropNplant = TotalplantN / self.BM
+
+    def update_nitrogen_concentration(self):
+        """Update nitrogen concentration (N) [kgN kgDM^-1] in plant compartments."""
+        self.NGV = np.divide(self.QNGV, self.BMGV, where=self.BMGV > 0, out=np.zeros_like(self.BMGV))
+        self.NGR = np.divide(self.QNGR, self.BMGR, where=self.BMGR > 0, out=np.zeros_like(self.BMGR))
+        self.NDV = np.divide(self.QNDV, self.BMDV, where=self.BMDV > 0, out=np.zeros_like(self.BMDV))
+        self.NDR = np.divide(self.QNDR, self.BMDR, where=self.BMDR > 0, out=np.zeros_like(self.BMDR))
 
 
     def save_variables(self):
