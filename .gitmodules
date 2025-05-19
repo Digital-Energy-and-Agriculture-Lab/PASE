@@ -1,0 +1,3 @@
+[submodule "pySTICS"]
+	path = pySTICS
+	url = git@gitlab.uliege.be:deal-public/pySTICS.git
