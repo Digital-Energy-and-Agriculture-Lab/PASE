@@ -23,9 +23,9 @@ from MODULES.ENVIRONMENT.mesh import Mesh
 
 PASE_Logger()
 
-DEBUG = True
+DEBUG = False
 PLOT = False
-SAVE = False
+SAVE = True
 
 def compute_analytical_f(disc_radius, heights):
     theta_0 = np.arctan(disc_radius / heights)
@@ -42,15 +42,18 @@ def compute_RMSE(actual, predicted):
     return rmse
 
 # Various heights
-step1 = 0.1
-heights = np.arange(0.1, 1, step=step1)
+if DEBUG:
+    # shorter heights vector for faster debug
+    heights = np.linspace(0.1, 1, 4)
+else:
+    step1 = 0.1
+    heights = np.arange(0.1, 1, step=step1)
 
-step2 = 0.25
-heights = np.concatenate([heights, np.arange(1, 2, step=step2)])
+    step2 = 0.25
+    heights = np.concatenate([heights, np.arange(1, 2, step=step2)])
 
-step3 = 1
-heights = np.concatenate([heights, np.arange(2, 6, step=step3)])
-# heights = np.linspace(0.5, 1.5, 30)
+    step3 = 1
+    heights = np.concatenate([heights, np.arange(2, 6, step=step3)])
 
 # Disc constants
 disc_direction = (0, 0, 1)
@@ -74,7 +77,12 @@ x_sensors = np.arange(start, stop+step, step=step)
 y_sensors = np.arange(start, stop+step, step=step)
 
 # Various MF values
-MFs = [1, 2, 6]
+if DEBUG:
+    # fewer MF values for faster debug
+    MFs = [1, 2]
+else:
+    MFs = [1, 2, 6]
+
 rmse_list = []
 for MF in MFs:
     computed_view_factor = []
@@ -158,16 +166,10 @@ for MF in MFs:
 
         print('Loop end')
 
-    # df = pd.DataFrame(results)
-    # df = pd.concat([df, results])
     df[f'MF:{MF} computed value'] = computed_view_factor
     df[f'MF:{MF} rel error'] = rel_error_center_value_list
 
     rmse_list.append(compute_RMSE(computed_view_factor, analytical_f_vec))
-
-
-        # df.columns = results_cols[1:]
-        # df.set_index(pd.Series(results_indices[1:]), inplace=True)
 
 print('Computations over')
 
@@ -220,7 +222,7 @@ if DEBUG:
 
 # Plot results graph
 plt.figure()
-
+# TODO : homogenize colormap with the graph below
 plt.plot(heights, analytical_f_vec, 'k-', label='analytical value')
 for MF in MFs:
     plt.plot(heights, df[f'MF:{MF} computed value'], 'x-', label=f'MF:{MF}')
@@ -235,7 +237,6 @@ plt.show()
 # Plot error graph
 plt.figure()
 
-# plt.plot(heights, analytical_f_vec, 'k-', label='analytical value')
 colors = plt.cm.rainbow(np.linspace(0, 1, len(MFs)))
 
 for i, MF in enumerate(MFs):
@@ -257,5 +258,5 @@ plt.show()
 
 # Save results
 if SAVE:
-    export_benchmark(df, fname_prefix='diffuse_benchmark_disc_height_', mode='x')
-    export_benchmark(df_rmse, fname_prefix='diffuse_benchmark_disc_height_', mode='a')
+    fname = export_benchmark(df, fname_prefix='diffuse_benchmark_disc_height_', mode='x')
+    export_benchmark(df_rmse, fname=fname, mode='a')
