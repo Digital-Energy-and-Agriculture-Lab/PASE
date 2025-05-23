@@ -7,7 +7,10 @@
 """"
 Benchmark the diffuse irradiance map
 """
+import os.path
+from datetime import datetime
 from itertools import product
+import logging
 import math
 from matplotlib import pyplot as plt
 import matplotlib
@@ -17,15 +20,28 @@ import pandas as pd
 import pyvista as pyV
 
 from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.benchmarking import export_benchmark
+from MODULES.DATA_MANAGEMENT.benchmarking import (export_benchmark,
+                                                  sign_commit_hash,
+                                                  get_git_revision_short_hash)
 from MODULES.ENVIRONMENT.light import Ray_casting_scene
 from MODULES.ENVIRONMENT.mesh import Mesh
 
-PASE_Logger()
-
 DEBUG = False
 PLOT = False
+PLOT_3D = False
 SAVE = True
+
+if SAVE:
+    GIT_REV = get_git_revision_short_hash()
+
+if DEBUG:
+    logger_lvl = logging.DEBUG
+else:
+    logger_lvl = logging.INFO
+logging.basicConfig(level=logger_lvl)
+
+FNAME_PREFIX = 'diffuse_benchmark_disc_height_'
+date_str = datetime.today().strftime('%Y-%m-%d')
 
 def compute_analytical_f(disc_radius, heights):
     theta_0 = np.arctan(disc_radius / heights)
@@ -55,6 +71,8 @@ else:
     step3 = 1
     heights = np.concatenate([heights, np.arange(2, 6, step=step3)])
 
+    heights = np.concatenate([heights, [10]])
+
 # Disc constants
 disc_direction = (0, 0, 1)
 disc_thickness = 0.001
@@ -81,7 +99,7 @@ if DEBUG:
     # fewer MF values for faster debug
     MFs = [1, 2]
 else:
-    MFs = [1, 2, 6]
+    MFs = [1, 2, 6, 8]
 
 rmse_list = []
 for MF in MFs:
@@ -116,68 +134,68 @@ for MF in MFs:
 
         L.diff_map = diffuse_map
 
-        if PLOT:
+        if PLOT_3D:
             L.visualize_diffuse_light_map()
 
-        print(f'{MF=}, height = {disc_height} m')
-        print(L.diff_map[0:3])
-        print(L.diff_map[3:6])
-        print(L.diff_map[6:9])
+        logging.info(f'{MF=}, height = {disc_height} m')
+        logging.debug(L.diff_map[0:3])
+        logging.debug(L.diff_map[3:6])
+        logging.debug(L.diff_map[6:9])
 
         # Check value at center
         center_id = 4
         center_computed_value = L.diff_map[center_id]
-        print(f'Center point computed value = {center_computed_value}')
-        print(f'Center point expected value = {analytical_f}')
+        logging.debug(f'Center point computed value = {center_computed_value}')
+        logging.debug(f'Center point expected value = {analytical_f}')
         rel_error_center_value = (1 - center_computed_value/analytical_f) * 100  # [%]
-        print(f'Relative error on center value = {rel_error_center_value:.3g} %')
+        logging.debug(f'Relative error on center value = {rel_error_center_value:.3g} %')
         # results.append([center_computed_value, rel_error_center_value])
         computed_view_factor.append(center_computed_value)
         rel_error_center_value_list.append(rel_error_center_value)
 
         # Analyze corners
         corners_ids = [0, 2, 6, 8]
-        print(10 * '-')
-        print("Corners' values:")
-        print(L.diff_map[corners_ids])
-        print('coef of var =', L.diff_map[corners_ids].std()/L.diff_map[corners_ids].mean())
+        logging.debug(10 * '-')
+        logging.debug("Corners' values:")
+        logging.debug(L.diff_map[corners_ids])
         cov_corners = L.diff_map[corners_ids].std()/L.diff_map[corners_ids].mean()
+        logging.debug(f'coef of var = {cov_corners}')
 
         # Analyze midpoints
         midpoints_ids = [1, 3, 5, 7]
-        print(10 * '-')
-        print("Midpoints' values:")
-        print(L.diff_map[midpoints_ids])
-        print('coef of var =', L.diff_map[midpoints_ids].std()/L.diff_map[midpoints_ids].mean())
+        logging.debug(10 * '-')
+        logging.debug("Midpoints' values:")
+        logging.debug(L.diff_map[midpoints_ids])
         cov_midpoints = L.diff_map[midpoints_ids].std()/L.diff_map[midpoints_ids].mean()
+        logging.debug(f'coef of var = {cov_midpoints}')
 
-        print(20*'=')
+        logging.debug(20*'=')
         if (cov_midpoints == 0) and (cov_corners == 0):
             result = 'passed'
-            print('Test passed !')
+            logging.info('Test passed !')
         elif (math.isclose(cov_midpoints, 0, abs_tol=0.01)) or (math.isclose(cov_midpoints, 0, abs_tol=0.01)):
             result = 'borderline'
-            print('Test borderline.')
+            logging.info('Test borderline.')
         else:
             result = 'FAILED'
-            print('Test failed.')
+            logging.info('Test failed.')
 
-        print('')
+        logging.debug('')
 
-        print('Loop end')
+        logging.debug('Loop end')
 
     df[f'MF:{MF} computed value'] = computed_view_factor
     df[f'MF:{MF} rel error'] = rel_error_center_value_list
 
     rmse_list.append(compute_RMSE(computed_view_factor, analytical_f_vec))
 
-print('Computations over')
+logging.debug('Computations over')
 
 df_rmse = pd.DataFrame([MFs, rmse_list]).T
 df_rmse.columns = ['MF', 'RMSE']
 df_rmse.set_index('MF', inplace=True)
 
-print(df_rmse)
+logging.info(df_rmse)
 
 # debug 3D view
 if DEBUG:
@@ -187,10 +205,10 @@ if DEBUG:
 
     plotter.add_mesh(L.geometry, color='black', opacity=0.5)
 
-    ground = np.array([[-200, 200, 0],
-                       [200, 200, 0],
-                       [-200, -200, 0],
-                       [200, -200, 0]])
+    ground = np.array([[-20, 20, 0],
+                       [20, 20, 0],
+                       [-20, -20, 0],
+                       [20, -20, 0]])
 
     ground_m = np.hstack([[3, 0, 1, 2],
                           [3, 1, 2, 3], ])
@@ -220,43 +238,77 @@ if DEBUG:
 
     plotter.show()
 
+# Save results
+if SAVE:
+    # Save to disk and return file name
+    fpath = export_benchmark(df,
+                             fname_prefix=FNAME_PREFIX,
+                             mode='x')
+    # Append RMSE dataframe to the same file
+    export_benchmark(df_rmse, fpath=fpath, mode='a')
+
+    # Sign with commit metadata
+    sign_commit_hash(fpath)
+
 # Plot results graph
-plt.figure()
-# TODO : homogenize colormap with the graph below
-plt.plot(heights, analytical_f_vec, 'k-', label='analytical value')
-for MF in MFs:
-    plt.plot(heights, df[f'MF:{MF} computed value'], 'x-', label=f'MF:{MF}')
-
-plt.xlabel('Height [m]')
-plt.ylabel('View factor [-]')
-
-plt.legend()
-
-plt.show()
-
-# Plot error graph
-plt.figure()
 
 colors = plt.cm.rainbow(np.linspace(0, 1, len(MFs)))
 
+fig = plt.figure()
+ax = fig.add_axes((0.1, 0.2, 0.8, 0.7))
+ax.plot(heights, analytical_f_vec, 'k-', label='analytical value')
 for i, MF in enumerate(MFs):
-    markerline, stemlines, baseline = plt.stem(heights,
+    ax.plot(heights, df[f'MF:{MF} computed value'], 'x-', label=f'MF:{MF}', color=colors[i])
+
+ax.set_xlabel('Height [m]')
+ax.set_ylabel('View factor [-]')
+
+ax.legend()
+
+if SAVE:
+    # Annotate with GIT_REV
+    fig_annotation = f'generated with git rev {GIT_REV}'
+    fig.text(1, 0.05, fig_annotation, ha='right')
+
+    # Save figure to disk
+    fig_format = 'svg'
+    figname = FNAME_PREFIX + date_str + '.' + fig_format
+    figpath = os.path.join('OUTPUTS', figname)
+    plt.savefig(figpath, transparent=False, format='svg')
+
+if PLOT:
+    plt.show()
+
+# Plot error graph
+fig = plt.figure()
+ax = fig.add_axes((0.1, 0.2, 0.8, 0.7))
+
+for i, MF in enumerate(MFs):
+    markerline, stemlines, baseline = ax.stem(heights,
                                                df[f'MF:{MF} rel error'],
                                                label=f'MF:{MF}',
                                                basefmt='k-')
-    # baseline.set_edgecolor('none')
+
     stemlines.set_edgecolor(colors[i])
     markerline.set_markerfacecolor('none')
     markerline.set_markeredgecolor(colors[i])
 
-plt.xlabel('Height [m]')
-plt.ylabel('View factor rel error [%]')
+ax.set_xlabel('Height [m]')
+ax.set_ylabel('View factor rel error [%]')
 
-plt.legend()
+ax.legend()
 
-plt.show()
-
-# Save results
 if SAVE:
-    fname = export_benchmark(df, fname_prefix='diffuse_benchmark_disc_height_', mode='x')
-    export_benchmark(df_rmse, fname=fname, mode='a')
+    # Annotate with GIT_REV
+    fig_annotation = f'generated with git rev {GIT_REV}'
+    fig.text(1, 0.05, fig_annotation, ha='right')
+
+    # Save figure to disk
+    fig_format = 'svg'
+    figname = FNAME_PREFIX + 'rel_err_' + date_str + '.' + fig_format
+    figpath = os.path.join('OUTPUTS', figname)
+    plt.savefig(figpath, transparent=False, format='svg')
+
+if PLOT:
+    plt.show()
+

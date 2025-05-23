@@ -14,13 +14,13 @@ import pandas as pd
 import pyvista as pyV
 
 from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.benchmarking import export_benchmark
+from MODULES.DATA_MANAGEMENT.benchmarking import export_benchmark, sign_commit_hash
 from MODULES.ENVIRONMENT.light import Ray_casting_scene
 from MODULES.ENVIRONMENT.mesh import Mesh
 
 PASE_Logger()
 
-DEBUG = True
+DEBUG = False
 PLOT = False
 SAVE = True
 
@@ -55,7 +55,7 @@ for y, x in product(y_sensors, x_sensors):
 # Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
 L = Ray_casting_scene(mesh=M, geometry=disc)
 
-MFs = [1, 2, 4, 8]
+MFs = [1, 2, 4, 6, 8]
 results_indices = ['point ID', 0, 1, 2, 3, 4, 5, 6, 7, 8, 'Relative error center point [%]', 'COV corners', 'COV midpoints', 'Test result']
 results = []
 results_cols = ['point ID']
@@ -137,10 +137,10 @@ if DEBUG:
 
     plotter.add_mesh(L.geometry, color='black', opacity=0.5)
 
-    ground = np.array([[-200, 200, 0],
-                       [200, 200, 0],
-                       [-200, -200, 0],
-                       [200, -200, 0]])
+    ground = np.array([[-20, 20, 0],
+                       [20, 20, 0],
+                       [-20, -20, 0],
+                       [20, -20, 0]])
 
     ground_m = np.hstack([[3, 0, 1, 2],
                           [3, 1, 2, 3], ])
@@ -171,5 +171,9 @@ if DEBUG:
     plotter.show()
 
 if SAVE:
-    export_benchmark(df, fname_prefix='diffuse_benchmark_disc_')
+    fpath = export_benchmark(df,
+                             fname_prefix='diffuse_benchmark_disc_',
+                             mode='x')
 
+    # Sign with commit metadata
+    sign_commit_hash(fpath)

@@ -14,7 +14,7 @@ import pandas as pd
 import pyvista as pyV
 
 from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.benchmarking import export_benchmark
+from MODULES.DATA_MANAGEMENT.benchmarking import export_benchmark, sign_commit_hash
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
 from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
@@ -175,5 +175,9 @@ if DEBUG:
     plotter.show()
 
 if SAVE:
-    export_benchmark(df, fname_prefix='diffuse_benchmark_square_')
+    fpath = export_benchmark(df,
+                             fname_prefix='diffuse_benchmark_square_',
+                             mode='x')
 
+    # Sign with commit metadata
+    sign_commit_hash(fpath)
