@@ -29,12 +29,12 @@ variation (cov = std/mean) of both corners and midpoints and marked as :
 - cov = 0: pass
 - 0 < cov <= tolerance : borderline
 - tolerance < cov : FAIL
-- 
+
 ## 1 m² round panel at 1 m height
 
 Diffuse irradiance benchmarking is handled in `diffuse_benchmark_disc.py`.
 
-The benchmarking case is built with a disc of 1 m² area at a height of 1 m.
+The benchmarking case is built with a horizontal disc of 1 m² area at a height of 1 m.
 The radius of the disc is derived from the 1 m² area and computes to 1/sqrt(pi).
 
 Nine (9) sensors are placed under the disc at ground level : 
@@ -87,6 +87,38 @@ Similaryly to the cov test, the result is marked as :
 
 The tolerance is set to 1%.
 
-### Sources 
+## 1 m² round panel at varying heights 
+
+In BENCHMARKING/diffuse_benchmark_disc_height.py
+
+The benchmarking case is built with a horizontal disc of 1 m² area at heights varying between 0.1 and 5 m.
+The radius of the disc is derived from the 1 m² area and computes to 1/sqrt(pi).
+
+One sensor is placed at ground level under the center of the disc.
+
+The view factor value f at the sensor location can be derived analytically (see Sources, SYMBIOSYST deliverable):
+
+$f = 1 - (sin(theta_{0}))^2$
+
+With $theta_{0}$ the half-opening angle of the disc:
+
+theta_{0} = atan(R/h)
+
+With:
+- R: radius of the disc
+- h: height of the disc
+
+Thus the f value at the center is computed and compared to the analytical value in the form of the relative error:
+
+rel_error = 1 - (computed_value/analytical_value)
+
+Similaryly to the tests in other cases, the result is marked as :
+- rel_error = 0 : pass
+- 0 < rel_error <= tolerance : borderline
+- tolerance < rel_error : FAIL
+
+The tolerance is set to 1%.
+
+## Sources 
 https://www.symbiosyst.eu/wp-content/uploads/2025/01/SYMBIOSYST_DELIVERABLE_D2.2_Final_Submitted.pdf, p. 47
 
