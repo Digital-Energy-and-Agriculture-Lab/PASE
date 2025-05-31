@@ -233,3 +233,54 @@ else:
                                 MM_DD='10-10', unit='t/ha')
     save_csv('mean_data_dates.csv', agro_results, ['BM', 'exported_BM', 'exported_N', 'exported_digestibleOM'])
     #choosing variables among variable_to_save.yml
+
+    #################################################################################
+    '''Adding a function to save simulation metadata'''
+    #################################################################################
+
+    import yaml
+    import subprocess
+    import pandas as pd
+    from datetime import datetime
+    import json
+
+
+    def save_simulation_metadata(config, Loc_1, crop_config, output_path="OUTPUTS/simulation_metadata.yaml"):
+        # Creating dictionary
+        metadata = {}
+
+        # Adding date and hour of simulation
+        metadata['date'] = datetime.now().isoformat()
+
+        # Finding Git commit hash
+        try:
+            commit_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
+        except Exception as e:
+            commit_hash = f"Could not retrieve commit: {e}"
+        metadata['git_commit'] = commit_hash
+
+        # Adding parameters from YAML and csv files contents
+        try:
+            metadata['soil_init'] = YAML_Inputs_provider(file=f"CROPS/GRASSIM/soil/{config['SoilInit']}").inputs
+            metadata['crop_init'] = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['CropInit']}").inputs
+            metadata['kc_values'] = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['Kc_values']}").inputs
+            metadata['pft_composition'] = YAML_Inputs_provider(file=f"CROPS/GRASSIM/{config['PFT_composition']}").inputs
+            metadata['pft_values'] = pd.read_csv(f"INPUTS/CROPS/GRASSIM/{config['PFT_values']}", sep=";",
+                                                 decimal='.').to_dict(orient='list')
+            metadata['management'] = YAML_Inputs_provider(
+                file=f"CROPS/GRASSIM/management/{config['Management']}").inputs
+        except Exception as e:
+            metadata['error_loading_yaml_inputs'] = str(e)
+
+        # Adding others useful parameters
+        metadata['general_location_config'] = Loc_1
+        metadata['crop_config'] = crop_config
+
+        # Saving metadata dictionary into YAML file
+        with open(output_path, 'w', encoding='utf-8') as f:
+            yaml.dump(metadata, f, allow_unicode=True)
+
+        print(f"Simulation metadata saved to {output_path}")
+
+
+    save_simulation_metadata(crop_config, Loc_1, crop_config)
