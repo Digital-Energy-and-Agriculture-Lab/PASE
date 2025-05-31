@@ -114,7 +114,7 @@ class Plants():
         Args:
             day: today's date
             day type: datetime object
-            WD: weather data (Rain [mm], Avg_temp [°C])
+            WD: weather data (Rain [mm], Avg_temp [°C], Max_Temp [°C])
             WD type: dictionary
             ET0: potential evapotranspiration [mm]
             ET0 type: float
@@ -127,6 +127,7 @@ class Plants():
         self.Temp = np.full(self.grid, WD['Avg_temp'])
         self.PARi = day_irr*0.48
         self.ET0 = ET0
+        self.Tmax = np.full(self.grid, WD['Max_temp'])
 
         if self.day.dayofyear == 1:
             self.ST = np.zeros(self.grid)
@@ -322,6 +323,17 @@ class Plants():
         # Apply np.select for the final result
         self.fW = np.select(conditions_fW, values_fW, default=W)
     
+    def compute_fW_BONNARD_25(self, W):
+        """Compute a growth reduction function (fW) based on water stress (W) [-].
+
+        Quadratic function not dependent from ET0
+        From Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+
+        Args:
+            W: water stress
+            W type: Numpy array of shape (grid)
+        """
+        self.fW=(-1.2387 * (W ** 2) + 2.2387 * W - 0.0056)* (18/self.Tmax)
 
     def compute_N_supply(self, Nmin, FNAmax, NSc):
         """Compute potential nitrogen supply of the soil [kgN ha^-1].

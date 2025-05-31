@@ -91,7 +91,7 @@ def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
 
     crop.compute_fT()
     crop.compute_fPARi()
-    crop.compute_fW(soil.W)
+    crop.compute_fW_BONNARD_25(soil.W)
     crop.compute_N_supply(Nmin=soil.Nmin, FNAmax=0.07, NSc=270)
     crop.compute_fN()
     crop.compute_N_demand()
