@@ -329,14 +329,14 @@ def evaluate_model_performance(simulated_df, observed_df, variables, output_file
     #Loop for each variable of interest. Condition to have them in both df simulated and observed.
     for var in variables:
         if var not in simulated_df.columns or var not in observed_df.columns:
-            print(f"Variable '{var}' manquante dans les données. Ignorée.")
+            print(f"Variable '{var}' lacking in data. Ignored.")
             continue
 
         sim_values = simulated_df[var].values
         obs_values = observed_df[var].values
 
         if len(sim_values) != len(obs_values):
-            raise ValueError(f"Longueur différente pour les données simulées et observées pour '{var}'.")
+            raise ValueError(f"Different length for simulated and reference data for '{var}'.")
 
         n = len(obs_values)
 
@@ -359,7 +359,7 @@ def evaluate_model_performance(simulated_df, observed_df, variables, output_file
 
     df_perf = pd.DataFrame(performance)
 
-    #revoir formulation  fonction save_csv plutôt
+    #Saving in a csv file
     if output_file:
         df_perf.to_csv(output_file, index=False)
         print(f"Résultats enregistrés dans {output_file}")
@@ -367,7 +367,7 @@ def evaluate_model_performance(simulated_df, observed_df, variables, output_file
     return df_perf
 
 variables_to_compare = ['exported_BM', 'exported_N', 'exported_digestibleOM']
-# Appliquer la fonction et enregistrer dans un fichier CSV
+# Compute performance index and save them
 result_df = evaluate_model_performance(simulated_df, observed_df, variables_to_compare, output_file='OUTPUTS/model_performance.csv')
 
 print(result_df)
