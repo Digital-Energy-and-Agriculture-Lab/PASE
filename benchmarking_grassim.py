@@ -284,3 +284,90 @@ else:
 
 
     save_simulation_metadata(crop_config, Loc_1, crop_config)
+
+
+#################################################################################
+"""Functions to compute model performance index and save them in a csv file"""
+#################################################################################
+
+#importing observed data as a dataframe OK!
+import pandas as pd
+path_csv_obs = r"C:\Users\user\Downloads\data_obs.csv"
+observed_df= pd.read_csv(path_csv_obs,sep=",", decimal='.',parse_dates=['Date'])
+print(observed_df)
+
+#importing simulated data
+#NB : I should use directly the dictionary agro_results and not the csv saved before but problem to isolate cut_dates
+path_csv_sim = r"C:\Users\user\Downloads\pase\OUTPUTS\mean_data_dates.csv"
+simulated_df = pd.read_csv(path_csv_sim,sep=",", decimal='.',parse_dates=['Date'])
+# Filtrer df2 pour ne garder que les dates présentes dans df1
+simulated_df = simulated_df[simulated_df['Date'].isin(observed_df['Date'])]
+print(simulated_df)
+
+import numpy as np
+def evaluate_model_performance(simulated_df, observed_df, variables, output_file=None):
+    """
+    Compare simulated value of variables of interest with observed/reference values.
+    Root mean square error - RMSE [unit of variable]
+    Relative root mean square error - rRMSE [%]
+    Normalized deviation - nd [-]
+    Model efficiency - ef [-]
+
+    Parameters:
+    - simulated_df (pd.DataFrame): DataFrame containing simulated values (dates + variables)
+    - observed_df (pd.DataFrame): DataFrame containing observed values (same dates + variables)
+    - variables (list): List of variables to compare (ex: ['BM', 'exported_N', 'exported_digestibleOM'])
+    - output_file (str, optional): Path to csv file to save results
+
+    Returns:
+    - pd.DataFrame: Metrics for each variable of interest
+    """
+
+    #Creating dictionary
+    performance = []
+
+    #Loop for each variable of interest. Condition to have them in both df simulated and observed.
+    for var in variables:
+        if var not in simulated_df.columns or var not in observed_df.columns:
+            print(f"Variable '{var}' manquante dans les données. Ignorée.")
+            continue
+
+        sim_values = simulated_df[var].values
+        obs_values = observed_df[var].values
+
+        if len(sim_values) != len(obs_values):
+            raise ValueError(f"Longueur différente pour les données simulées et observées pour '{var}'.")
+
+        n = len(obs_values)
+
+        mean_obs = np.mean(obs_values)
+
+        rmse=np.sqrt(np.mean((np.array(obs_values) - np.array(sim_values)) ** 2))
+        rrmse = 100*(rmse / mean_obs)
+        nd = (np.sum(obs_values) - np.sum(sim_values)) / np.sum(obs_values)
+        ef_num = np.sum((obs_values - mean_obs)**2) - np.sum((sim_values - obs_values)**2)
+        ef_den = np.sum((obs_values - mean_obs)**2)
+        ef = ef_num / ef_den if ef_den != 0 else np.nan
+
+        performance.append({
+            "Variable": var,
+            "RMSE": rmse,
+            "RRMSE": rrmse,
+            "ND": nd,
+            "EF": ef
+        })
+
+    df_perf = pd.DataFrame(performance)
+
+    #revoir formulation  fonction save_csv plutôt
+    if output_file:
+        df_perf.to_csv(output_file, index=False)
+        print(f"Résultats enregistrés dans {output_file}")
+
+    return df_perf
+
+variables_to_compare = ['exported_BM', 'exported_N', 'exported_digestibleOM']
+# Appliquer la fonction et enregistrer dans un fichier CSV
+result_df = evaluate_model_performance(simulated_df, observed_df, variables_to_compare, output_file='OUTPUTS/model_performance.csv')
+
+print(result_df)
