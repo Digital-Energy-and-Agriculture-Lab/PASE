@@ -6,7 +6,8 @@
 #This file is part of the PASE software, and is distributed under the MIT license.
 
 from MODULES.CROPS.SIMPLE.run_simple import run_independant_years_of_crop
-from MODULES.CROPS.STICS.JAVA.run_java_stics import run_independant_usms
+from MODULES.CROPS.STICS.JAVASTICS.run_java_stics import run_independant_usms
+from MODULES.CROPS.STICS.PYSTICS.run_pystics_from_PASE import run_independant_usms_in_pystics
 from MODULES.CROPS.GRASSIM.run_grassim import run_grassim
 from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 from datetime import datetime
@@ -26,6 +27,10 @@ def run_crop_simu(config, option_2D, WD, daily_irr, scenario_P):
     if config['CropModel'] == 'stics':
         Crop_plot = run_independant_usms(config, WD, daily_irr, scenario_P)  
         results = Crop_plot.nyears_data      
+        
+    if config['CropModel'] == 'pystics':
+        Crop_plot = run_independant_usms_in_pystics(config, WD, daily_irr, scenario_P)  
+        results = Crop_plot.nyears_data
         
     if config['CropModel'] == 'grassim':
         Soil_plot, Crop_plot, Management_plot = run_grassim(config, WD, daily_irr, scenario_P['Latitude'], scenario_P['Altitude'])

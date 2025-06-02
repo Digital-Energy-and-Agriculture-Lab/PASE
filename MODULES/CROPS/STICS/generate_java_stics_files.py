@@ -5,7 +5,7 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-def generate_weather_data_file(WD, irrad, loc_name):
+def generate_weather_data_file(WD, irrad, loc_name, path):
     
     WD_files_dict = {}
     
@@ -18,7 +18,7 @@ def generate_weather_data_file(WD, irrad, loc_name):
             
             WD_file_name = (str(loc_name)+'_'+year+'_position'+str(position))
             WD_files_list.append(WD_file_name)
-            WD_file = open('INPUTS/CROPS/STICS/param_files/'+WD_file_name+'.'+year,'w')
+            WD_file = open(path+WD_file_name+'.'+year,'w')
             
             for day in WD[year].index:
                 
@@ -51,9 +51,9 @@ def generate_weather_data_file(WD, irrad, loc_name):
     return WD_files_dict
 
 
-def generate_USMS_file(FN, FN_PY, simu_P, year):
+def generate_USMS_file(FN, FN_PY, simu_P, year, path):
 
-    output_file = open('INPUTS/CROPS/STICS/param_files/usms.xml','w')
+    output_file = open(path+'usms.xml','w')
 
     output_file.write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
     output_file.write('<usms>\n')

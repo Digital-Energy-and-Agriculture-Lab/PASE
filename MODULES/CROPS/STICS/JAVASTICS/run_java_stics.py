@@ -6,9 +6,9 @@
 #This file is part of the PASE software, and is distributed under the MIT license.
 
 from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
-from MODULES.CROPS.STICS.JAVA.generate_java_stics_files import \
+from MODULES.CROPS.STICS.generate_java_stics_files import \
     generate_weather_data_file, generate_USMS_file
-from MODULES.CROPS.STICS.JAVA.get_java_stics_outputs import Crop_outputs
+from MODULES.CROPS.STICS.get_java_stics_outputs import Crop_outputs
 import os
 import subprocess
 import platform
@@ -21,7 +21,8 @@ def run_independant_usms(config, WD, daily_irr, scenario_P):
     Simu_init = YAML_Inputs_provider(f"CROPS/STICS/{config['SimuInit']}").inputs
     
     WD_files_dict = generate_weather_data_file(WD, daily_irr,
-                                               scenario_P['LocationName'])
+                                               scenario_P['LocationName'],
+                                               'INPUTS/CROPS/STICS/param_files/')
     
     Crop_plot = Crop_outputs()
     
@@ -31,7 +32,7 @@ def run_independant_usms(config, WD, daily_irr, scenario_P):
         Crop_plot.initiate_one_year_variables(n_positions)        
         
         if (int(year) == scenario_P['SimulationStartingYear'] 
-            and Simu_init['AnnualCropOption'] == 0):                
+            and Simu_init['AnnualCropOption'] == 0):         # If bisannual crop and first year of simulation, crop development can not be computed as it was sown on the previous year       
             pass
         
         else:                 
@@ -45,7 +46,7 @@ def run_independant_usms(config, WD, daily_irr, scenario_P):
                     WD_file_previous_year = WD_file
                 
                 generate_USMS_file(WD_file, WD_file_previous_year,
-                                   Simu_init, year)
+                                   Simu_init, year, 'INPUTS/CROPS/STICS/param_files/')
                 
                 os.chdir("INPUTS/CROPS/STICS") #Mettre le chemin d'accès avant l'exécutable pour ne pas devoir naviguer dans les dossiers.
 

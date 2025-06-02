@@ -27,7 +27,7 @@ Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inpu
 # Import PV system and PV modules parameters
 AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
-crop_config = YAML_Inputs_provider(file='grassim_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
+crop_config = YAML_Inputs_provider(file='pystics_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
 # Import of weather data and computation of daily weather data
@@ -107,7 +107,7 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP,
 
 L.visualize_direct_light_map(1)
 L.visualize_diffuse_light_map()
-L.visualize_daily_irrad_map(2009, 150)
+L.visualize_daily_irrad_map(2005, 150)
 
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
 #DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])
