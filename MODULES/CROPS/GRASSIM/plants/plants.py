@@ -334,6 +334,7 @@ class Plants():
             W type: Numpy array of shape (grid)
         """
         self.fW=(-1.2387 * (W ** 2) + 2.2387 * W - 0.0056)* (18/self.Tmax)
+        self.fW = np.clip(self.fW, 0, 1)
 
     def compute_N_supply(self, Nmin, FNAmax, NSc):
         """Compute potential nitrogen supply of the soil [kgN ha^-1].
