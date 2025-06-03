@@ -131,6 +131,23 @@ class Soil():
         """
         self.N_leached = self.Nmin * (self.water_leached / self.water)
 
+    def compute_N_leached_BONNARD_25 (self):
+        """Compute nitrogen leaching (N_leached) [kgN ha^-1] based on proportion of water leached [mm].
+
+        Upper limit of N_leached at 0.7*Nmin
+        From Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+        """
+        n_leached_raw = self.Nmin * (self.water_leached / self.water)
+
+        conditions_leached = [
+            n_leached_raw > 0.7 * self.Nmin
+        ]
+
+        values_leached = [
+            0.7 * self.Nmin  # Upper limit
+        ]
+
+        self.N_leached = np.select(conditions_leached, values_leached, default=n_leached_raw)
 
     def compute_N2O_emissions(self):
         """ Compute nitrogen dioxide emission based on mineral nitrogen (Nmin), water stress (W) and temperature (Temp) influencing denitrification.
