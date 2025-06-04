@@ -5,7 +5,7 @@ from datetime import datetime
 from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 
 class Soil():
-    def __init__(self, grid, inits, variables_to_save):
+    def __init__(self, grid, inits, soil_properties,variables_to_save):
         """
         Initialize the soil.
         Set the grid, the initial variables, the variables to save. 
@@ -16,6 +16,7 @@ class Soil():
             grid type: tuple (x, y)
             inits: initial values of variables
             inity type: dictionary
+            soil_properties: pandas DataFrame of soil hydraulic properties
             variables_to_save: names of variables to save in the output dictionary
             variables_to_save type: list
         """
@@ -23,8 +24,96 @@ class Soil():
         self.inits = inits
         self.variables_to_save = variables_to_save
         self.nyears_data = {}
+        self.soil_properties = soil_properties
         self.init_spatialized_soil()
+        self.classify_usda_texture()
+        self.get_hydraulic_properties()
 
+    def classify_usda_texture(self):
+        """
+        Classify USDA soil texture class based on sand and clay percentages.
+        Silt is computed as 100 - sand - clay.
+
+        Based on https://www.nrcs.usda.gov/resources/education-and-teaching-materials/soil-texture-calculator.
+
+       """
+        # Verify that sand and clay are good shape arrays
+        if not isinstance(self.sand, np.ndarray) or not isinstance(self.clay, np.ndarray):
+            raise TypeError("sand and clay must be numpy arrays for per-cell classification.")
+
+        self.silt = 100 - self.sand - self.clay
+
+        # Conditions d'erreur : s'assurer que les pourcentages sont valides
+        if np.any(self.sand < 0) or np.any(self.clay < 0) or np.any(self.silt < 0):
+            raise ValueError("Sand, clay, and silt must be >= 0.")
+
+        #if np.any((self.sand + self.clay + self.silt) != 100):
+            #raise ValueError("Sand + clay + silt must equal 100 in every cell.")
+
+        # Initialiser tableau vide de texture (object = string)
+        self.texture = np.full(self.sand.shape, 'Unknown', dtype=object)
+
+        # Exemple de classification vectorisée
+        conditions = [
+            (self.clay >= 40) & (self.silt < 40) & (self.sand <= 45),
+            (self.clay >= 40) & (self.silt >= 40),
+            (self.clay >= 35) & (self.sand >= 45),
+            (self.clay >= 27) & (self.clay < 40) & (self.silt <= 20),
+            (self.clay >= 27) & (self.clay < 40) & (self.silt > 20) & (self.silt <= 40),
+            (self.clay >= 27) & (self.clay < 40) & (self.silt > 40),
+            (self.clay >= 20) & (self.clay < 27) & (self.silt >= 28) & (self.sand <= 52),
+            (self.clay < 27) & (self.silt >= 50) & (self.clay >= 12),
+            (self.clay < 12) & (self.silt >= 80),
+            (self.clay >= 20) & (self.clay < 35) & (self.sand > 45) & (self.silt < 28),
+            (self.clay < 20) & (self.sand > 52) & ((self.silt + 2 * self.clay) >= 30),
+            (self.clay < 7) & (self.silt < 50) & (self.sand > 85),
+            (self.sand >= 70) & (self.sand <= 91) &
+            ((self.silt + 1.5 * self.clay) >= 15) &
+            ((self.silt + 2 * self.clay) < 30),
+        ]
+        choices = [
+            "Clay", "Silty_Clay", "Sandy_Clay", "Sandy_Clay_Loam", "Clay_Loam",
+            "Silty_Clay_Loam", "Loam", "Silty_Loam", "Silt", "Sandy_clay_loam",
+            "Sandy_Loam", "Sand", "Loamy_Sand"
+        ]
+
+        self.texture = np.select(conditions, choices, default="Loam")
+
+    def get_hydraulic_properties(self):
+        """
+        Assign hydraulic properties (InfRate and SatConD) to each cell based on its texture.
+        Assumes self.texture is a numpy array of texture names (same shape as grid).
+        Assumes self.soil_properties is a pandas DataFrame with 'texture', 'InfRate', and 'SatConD'.
+        """
+        # Create empty arrays to store cell properties
+        self.InfRate = np.zeros(self.grid)
+        self.SatConD = np.zeros(self.grid)
+
+        # Créer un dictionnaire: texture → (InfRate, SatConD)
+        texture_map = {
+            row['Texture']: (row['InfRate'], row['SatConD'])
+            for _, row in self.soil_properties.iterrows()
+        }
+
+        # Appliquer ces propriétés cellule par cellule selon la texture
+        for texture_name, (inf, sat) in texture_map.items():
+            mask = self.texture == texture_name
+            self.InfRate[mask] = inf
+            self.SatConD[mask] = sat
+
+        # Vérifier s'il reste des cellules sans valeurs assignées
+        if np.any(self.InfRate == 0) or np.any(self.SatConD == 0):
+            unknown_textures = np.unique(self.texture[(self.InfRate == 0) | (self.SatConD == 0)])
+            raise ValueError(f"Some textures not found : {unknown_textures}")
+        # To verify textures and their frequency
+        unique_textures, counts = np.unique(self.texture, return_counts=True)
+        print("Textures trouvées et leur fréquence :")
+        for tex, count in zip(unique_textures, counts):
+            print(f"{tex}: {count} cellules")
+        mask_loam = self.texture == "Loam"
+        print(f"Nombre de cellules 'Loam': {np.sum(mask_loam)}")
+        print(f"InfRate pour 'Loam': {np.unique(self.InfRate[mask_loam])}")
+        print(f"SatConD pour 'Loam': {np.unique(self.SatConD[mask_loam])}")
 
     def init_spatialized_soil(self):
         """
@@ -74,6 +163,7 @@ class Soil():
     def compute_water_balance(self, PP, AET):
         """Compute water balance (water) [mm] and water stress (W) [%].
 
+        Water drainage is a simple proportion of water content.
         From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
 
         Args:
@@ -94,6 +184,18 @@ class Soil():
         self.W = (self.water - self.wilting_point) / (self.water_capacity - self.wilting_point)
         self.W = self.W.clip(0, 1)
 
+    def compute_water_balance_BONNARD_25(self,PP,AET):
+        """Compute water balance (water) [mm] and water stress (W) [%].
+
+        Water drainage is dependent on water infiltration capacity (InfRate) [mm/day] and the soil hydraulic conductivity at saturation (SatCond) [cm/day].
+        From Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+
+        Args:
+            PP: daily precipitations [mm].
+            PP type:
+            AET: daily actual evapotranspiration [mm].
+            AET type:
+        """
     
     def compute_N_mineralization(self, K, Tref, Temp):
         """Compute nitrogen mineralization based on water stress (W) air temperature (Temp) and soil organic nitrogen (Norg) [kgNorg ha^-1].

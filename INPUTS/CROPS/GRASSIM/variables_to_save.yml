@@ -4,6 +4,7 @@ soil_variables:
 - immobilization
 - mineralization
 - Vp
+- N_leached
 
 crop_variables:
 - BM
@@ -13,6 +14,9 @@ crop_variables:
 - GRO
 - GROGV
 - SENGV
+- fW
 
 management_variables:
 - exported_BM
+- exported_N
+- exported_digestibleOM
