@@ -239,6 +239,33 @@ class Soil():
         self.Vp = (0.0929 + (0.1833-0.0929) * np.exp(-0.2173*self.Norg/1000)) * (self.Norg/1000)
         self.mineralization = self.g0 * self.fT_nitro * self.Vp
 
+    def compute_N_mineralization_BONNARD_25(self, K, Tref, Temp):
+        """Compute nitrogen mineralization based on water stress (W) air temperature (Temp) and soil organic nitrogen (Norg) [kgNorg ha^-1].
+
+        From Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+
+        Args:
+            K: parameter influencing temperature influence on mineralization [-].
+            K type:
+            Tref: reference temperature for mineralization [°C].
+            Tref type:
+            Temp: average daily temperature [°C].
+            Temp type:
+        """
+        self.g0 = (1 - 0.2) * self.W + 0.2
+        self.g0 = self.g0.clip(0.2, 1)
+        self.fT_nitro = np.where(
+            Temp < 0,
+            0,
+            np.where(
+                Temp < 4,
+                (Temp / 4) * 0.28,
+                np.exp(K * (Temp - Tref))
+            )
+        )
+        self.fT_nitro=self.fT_nitro.clip(0,1)
+        self.Vp = (0.0929 + (0.1833-0.0929) * np.exp(-0.2173*self.Norg/1000)) * (self.Norg/1000)
+        self.mineralization = self.g0 * self.fT_nitro * self.Vp
 
     def compute_N_immobilization(self):
         """Compute nitrogen immobilization based on water stress (W), air temperature (Temp) and soil mineral nitrogen (Nmin) [kgN ha^-1].
@@ -249,6 +276,31 @@ class Soil():
         self.Ip = self.Ip.clip(0, None)
         self.immobilization = self.g0 * self.fT_nitro * self.Ip
 
+    def compute_N_immobilization_BONNARD_25(self,K,Tref,Temp):
+        """Compute nitrogen immobilization based on water stress (W), air temperature (Temp) and soil mineral nitrogen (Nmin) [kgN ha^-1].
+
+        From Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+
+        Args:
+            K: parameter influencing temperature influence on mineralization [-].
+            K type:
+            Tref: reference temperature for mineralization [°C].
+            Tref type:
+            Temp: average daily temperature [°C].
+            Temp type:
+        """
+        self.Ip = 2.5* 4. * self.Nmin / 1000
+        self.Ip = self.Ip.clip(0, None)
+        self.fT_immo = np.where(
+            Temp < 0,
+            0,
+            np.where(
+                Temp < 4,
+                (Temp / 4) * 2,
+                np.exp(-K * (Temp - Tref))
+            )
+        )
+        self.immobilization = self.g0 * self.fT_immo * self.Ip
 
     def compute_N_leached(self):
         """Compute nitrogen leaching (N_leached) [kgN ha^-1] based on proportion of water leached [mm].
