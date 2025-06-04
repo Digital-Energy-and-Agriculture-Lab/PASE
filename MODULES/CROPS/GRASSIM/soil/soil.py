@@ -105,15 +105,6 @@ class Soil():
         if np.any(self.InfRate == 0) or np.any(self.SatConD == 0):
             unknown_textures = np.unique(self.texture[(self.InfRate == 0) | (self.SatConD == 0)])
             raise ValueError(f"Some textures not found : {unknown_textures}")
-        # To verify textures and their frequency
-        unique_textures, counts = np.unique(self.texture, return_counts=True)
-        print("Textures trouvées et leur fréquence :")
-        for tex, count in zip(unique_textures, counts):
-            print(f"{tex}: {count} cellules")
-        mask_loam = self.texture == "Loam"
-        print(f"Nombre de cellules 'Loam': {np.sum(mask_loam)}")
-        print(f"InfRate pour 'Loam': {np.unique(self.InfRate[mask_loam])}")
-        print(f"SatConD pour 'Loam': {np.unique(self.SatConD[mask_loam])}")
 
     def init_spatialized_soil(self):
         """
@@ -187,7 +178,7 @@ class Soil():
     def compute_water_balance_BONNARD_25(self,PP,AET):
         """Compute water balance (water) [mm] and water stress (W) [%].
 
-        Water drainage is dependent on water infiltration capacity (InfRate) [mm/day] and the soil hydraulic conductivity at saturation (SatCond) [cm/day].
+        Water leaching is dependent on water infiltration capacity (InfRate) [mm/day] and the soil hydraulic conductivity at saturation (SatCond) [cm/day].
         From Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
 
         Args:
@@ -196,7 +187,40 @@ class Soil():
             AET: daily actual evapotranspiration [mm].
             AET type:
         """
-    
+        # Limited infiltration by InfRate
+        infiltrated = np.minimum(PP, self.InfRate)
+        extra_water = PP - infiltrated
+
+        self.water += infiltrated - AET + self.not_runoff
+
+        # Computing water_leached
+        self.water_leached = np.zeros_like(self.water)
+        mask_below_sat = (self.water > self.water_capacity) & (self.water < self.water_saturation)
+        Below_SatConD = np.zeros_like(self.water)
+        Below_SatConD[mask_below_sat] = self.SatConD[mask_below_sat] * np.exp(
+            48.2 * (self.water[mask_below_sat] - self.water_saturation[mask_below_sat]) * 1e-7
+        )
+        self.water_leached[mask_below_sat] = (
+                Below_SatConD[mask_below_sat] / 100 * (self.water[mask_below_sat] - self.water_capacity[mask_below_sat])
+        )
+        mask_above_sat = self.water >= self.water_saturation
+        self.water_leached[mask_above_sat] = (
+                self.SatConD[mask_above_sat] / 100 * (self.water_saturation[mask_above_sat] - self.water_capacity[mask_above_sat])
+        )
+
+        # Updating water content
+        self.water -= self.water_leached
+
+        # Computing not-runoff as constant proportion of excess water
+        excess = self.water + extra_water - self.water_saturation
+        self.not_runoff = np.where(excess > 0, 0.2 * excess, 0)
+
+        self.water = self.water.clip(0, self.water_saturation)
+
+        # Computing W
+        self.W = (self.water - self.wilting_point) / (self.water_capacity - self.wilting_point)
+        self.W = self.W.clip(0, 1)
+
     def compute_N_mineralization(self, K, Tref, Temp):
         """Compute nitrogen mineralization based on water stress (W) air temperature (Temp) and soil organic nitrogen (Norg) [kgNorg ha^-1].
 
