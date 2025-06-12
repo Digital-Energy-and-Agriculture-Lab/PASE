@@ -10,6 +10,12 @@ PanelDimensionY:
    Limit: [0.1,5]
    Unit: meters [m]
    Definition: Panel dimension on the y axis which would be the main potential axis of rotation
+PanelDimensionZ:
+   Value: 0.1
+   Type: float
+   Limit: [0.1,1]
+   Unit: meters [m]
+   Definition: Panel dimension on the z axis (thickness)
 Panel_Peak_Power:
    Value: 400
    Type: float
