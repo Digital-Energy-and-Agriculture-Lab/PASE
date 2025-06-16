@@ -91,6 +91,8 @@ def generate_USMS_file(FN, FN_PY, simu_P, year, path):
     output_file.write('      <flai>null</flai>\n')
     output_file.write('    </plante>\n')
     output_file.write('  </usm>\n')
+    output_file.write('  <usm nom="Bidon">\n')   # Add to work with pystics' way of importing usm parameters (line 715-721 de params.py)
+    output_file.write('  </usm>\n')
     output_file.write('</usms>')
 
     output_file.close()
