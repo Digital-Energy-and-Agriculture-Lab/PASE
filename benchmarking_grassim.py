@@ -298,7 +298,7 @@ print(observed_df)
 
 #importing simulated data
 #NB : I should use directly the dictionary agro_results and not the csv saved before but problem to isolate cut_dates
-path_csv_sim = r"C:\Users\user\Downloads\pase\OUTPUTS\mean_data_dates.csv"
+path_csv_sim = r"/OUTPUTS/mean_data_dates.csv"
 simulated_df = pd.read_csv(path_csv_sim,sep=",", decimal='.',parse_dates=['Date'])
 # Filtrer df2 pour ne garder que les dates présentes dans df1
 simulated_df = simulated_df[simulated_df['Date'].isin(observed_df['Date'])]
