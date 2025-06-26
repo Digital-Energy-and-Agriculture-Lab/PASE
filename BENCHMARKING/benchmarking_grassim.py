@@ -11,6 +11,12 @@
 - saving three states variables (exported_BM, exported_N and exported_OM)
 - saving metadata associated with the simulation (commit used, date, parameters used)'''
 
+import sys
+# Set project root as working directory
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))  # BENCHMARKING/
+PROJECT_ROOT = os.path.abspath(os.path.join(ROOT_DIR, '..'))  # Remonte à pase/
+os.chdir(PROJECT_ROOT)
+
 from datetime import datetime
 import numpy as np
 import os
@@ -298,7 +304,7 @@ print(observed_df)
 
 #importing simulated data
 #NB : I should use directly the dictionary agro_results and not the csv saved before but problem to isolate cut_dates
-path_csv_sim = r"/OUTPUTS/mean_data_dates.csv"
+path_csv_sim = r"OUTPUTS/mean_data_dates.csv"
 simulated_df = pd.read_csv(path_csv_sim,sep=",", decimal='.',parse_dates=['Date'])
 # Filtrer df2 pour ne garder que les dates présentes dans df1
 simulated_df = simulated_df[simulated_df['Date'].isin(observed_df['Date'])]
