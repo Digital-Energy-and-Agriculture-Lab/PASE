@@ -2,6 +2,15 @@
 
 The **PASE** framework is designed to simulate an agrivoltaic system, calculating both photovoltaic and agricultural outputs. It leverages the HDKR model to compute the global tilted irradiance on the PV panels and uses a ray casting algorithm to estimate the light reaching crops beneath the panels. These irradiance data are then used with crop models to simulate crop growth and yield.
 
+## Binder
+Try the PASE notebooks on Binder (**no installation required**):
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.uliege.be%2Fdeal-public%2Fpase/152-pase-training-session)
+
+Note: Currently, the above Binder button points to a feature branch. 
+The link is subject to change in the near future, as we continue improving the framework and notebooks, as well as keep creating new notebooks. 
+Visit regularly to access the most up-to-date versions. 
+
 ## Installation
 
 The repository provides environment files for setting up a conda virtual environment with all necessary dependencies. There are two separate files:
