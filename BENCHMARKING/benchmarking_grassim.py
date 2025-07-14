@@ -297,9 +297,9 @@ else:
 """Functions to compute model performance index and save them in a csv file"""
 #################################################################################
 
-#importing observed data as a dataframe OK!
+#importing observed data as a dataframe
 import pandas as pd
-path_csv_obs = r"C:\Users\user\Downloads\data_obs.csv"
+path_csv_obs = r"BENCHMARKING/OBSERVED_DATA/data_obs_example.csv"
 observed_df= pd.read_csv(path_csv_obs,sep=",", decimal='.',parse_dates=['Date'])
 print(observed_df)
 
