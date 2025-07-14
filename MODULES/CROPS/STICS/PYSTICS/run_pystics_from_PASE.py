@@ -55,47 +55,22 @@ def run_independant_usms_in_pystics(config, WD, daily_irr, scenario_P):
                 from pystics.simulation import run_pystics_simulation
                 
                 # Read input files from pystics/parametrization_files/example folder for the USM associated to chosen species and variety
-                weather, crop, manage, soil, station, constants, initial = parametrization_from_stics_example_files(WD_file, Simu_init['Variety'])
+                weather, crop, manage, soil, station, constants, initial = parametrization_from_stics_example_files(WD_file, Simu_init['Variety'], PASE=1)
                 
                 # Run the simulation
                 pystics_df, pystics_mat_list = run_pystics_simulation(weather, crop, soil, constants, manage, station, initial)
                 
-                
-                """
-                daily_results_stics = pd.read_csv('param_files/mod_s'+WD_file+'.sti', sep=';', decimal='.')
-                daily_results_stics['jul_day'] = daily_results_stics['jul']
-                nd_year = max(daily_results_stics['ian'])
-                st_year = min(daily_results_stics['ian'])
-                if st_year%4==0:
-                    supp_day = 1
-                else:
-                    supp_day = 0
-                    
-                if Simu_init['AnnualCropOption'] == 0:
-                    daily_results_stics.loc[daily_results_stics['ian']
-                                                   ==nd_year, 'jul_day'] = (daily_results_stics.loc[daily_results_stics['ian']==nd_year, 'jul_day'] 
-                                                                                         + 365 + supp_day)
-                else:
-                    pass
-                harvest_jul_day = max(daily_results_stics['irecs'])
-                sowing_jul_day = min(daily_results_stics['iplts'])
-
-                daily_results_stics = daily_results_stics.set_index('jul_day')
-
-                Fresh_yield = float(daily_results_stics.loc[daily_results_stics.index==harvest_jul_day, 'pdsfruitfrais'])
-                H2Ocontent_fruit = float(daily_results_stics.loc[daily_results_stics.index==harvest_jul_day, 'H2Orec'])
-                Dry_yield = float(daily_results_stics.loc[daily_results_stics.index==harvest_jul_day, 'mafruit'])
-                Total_ET = sum(daily_results_stics.loc[(daily_results_stics.index<=harvest_jul_day) & 
-                                                       (daily_results_stics.index>=sowing_jul_day), 'et'])
+                Fresh_yield = np.nan
+                Dry_yield = max(pystics_df['mafruit'])
+                Total_ET = sum(pystics_df['et'])
                 
                 Crop_plot.fill_np_variables_for_each_position(count, Fresh_yield,
                                                               Dry_yield, Total_ET)
+                count+=1    
                 
-                count+=1
+                os.chdir("../../../../..")
                 
             Crop_plot.fill_dict_variables_for_each_year(year)
-            """
-                os.chdir("../../../../..")
                 
     return Crop_plot
         

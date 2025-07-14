@@ -215,13 +215,19 @@ agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      Loc_1)
 
 
-if crop_config['CropModel'] == ('simple' or 'stics'):
+if crop_config['CropModel'] == 'simple':
     visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
                                 PV_1_3Dconfig.PV_central_PD, M, 2008, 
                                 MM_DD='10-10', unit='g/m²')
     save_csv('mean_data.csv', agro_results, ['Dry_yield', 'Biomass'])
-else:
+    
+elif crop_config['CropModel'] == 'grassim':
     visualize_map_of_a_variable(crop_config, agro_results,'BM',
                                 PV_1_3Dconfig.PV_central_PD, M, 2008,
                                 MM_DD='10-10', unit='t/ha')
     save_csv('mean_data.csv', agro_results, ['BM'])
+    
+else:
+    visualize_map_of_a_variable(crop_config, agro_results,'Dry_yield',
+                                PV_1_3Dconfig.PV_central_PD, M, 2006,
+                                MM_DD='Harvest_day', unit='t/ha')

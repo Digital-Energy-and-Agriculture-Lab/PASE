@@ -1,24 +1,23 @@
-11:02:15 AM  (INFO)  -  START OF THE SIMULATION
-11:02:15 AM  (INFO)  -  Input values from Siguesol_loc.yaml have been imported successfully
-11:02:15 AM  (INFO)  -  Input values from AV_siguesol.yaml have been imported successfully
-11:02:15 AM  (INFO)  -  Input values from PV_module_SigueSOL.yaml have been imported successfully
-11:02:15 AM  (INFO)  -  Input values from pystics_example.yml have been imported successfully
-11:02:15 AM  (INFO)  -  Get hourly weather data for year 2005 from PvGis
-11:02:15 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-11:02:16 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 302 0
-11:02:16 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-11:02:16 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 200 961476
-11:02:17 AM  (INFO)  -  Get hourly weather data for year 2006 from PvGis
-11:02:17 AM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
-11:02:17 AM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 302 0
-11:02:17 AM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
-11:02:18 AM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 200 961912
-11:02:18 AM  (INFO)  -  Computation of daily weather data for year 2005
-11:02:18 AM  (INFO)  -  Computation of daily weather data for year 2006
-11:02:21 AM  (DEBUG)  -  Sum of solid angles = 2.004 * pi
-11:02:21 AM  (WARNING)  -  Sum of solid angles seems off, check the sky discretization scheme
-11:02:21 AM  (WARNING)  -  Sum of solid angles = 2.004 * pi
-11:02:21 AM  (DEBUG)  -  Sum of surface areas = 1.002
-11:02:21 AM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
-11:02:30 AM  (INFO)  -  Input values from CROPS/pySTICS/simu_init.yaml have been imported successfully
-11:06:54 AM  (DEBUG)  -  handle_close[97c89bd24a9011f09f3e18568057e8d8]({'header': {'msg_id': '47f6db45-e8bdbaa8659775526825cf72_13622_24', 'msg_type': 'comm_close', 'username': 'roxane', 'session': '47f6db45-e8bdbaa8659775526825cf72', 'date': datetime.datetime(2025, 6, 16, 9, 6, 54, 76453, tzinfo=tzutc()), 'version': '5.3'}, 'msg_id': '47f6db45-e8bdbaa8659775526825cf72_13622_24', 'msg_type': 'comm_close', 'parent_header': {}, 'metadata': {}, 'content': {'comm_id': '97c89bd24a9011f09f3e18568057e8d8', 'data': {}}, 'buffers': []})
+04:29:59 PM  (INFO)  -  START OF THE SIMULATION
+04:29:59 PM  (INFO)  -  Input values from Siguesol_loc.yaml have been imported successfully
+04:29:59 PM  (INFO)  -  Input values from AV_siguesol.yaml have been imported successfully
+04:29:59 PM  (INFO)  -  Input values from PV_module_SigueSOL.yaml have been imported successfully
+04:29:59 PM  (INFO)  -  Input values from pystics_example.yml have been imported successfully
+04:29:59 PM  (INFO)  -  Get hourly weather data for year 2005 from PvGis
+04:29:59 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+04:29:59 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 302 0
+04:29:59 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+04:30:01 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2005&endyear=2005&components=1&outputformat=json HTTP/1.1" 200 961476
+04:30:01 PM  (INFO)  -  Get hourly weather data for year 2006 from PvGis
+04:30:01 PM  (DEBUG)  -  Starting new HTTP connection (1): re.jrc.ec.europa.eu:80
+04:30:01 PM  (DEBUG)  -  http://re.jrc.ec.europa.eu:80 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 302 0
+04:30:01 PM  (DEBUG)  -  Starting new HTTPS connection (1): re.jrc.ec.europa.eu:443
+04:30:03 PM  (DEBUG)  -  https://re.jrc.ec.europa.eu:443 "GET /api/seriescalc?lat=50.376&lon=5.677&raddatabase=PVGIS-SARAH3&useHorizon=1&userHorizon=&startyear=2006&endyear=2006&components=1&outputformat=json HTTP/1.1" 200 961912
+04:30:03 PM  (INFO)  -  Computation of daily weather data for year 2005
+04:30:03 PM  (INFO)  -  Computation of daily weather data for year 2006
+04:30:08 PM  (DEBUG)  -  Sum of solid angles = 2.004 * pi
+04:30:08 PM  (WARNING)  -  Sum of solid angles seems off, check the sky discretization scheme
+04:30:08 PM  (WARNING)  -  Sum of solid angles = 2.004 * pi
+04:30:08 PM  (DEBUG)  -  Sum of surface areas = 1.002
+04:30:08 PM  (DEBUG)  -  falling back to hashlib hashing: `pip install xxhash`for 50x faster cache checks
+04:30:15 PM  (INFO)  -  Input values from CROPS/pySTICS/simu_init.yaml have been imported successfully
