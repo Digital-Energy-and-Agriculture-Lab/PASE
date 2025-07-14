@@ -12,6 +12,8 @@
 - saving metadata associated with the simulation (commit used, date, parameters used)'''
 
 import sys
+import os
+
 # Set project root as working directory
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))  # BENCHMARKING/
 PROJECT_ROOT = os.path.abspath(os.path.join(ROOT_DIR, '..'))  # Remonte à pase/
@@ -19,7 +21,6 @@ os.chdir(PROJECT_ROOT)
 
 from datetime import datetime
 import numpy as np
-import os
 import pickle
 
 from MODULES.user_support_tools import PASE_Logger
