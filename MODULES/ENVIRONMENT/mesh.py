@@ -74,8 +74,8 @@ class Mesh:
         Returns:
            
         """
-        xrng = np.arange(X_min, X_max, X_increment)
-        yrng = np.arange(Y_min, Y_max, Y_increment)
+        xrng = np.arange(X_min, X_max + X_increment, X_increment)
+        yrng = np.arange(Y_min, Y_max + Y_increment, Y_increment)
         zrng = zcoord
         # Create coordinate arrays for each dimension using meshgrid
         x_coords, y_coords, z_coords = np.meshgrid(xrng, yrng, zrng, indexing='ij')
