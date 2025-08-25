@@ -203,13 +203,9 @@ class PV_Configuration_3D:
     
     def create_block_of_panels(self, repet_dist_panelsX, repet_dist_panelsY,
                                n_panelsX, n_panelsY, fst_panel):
-        
-        xrng = np.arange(repet_dist_panelsX*0.5*(1-n_panelsX), 
-                         repet_dist_panelsX*0.5*(n_panelsX+1),
-                         repet_dist_panelsX, dtype=np.float32)
-        yrng = np.arange(repet_dist_panelsY*0.5*(1-n_panelsY), 
-                         repet_dist_panelsY*0.5*(n_panelsY+1),
-                         repet_dist_panelsY, dtype=np.float32)
+
+        xrng = repet_dist_panelsX * np.arange(-(n_panelsX - 1) / 2, (n_panelsX + 1) / 2)
+        yrng = repet_dist_panelsY * np.arange(-(n_panelsY - 1) / 2, (n_panelsY + 1) / 2)
         zrng = np.arange(0, 1, 2, dtype=np.float32)
         
         x, y, z = np.meshgrid(xrng, yrng, zrng)            
