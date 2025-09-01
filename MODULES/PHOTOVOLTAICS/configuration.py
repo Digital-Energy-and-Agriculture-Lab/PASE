@@ -8,6 +8,8 @@
 import pyvista as pyV
 import numpy as np
 
+pyV.global_theme.allow_empty_mesh = True
+
 class MultiBlock_PASE(pyV.MultiBlock):
     '''
     New class which add new functionnalities

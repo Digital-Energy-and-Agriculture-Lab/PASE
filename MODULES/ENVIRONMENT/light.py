@@ -447,7 +447,11 @@ class Ray_casting_scene:
            Diffu (np.array 1 x n):  Providing a vector with the fraction ([0-1]) of diffuse light 
                                    for each of the "n" source points defined in the mesh
         """
-      
+
+        # Handle empty geometry: return full diffuse light
+        if geometry.n_faces == 0 :
+            print("Geometry is empty. Returning full diffuse illumination.")
+            return np.ones(self.n_sourcepoints, dtype=np.float16)
     
         #Get direction of ray to reach the small suns and compute the sky view of each point
         if scheme.lower() == 'reinhart':
@@ -581,6 +585,13 @@ class Ray_casting_scene:
            direct_ID_t_map (np.array n x t):  Providing a matrix of boolean (0/1) for each source points (n) and each
                                            sun positions (t). If the point does not directly see the sun a value of 0 is given.
         """
+
+        # Handle empty geometry: return full direct light
+        if geometry.n_faces == 0 :
+            n_sun_positions = sun_P.shape[0]
+            print("Geometry is empty. Returning full direct illumination.")
+            return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
+        
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
         SourcePoints = np.repeat(np.column_stack((
                                                   self.sourcepoints[:,0],
