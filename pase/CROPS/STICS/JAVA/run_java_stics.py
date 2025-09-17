@@ -5,10 +5,10 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
-from MODULES.CROPS.STICS.JAVA.generate_java_stics_files import \
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from pase.CROPS.STICS.JAVA.generate_java_stics_files import \
     generate_weather_data_file, generate_USMS_file
-from MODULES.CROPS.STICS.JAVA.get_java_stics_outputs import Crop_outputs
+from pase.CROPS.STICS.JAVA.get_java_stics_outputs import Crop_outputs
 import os
 import subprocess
 import platform

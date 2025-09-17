@@ -15,8 +15,8 @@ import math
 import numpy as np
 import os
 
-from MODULES.user_support_tools import PASE_Logger
-from MODULES.ENVIRONMENT.aerodynamics import get_wind_speed_specific_height
+from pase.user_support_tools import PASE_Logger
+from pase.ENVIRONMENT.aerodynamics import get_wind_speed_specific_height
 
 
 class Weather_data:

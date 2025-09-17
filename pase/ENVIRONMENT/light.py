@@ -13,9 +13,9 @@ import pvlib.solarposition as pvlibSP
 import matplotlib.pyplot as plt
 import os
 
-import MODULES.conversion_functions as cf
-from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
-from MODULES.ENVIRONMENT.sky_model import ReinhartSky
+import pase.conversion_functions as cf
+from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from pase.ENVIRONMENT.sky_model import ReinhartSky
 
 logger = logging.getLogger(__name__)
 

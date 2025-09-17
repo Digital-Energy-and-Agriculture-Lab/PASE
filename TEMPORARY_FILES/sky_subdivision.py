@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
 
-from MODULES.conversion_functions import sph_to_cart
+from pase.conversion_functions import sph_to_cart
 
 VERBOSE = False
 compare_fhs = False

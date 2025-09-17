@@ -8,7 +8,7 @@
 import os
 import yaml
 
-from MODULES.user_support_tools import PASE_Logger
+from pase.user_support_tools import PASE_Logger
 
 
 class YAML_Inputs_provider:
