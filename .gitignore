@@ -5,10 +5,12 @@
 # IDE clutter
 .idea/
 
-# Outputs (graphs, data, logs)
+# Outputs (graphs, data, logs, profiling, ...)
 *.png
 *.csv
 *.log
+*.prof
+*.out
 
 # STICS clutter
 *.sti

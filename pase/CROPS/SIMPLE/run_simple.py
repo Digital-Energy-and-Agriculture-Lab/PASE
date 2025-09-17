@@ -7,10 +7,10 @@
 
 import pandas as pd
 import numpy as np
-from MODULES.CROPS.SIMPLE import simple
-from MODULES.CROPS.SIMPLE import water_balance
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
-from MODULES.CROPS.evapotranspiration_FAO56_PM import get_ET0
+from pase.CROPS.SIMPLE import simple
+from pase.CROPS.SIMPLE import water_balance
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from pase.CROPS.evapotranspiration_FAO56_PM import get_ET0
 
 
 def run_independant_years_of_crop(config, option_2D, WD, daily_irr, lat, alt):

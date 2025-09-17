@@ -2,7 +2,7 @@ import numpy as np
 import copy 
 from datetime import datetime
 
-from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 
 class Soil():
     def __init__(self, grid, inits, variables_to_save):
