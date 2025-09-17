@@ -7,7 +7,7 @@ name = "pase"
 version = "1.2.0"
 description = "Python Agrivoltaic Simulation Environment"
 readme = "README.md"
-requires-python = "==3.10.15"
+requires-python = ">=3.10.15"
 dependencies = []
 
 [project.optional-dependencies]
