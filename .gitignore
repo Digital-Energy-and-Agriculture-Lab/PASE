@@ -1,14 +1,18 @@
+# Python clutter
 *__pycache__*
+*.egg-info
 
-*.log
-
-*.png
-
+# IDE clutter
 .idea/
 
+# Outputs (graphs, data, logs, profiling, ...)
+*.png
 *.csv
+*.log
+*.prof
+*.out
 
-
+# STICS clutter
 *.sti
 *param_files/*
 *default/*

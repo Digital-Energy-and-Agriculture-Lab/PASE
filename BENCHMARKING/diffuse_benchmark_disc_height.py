@@ -19,12 +19,12 @@ import numpy as np
 import pandas as pd
 import pyvista as pyV
 
-from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.benchmarking import (export_benchmark,
-                                                  sign_commit_hash,
-                                                  get_git_revision_short_hash)
-from MODULES.ENVIRONMENT.light import Ray_casting_scene
-from MODULES.ENVIRONMENT.mesh import Mesh
+from pase.user_support_tools import PASE_Logger
+from pase.DATA_MANAGEMENT.benchmarking import (export_benchmark,
+                                               sign_commit_hash,
+                                               get_git_revision_short_hash)
+from pase.ENVIRONMENT.light import Ray_casting_scene
+from pase.ENVIRONMENT.mesh import Mesh
 
 DEBUG = False
 PLOT = False
