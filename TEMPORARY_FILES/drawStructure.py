@@ -6,9 +6,9 @@ side_m       = 0.05
 n_bars       = 3
 group_height = 1.0
 clearance    = 0.5
-rotation_x   = -90
+rotation_x   = -45
 support_y    = +side_m
-n_groups     = 1
+n_groups     = 3
 group_offset = 1.0
 ground_z     = 0.0
 
