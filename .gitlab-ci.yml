@@ -1,0 +1,56 @@
+image: mambaorg/micromamba:1.4.0
+
+stages:
+  - test
+
+variables:
+  CONDA_ENV_NAME: ci-env
+  ENV_YML: environment_unix.yml
+  # micromamba uses a read-only root; create envs under /tmp or $CI_PROJECT_DIR/.venv
+  MAMBA_ROOT_PREFIX: "$CI_PROJECT_DIR/.mamba"
+
+cache:
+  key: "${CI_COMMIT_REF_SLUG}"
+  paths:
+    - .mamba/pkgs/    # cached conda packages
+    - .mamba/envs/    # cached envs (optional)
+
+before_script:
+  # show Python for debugging
+  - python --version || true
+  # create conda environment from your environment YAML
+  - |
+    if [ ! -f "$ENV_YML" ]; then
+      echo "Environment file $ENV_YML not found. Listing repo root:"
+      ls -la
+      exit 1
+    fi
+  # create the environment using micromamba for speed (non-root)
+  - micromamba create -y -n "$CONDA_ENV_NAME" -f "$ENV_YML"
+  # activate the environment for the remainder of the script
+  - eval "$(micromamba shell hook)"
+  - micromamba activate "$CONDA_ENV_NAME"
+  # ensure pytest is available (in case env yml omitted it)
+  - python -m pytest --version
+  - python --version
+  - |
+    python -c "import importlib,sys; 
+    pkgs=['vtk','pyembree','numpy','pandas','trimesh','rtree', 'pyvista']; 
+    for p in pkgs: 
+      try: 
+        m=importlib.import_module(p); print(p,'OK', getattr(m,'file',None)) 
+      except Exception as e: 
+        print(p,'IMPORT FAILED:',e,file=sys.stderr); sys.exit(2)"
+  - export PYTHONPATH="$CI_PROJECT_DIR:$PYTHONPATH"
+
+pytest:
+  stage: test
+  script:
+    - pytest -vv --junitxml=junit.xml
+  artifacts:
+    when: always
+    reports:
+      junit: junit.xml
+    paths:
+      - junit.xml
+  allow_failure: false
