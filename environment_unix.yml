@@ -18,3 +18,5 @@ dependencies:
   - pyyaml
   - seaborn
   - yaml
+  - pytest
+  - pytest-cov
