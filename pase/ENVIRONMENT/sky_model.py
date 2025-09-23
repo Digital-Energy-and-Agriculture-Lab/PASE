@@ -8,10 +8,16 @@ Paper openly available on Researchgate: https://www.google.com/url?sa=t&source=w
 import logging
 import math
 import numpy as np
+import os
 import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib
-matplotlib.use('TkAgg')
+
+if os.environ.get("CI") == "true":
+    matplotlib.use('Agg')
+else:
+    matplotlib.use('TkAgg')
+
 
 from pase.conversion_functions import sph_to_cart
 
