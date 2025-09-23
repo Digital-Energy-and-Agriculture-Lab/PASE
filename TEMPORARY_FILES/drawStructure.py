@@ -1,5 +1,8 @@
 import pyvista as pv
 import numpy as np
+import os
+
+
 
 length_m     = 1.0
 side_m       = 0.05
@@ -58,7 +61,11 @@ def make_group(x_offset=0.0, end=False):
 
     return rotated, feet
 
-groups = [make_group(i * group_offset, end=(i == n_groups - 1)) for i in range(n_groups)]
+def build_all_groups(n_groups: int, group_offset: float = 1.0):
+    groups = [make_group(i * group_offset, end=(i == n_groups - 1)) for i in range(n_groups)]
+    return groups
+
+groups = build_all_groups(n_groups, group_offset)
 rotated_all = groups[0][0]
 feet_all = groups[0][1]
 for g in groups[1:]:
@@ -67,10 +74,11 @@ for g in groups[1:]:
 
 ground = pv.Plane(center=(0,0,ground_z), direction=(0,0,1), i_size=10.0, j_size=10.0)
 
-pl = pv.Plotter()
-pl.add_mesh(ground, color="#d0d0d0", lighting=True)
-pl.add_mesh(rotated_all, color="lightgrey", lighting=True)
-pl.add_mesh(feet_all, color="lightgrey", lighting=True)
-pl.add_axes()
-pl.camera_position = "xz"
-pl.show()
+if os.environ.get("CI")!="true":
+    pl = pv.Plotter()
+    pl.add_mesh(ground, color="#d0d0d0", lighting=True)
+    pl.add_mesh(rotated_all, color="lightgrey", lighting=True)
+    pl.add_mesh(feet_all, color="lightgrey", lighting=True)
+    pl.add_axes()
+    pl.camera_position = "xz"
+    pl.show()
