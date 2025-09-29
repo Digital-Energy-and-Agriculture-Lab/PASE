@@ -2,8 +2,6 @@ import pyvista as pv
 import numpy as np
 import os
 
-
-
 length_m     = 1.0
 side_m       = 0.05
 n_bars       = 3
@@ -37,48 +35,52 @@ def make_group(x_offset=0.0, end=False):
                         x_length=side_m, y_length=side_m, z_length=support_height)
     assembly = assembly.merge(support_a)
 
-    feet = None
-    def foot_for(support_x):
-        Ry = support_y*np.cos(theta) - support_center_z*np.sin(theta)
-        Rz = support_y*np.sin(theta) + support_center_z*np.cos(theta)
-        Rx = support_x
-        foot_height = max(Rz - ground_z, side_m)
-        foot_center_z = ground_z + foot_height/2.0
-        return pv.Cube(center=(Rx, Ry, foot_center_z),
-                       x_length=side_m, y_length=side_m, z_length=foot_height)
-
+    supports = [(support_x_a, support_y, support_center_z)]
     if end:
         support_x_b = x_offset + length_m - side_m/2
         support_b = pv.Cube(center=(support_x_b, support_y, support_center_z),
                             x_length=side_m, y_length=side_m, z_length=support_height)
         assembly = assembly.merge(support_b)
+        supports.append((support_x_b, support_y, support_center_z))
 
-    rotated = assembly.rotate_x(rotation_x, point=(x_offset, 0, 0), inplace=False)
+    return assembly, supports
 
-    feet = foot_for(support_x_a)
-    if end:
-        feet = feet.merge(foot_for(x_offset + length_m - side_m/2))
+def rot_x_about(pivot, angle_rad, p):
+    x0,y0,z0 = pivot
+    x,y,z = p
+    cy, sy = np.cos(angle_rad), np.sin(angle_rad)
+    dy, dz = y - y0, z - z0
+    y2 = y0 + dy*cy - dz*sy
+    z2 = z0 + dy*sy + dz*cy
+    return (x, y2, z2)
 
-    return rotated, feet
+groups = [make_group(i * group_offset, end=(i == n_groups - 1)) for i in range(n_groups)]
 
-def build_all_groups(n_groups: int, group_offset: float = 1.0):
-    groups = [make_group(i * group_offset, end=(i == n_groups - 1)) for i in range(n_groups)]
-    return groups
-
-groups = build_all_groups(n_groups, group_offset)
-rotated_all = groups[0][0]
-feet_all = groups[0][1]
+upper_all = groups[0][0]
 for g in groups[1:]:
-    rotated_all = rotated_all.merge(g[0])
-    feet_all = feet_all.merge(g[1])
+    upper_all = upper_all.merge(g[0])
+
+center_x = ((n_groups - 1) * group_offset + length_m) / 2.0
+pivot = (center_x, 0.0, clearance + group_height/2.0)
+upper_rot = upper_all.rotate_x(rotation_x, point=pivot, inplace=False)
+
+feet = None
+for _, supports in groups:
+    for (sx, sy, sz) in supports:
+        top = rot_x_about(pivot, theta, (sx, sy, sz))
+        _, ty, tz = top
+        fh = max(tz - ground_z, side_m)
+        fc = pv.Cube(center=(sx, ty, ground_z + fh/2.0),
+                     x_length=side_m, y_length=side_m, z_length=fh)
+        feet = fc if feet is None else feet.merge(fc)
 
 ground = pv.Plane(center=(0,0,ground_z), direction=(0,0,1), i_size=10.0, j_size=10.0)
 
 if os.environ.get("CI")!="true":
     pl = pv.Plotter()
     pl.add_mesh(ground, color="#d0d0d0", lighting=True)
-    pl.add_mesh(rotated_all, color="lightgrey", lighting=True)
-    pl.add_mesh(feet_all, color="lightgrey", lighting=True)
+    pl.add_mesh(upper_rot, color="lightgrey", lighting=True)
+    pl.add_mesh(feet, color="lightgrey", lighting=True)
     pl.add_axes()
     pl.camera_position = "xz"
     pl.show()
