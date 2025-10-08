@@ -6,7 +6,8 @@
 #This file is part of the PASE software, and is distributed under the MIT license.
 
 import logging
-import os
+from typing import Tuple
+
 
 class PASE_Logger:
     
@@ -69,6 +70,12 @@ class PASE_Logger:
         logging.critical(msg)
         print(msg)
         
-    
-        
-        
+
+def prompt(prompt: str, valid: Tuple[str, ...], default: str = None) -> str:
+    while True:
+        resp = input(prompt).strip()
+        if resp == "" and default is not None:
+            return default
+        if resp.lower() in valid:
+            return resp.lower()
+        print(f"Invalid input. Expected one of: {', '.join(valid)}")

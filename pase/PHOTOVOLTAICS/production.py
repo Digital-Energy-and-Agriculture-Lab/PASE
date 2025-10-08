@@ -159,8 +159,8 @@ class PV_Production:
             DHI: Diffuse Horizontal Irradiance [W/m²]
             Ai: Anisotropy index
             f: modulating factor
-            SF: ? TODO
-            tiltY: panel inclination [?] TODO
+            SF: shading factor of a row to the next
+            tiltY: panel inclination [°]
 
         Returns:
             GTI: Global Tilted Irradiance [W/m²]
