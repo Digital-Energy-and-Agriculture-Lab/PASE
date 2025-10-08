@@ -5,7 +5,7 @@ NumberOfPanelsX:
    Unit: dimensionless [-]
    Definition: Number of panels on the x axis in one block of panels (x axis being the second potential axis of rotation of the block of panels)
 NumberOfPanelsY:
-   Value: 8
+   Value: 4
    Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]

@@ -56,3 +56,4 @@ pytest:
     paths:
       - junit.xml
   allow_failure: false
+

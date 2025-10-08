@@ -7,6 +7,7 @@
 
 import pyvista as pyV
 import numpy as np
+from pase.user_support_tools import prompt
 
 pyV.global_theme.allow_empty_mesh = True
 
@@ -130,6 +131,7 @@ class PV_Configuration_3D:
         else:
             self.PV_central_PD = []
             self.get_tiltY_along_time(sun_vector, azimut, GCR_x)
+            counter_viz = 0
             for tilt in self.tiltY_along_time:
                 PV_block_tilted = self.rotation_1st_axis(PV_block_PD, tilt)
                 PV_central, PV_central_mb = self.create_central(PV_block_tilted, 
@@ -141,7 +143,15 @@ class PV_Configuration_3D:
                                                  two_facets_rel_position,
                                                  azimut)
                 self.PV_central_PD.append(PV_central)
-            
+
+                if self.visualization:
+                    counter_viz += 1
+                # Prompt : keep showing PV structure ?
+                if counter_viz % 3 == 0 and self.visualization:
+                    counter_viz += 1
+                    resp = prompt('Keep showing PV structures ? y/[n]', valid=('y', 'n'), default='n')
+                    if resp == 'n':
+                        self.visualization = False
             
     #Set default parameters in the dict, this avoid error of missing key
     def get_dict_default_parameters(self, PV_i):

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
-#Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
+#Author : Bouvry Arnaud (abouvry@uliege.be)
 #This file is part of the PASE software, and is distributed under the MIT license.
 """"
 Benchmark the diffuse irradiance map
@@ -17,12 +17,17 @@ from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.benchmarking import export_benchmark, sign_commit_hash
 from pase.ENVIRONMENT.light import Ray_casting_scene
 from pase.ENVIRONMENT.mesh import Mesh
+from pase.ENVIRONMENT.sky_model import ReinhartSky
 
 PASE_Logger()
 
+VERBOSE = True
 DEBUG = False
 PLOT = False
-SAVE = True
+SAVE = False
+EMPTY_SCENE = False
+
+pyV.global_theme.allow_empty_mesh = True
 
 # Configure the scene
 # Placeholder
@@ -31,12 +36,16 @@ disc_center = (0, 0, disc_height)
 disc_direction = (0, 0, 1)
 disc_radius = np.sqrt(1/np.pi)
 disc_thickness = 0.001
-disc = pyV.Cylinder(center=disc_center, radius=disc_radius,
+if EMPTY_SCENE:
+    disc = pyV.PolyData()
+    analytical_f = 1
+else:
+    disc = pyV.Cylinder(center=disc_center, radius=disc_radius,
                     height=disc_thickness,
                     direction=disc_direction).triangulate()
 
-theta_0 = np.arctan(disc_radius/disc_height)
-analytical_f = 1 - (np.sin(theta_0))**2
+    theta_0 = np.arctan(disc_radius/disc_height)
+    analytical_f = 1 - (np.sin(theta_0))**2
 
 # Initiation of the mesh object containing points of interest to compute light
 M = Mesh()
@@ -52,8 +61,8 @@ y_sensors = np.arange(start, stop+step, step=step)
 for y, x in product(y_sensors, x_sensors):
     M.add_sensor(x, y,0)
 
-# Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
-L = Ray_casting_scene(mesh=M, geometry=disc)
+# Initialize and run light ray casting model (direct and diffuse) with points of interest and scene
+
 
 MFs = [1, 2, 4, 6, 8]
 results_indices = ['point ID', 0, 1, 2, 3, 4, 5, 6, 7, 8, 'Relative error center point [%]', 'COV corners', 'COV midpoints', 'Test result']
@@ -63,24 +72,30 @@ results_cols = ['point ID']
 for MF in MFs:
     results_cols.append(f'MF: {MF}')
 
-    diffuse_map = L.diffuse_map(L.geometry,
-                                scheme='Reinhart',
-                                MF=MF,
-                                n_small_suns=0)
+    discrete_sky = ReinhartSky(MF=MF).reinhart_patches
 
-    L.diff_map = diffuse_map
+    L = Ray_casting_scene(mesh=M, geometry=disc, discrete_sky=discrete_sky)
+
+    L.diffuse_mask = L.get_diffuse_mask(L.geometry)
+
+    L.get_diffuse_weights_map()
+
+    L.get_diffuse_shaded_weights_map()
 
     if PLOT:
         L.visualize_diffuse_light_map()
 
+    L.diffuse_shaded_weights_map = L.diffuse_shaded_weights_map.sum(axis=0)
+
     print(f'{MF=}')
-    print(L.diff_map[0:3])
-    print(L.diff_map[3:6])
-    print(L.diff_map[6:9])
+    if VERBOSE:
+        print(L.diffuse_shaded_weights_map[0:3])
+        print(L.diffuse_shaded_weights_map[3:6])
+        print(L.diffuse_shaded_weights_map[6:9])
 
     # Check value at center
     center_id = 4
-    center_computed_value = L.diff_map[center_id]
+    center_computed_value = L.diffuse_shaded_weights_map[center_id]
     print(f'Center point computed value = {center_computed_value}')
     print(f'Center point expected value = {analytical_f}')
     rel_error_center_value = (1 - center_computed_value / analytical_f) * 100  # [%]
@@ -90,17 +105,19 @@ for MF in MFs:
     corners_ids = [0, 2, 6, 8]
     print(10 * '-')
     print("Corners' values:")
-    print(L.diff_map[corners_ids])
-    print('coef of var =', L.diff_map[corners_ids].std()/L.diff_map[corners_ids].mean())
-    cov_corners = L.diff_map[corners_ids].std()/L.diff_map[corners_ids].mean()
+    if VERBOSE:
+        print(L.diffuse_shaded_weights_map[corners_ids])
+    print('coef of var =', L.diffuse_shaded_weights_map[corners_ids].std() / L.diffuse_shaded_weights_map[corners_ids].mean())
+    cov_corners = L.diffuse_shaded_weights_map[corners_ids].std() / L.diffuse_shaded_weights_map[corners_ids].mean()
 
     # Analyze midpoints
     midpoints_ids = [1, 3, 5, 7]
     print(10 * '-')
     print("Midpoints' values:")
-    print(L.diff_map[midpoints_ids])
-    print('coef of var =', L.diff_map[midpoints_ids].std()/L.diff_map[midpoints_ids].mean())
-    cov_midpoints = L.diff_map[midpoints_ids].std()/L.diff_map[midpoints_ids].mean()
+    if VERBOSE:
+        print(L.diffuse_shaded_weights_map[midpoints_ids])
+    print('coef of var =', L.diffuse_shaded_weights_map[midpoints_ids].std() / L.diffuse_shaded_weights_map[midpoints_ids].mean())
+    cov_midpoints = L.diffuse_shaded_weights_map[midpoints_ids].std() / L.diffuse_shaded_weights_map[midpoints_ids].mean()
 
 
     print(20*'=')
@@ -116,9 +133,9 @@ for MF in MFs:
         result = 'FAILED'
         print('Test failed.')
         # results.append({f'{MF=}': 'FAIL', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
-    results.append([L.diff_map[0], L.diff_map[1], L.diff_map[2], L.diff_map[3],
-                    L.diff_map[4], L.diff_map[5], L.diff_map[6], L.diff_map[7],
-                    L.diff_map[8],
+    results.append([L.diffuse_shaded_weights_map[0], L.diffuse_shaded_weights_map[1], L.diffuse_shaded_weights_map[2],
+                    L.diffuse_shaded_weights_map[3], L.diffuse_shaded_weights_map[4], L.diffuse_shaded_weights_map[5],
+                    L.diffuse_shaded_weights_map[6], L.diffuse_shaded_weights_map[7], L.diffuse_shaded_weights_map[8],
                     rel_error_center_value,
                     cov_corners, cov_midpoints,
                     result])
@@ -151,7 +168,7 @@ if DEBUG:
 
     plotter.add_axes(**labels)
 
-    spatialized_variable = np.array(L.diff_map, dtype=np.float32)
+    spatialized_variable = np.array(L.diffuse_shaded_weights_map, dtype=np.float32)
     lgd_title = 'Diffuse map'
     plotter.add_mesh(L.sourcepoints[:,:-1],
                      scalars=spatialized_variable,

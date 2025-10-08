@@ -12,12 +12,14 @@ import pickle
 
 from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
+from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
 from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
 from pase.DATA_MANAGEMENT.output.save_csv import save_csv
 from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
 from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from pase.ENVIRONMENT.light import Ray_casting_scene
 from pase.ENVIRONMENT.mesh import Mesh
+from pase.ENVIRONMENT.sky_model import ReinhartSky
 from pase.PHOTOVOLTAICS.production import PV_Production
 from pase.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
 
@@ -28,6 +30,11 @@ Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inpu
 AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
 crop_config = YAML_Inputs_provider(file='grassim_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
+
+# Using Sky Types characterization while simulating an AV central with solar
+# tracking is very computer intensive ; InputChecker asks the user to reconsider
+input_checker = InputsEvaluator(Loc_1, AV_1)
+
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
 # Import of weather data and computation of daily weather data
@@ -90,20 +97,27 @@ M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
 #Activation of the ray castinf from a PV module of the central (this functionnalities is under construction)
 #M.add_PV_mesh(PV_1_3Dconfig.PV_central_MB[3]) #(This will not work if you are with a PV system with a rotation axis)
 
+# Discrete sky model
+discrete_sky = ReinhartSky(MF=Loc_1['MF']).reinhart_patches
 
 # Computation of sun and light data
 Light_instance = Light(WD.nyears_data, Sun_positions_complete)
-# Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
-L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central_PD)
+
+# Instantiation of light ray casting model (direct and diffuse) with points of interest and scene
+L = Ray_casting_scene(mesh=M,
+                      geometry=PV_1_3Dconfig.PV_central_PD,
+                      discrete_sky=discrete_sky)
+
+# Run light ray casting model (direct and diffuse) with points of interest and scene
 L.get_light_maps(Sun_positions_samp.solar_vector,
-                 scheme=Loc_1['SkyDiscretizationScheme'],
-                 MF=Loc_1['MF'],
-                 n_small_suns=Loc_1['FibonacciSamples'],
                  visualization=False,
                  Sun_P_map_to_visualize=3)
+
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
-                            Light_instance.data)
+                            Light_instance.data,
+                            visualization=True,
+                            year=2005, julian_day=5)
 
 L.visualize_direct_light_map(1)
 L.visualize_diffuse_light_map()

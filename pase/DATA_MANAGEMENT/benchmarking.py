@@ -4,6 +4,9 @@ import os
 import pandas as pd
 import subprocess
 
+from MODULES.user_support_tools import PASE_Logger
+
+
 def export_benchmark(df, fname_prefix='diffuse_benchmark_', mode='x', fpath=None):
     if mode == 'x':
         behavior = '(creating new file)'
@@ -12,7 +15,7 @@ def export_benchmark(df, fname_prefix='diffuse_benchmark_', mode='x', fpath=None
     else :
         raise ValueError('Unexpected mode.')
 
-    print('Saving result ' + behavior)
+    PASE_Logger('Saving result ' + behavior, level='INFO')
 
     exact_fpath_provided = True if fpath is not None else False
 
@@ -38,11 +41,11 @@ def export_benchmark(df, fname_prefix='diffuse_benchmark_', mode='x', fpath=None
 
             df.to_csv(fpath, mode=mode, float_format="%.3e", sep=';')
             written = True
-            print(f'Result saved in {fpath}')
+            PASE_Logger(f'Result saved in {fpath}', level='INFO')
             return fpath
 
         except FileExistsError as e:
-            print(str(e) + ' Increment suffix counter.')
+            PASE_Logger(str(e) + ' Increment suffix counter.', level='WARNING')
 
             counter += 1
             if counter > 10:
