@@ -10,16 +10,16 @@ import numpy as np
 import os
 import pickle
 
-from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
-from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
-from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
-from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
-from MODULES.ENVIRONMENT.light import Ray_casting_scene
-from MODULES.ENVIRONMENT.mesh import Mesh
-from MODULES.PHOTOVOLTAICS.production import PV_Production
-from MODULES.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
+from pase.user_support_tools import PASE_Logger
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
+from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
+from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
+from pase.ENVIRONMENT.light import Ray_casting_scene
+from pase.ENVIRONMENT.mesh import Mesh
+from pase.PHOTOVOLTAICS.production import PV_Production
+from pase.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
 
 PASE_Logger()
 
