@@ -2,37 +2,39 @@
 # -*- coding: utf-8 -*-
 
 #Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
-#Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
+#Author : Julien Philippart based on the main.py script of Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-'''This script is based on the main.py scripts to run simulations. Diffrences are :
+'''This script is based on the main.py scripts to run simulations. Differences are :
 - comparing simulation results to imported reference data
 - computing performance indicators
-- saving three states variables (exported_BM, exported_N and exported_OM)
+- saving selected states variables (exported_BM, exported_N and exported_OM)
 - saving metadata associated with the simulation (commit used, date, parameters used)'''
 
 import sys
 import os
-
-# Set project root as working directory
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))  # BENCHMARKING/
-PROJECT_ROOT = os.path.abspath(os.path.join(ROOT_DIR, '..'))  # Remonte à pase/
-os.chdir(PROJECT_ROOT)
-
 from datetime import datetime
 import numpy as np
+import yaml
+import subprocess
+import pandas as pd
 import pickle
 
-from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
-from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from MODULES.DATA_MANAGEMENT.output.save_csv import save_csv
-from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
-from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
-from MODULES.ENVIRONMENT.light import Ray_casting_scene
-from MODULES.ENVIRONMENT.mesh import Mesh
-from MODULES.PHOTOVOLTAICS.production import PV_Production
-from MODULES.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
+# Set project root as working directory and defining and input path to be easy to use with yaml inputs provider
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))  # file BENCHMARKING/   NB : this command does not work in console because _file_ not found
+PROJECT_ROOT = os.path.abspath(os.path.join(ROOT_DIR, '..'))  # Remonte à pase/ -> root of project where the "main.py" is located
+os.chdir(PROJECT_ROOT)
+
+from pase.user_support_tools import PASE_Logger
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
+from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from pase.DATA_MANAGEMENT.output.save_csv import save_csv
+from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
+from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
+from pase.ENVIRONMENT.light import Ray_casting_scene
+from pase.ENVIRONMENT.mesh import Mesh
+from pase.PHOTOVOLTAICS.production import PV_Production
+from pase.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
 
 PASE_Logger()
 # Import of general parameters
@@ -71,26 +73,6 @@ PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
 
-# Parts to integer in a function that aims to use ray casting light model for PV panels production
-# Still have to integer this in a user friendly way and to couple with eletricity production part
-"""
-PV_params_dictBis = PV_params_dict.copy()
-PV_params_dictBis['PanelThickness'] = False
-PV_1_3DconfigMeshTop = PV_Configuration_3D(PV_params_dictBis, Sun_positions_samp.solar_vector,
-                                    visualization=False)
-PV_params_dictBis["PanelDimensionZ"] = -0.1
-PV_1_3DconfigMeshBot = PV_Configuration_3D(PV_params_dictBis, Sun_positions_samp.solar_vector,
-                                    visualization=False)
-M.Add_PV_Mesh(PV_1_3DconfigMeshTop.PV_central,flag = "TopPV", radius = 0.5)
-M.Add_PV_Mesh(PV_1_3DconfigMeshBot.PV_central, flag = "BotPV", radius = 0.5)
-#TopPoints = M.Get_SourcePoints_ByFlag('TopPV')
-#BotPoints = M.Get_SourcePoints_ByFlag('BotPV')
-#TopPointsBis = M.Get_SourcePoints(FlagId=[0])
-#BotPointsBis = M.Get_SourcePoints(FlagId=[1])
-#FlagIdTop = M.Get_FlagId_ByFlag("BotPV")
-#print("The Bottom of the PV have the FlagID = " + str(FlagIdTop))
-"""
-
 # Add of the points of interests on the ground for crop models
 M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
                                   Loc_1['Xmax_InterestZone'],
@@ -99,10 +81,6 @@ M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
                                   Loc_1['dX_InterestZone'],
                                   Loc_1['dY_InterestZone'],
                                   flag="crop")
-
-#Activation of the ray castinf from a PV module of the central (this functionnalities is under construction)
-#M.add_PV_mesh(PV_1_3Dconfig.PV_central_MB[3]) #(This will not work if you are with a PV system with a rotation axis)
-
 
 # Computation of sun and light data
 Light_instance = Light(WD.nyears_data, Sun_positions_complete)
@@ -122,99 +100,6 @@ L.visualize_direct_light_map(1)
 L.visualize_diffuse_light_map()
 L.visualize_daily_irrad_map(2009, 150)
 
-#DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
-#DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])
-"""
-# Examples of visualisation for the direct light map, diffuse light map (sky view factor)
-# and daily irradiation map. Those lines are for PV system with no rotation axis. 
-j = 5 #day definition
-
-open_pyvista_3D_visualization(M.sourcepoints[:,:-1], 
-                L.dir_map[:,3], 
-                PV_1_3Dconfig.PV_central_PD,
-                "Direct map [-]")
-
-open_pyvista_3D_visualization(M.sourcepoints[:,:-1], 
-                np.array(L.diff_map,dtype=np.float32), 
-                PV_1_3Dconfig.PV_central_PD,
-                "Sky visibility map [-]")
-
-open_pyvista_3D_visualization(M.sourcepoints[:,:-1], 
-                L.daily_irr_spat['2008'][:,j], 
-                PV_1_3Dconfig.PV_central_PD,
-                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")
-"""
-
-
-
-"""
-# Examples of visualisation for the direct light map, diffuse light map (sky view factor)
-# and daily irradiation map. Those lines are for PV system with ONE rotation axis. 
-j = 5 #Julian day definition
-sun_p = 5 #Index of the sun positions as it is in the Sun_positions_samp.SP attribute
-show_light_map2(L.sourcepoints[:,:-1], 
-                L.dir_map[:,sun_p], 
-                PV_1_3Dconfig.PV_central_PD[sun_p],
-                "Direct map [-]")
-
-show_light_map2(L.sourcepoints[:,:-1], 
-                np.array(L.diff_map[:,sun_p],dtype=np.float32), 
-                PV_1_3Dconfig.PV_central_PD[sun_p],
-                "Sky visibility map [-]")
-
-show_light_map2(L.sourcepoints[:,:-1], 
-                L.daily_irr_spat['2021'][:,j], 
-                PV_1_3Dconfig.PV_central_PD[sun_p],
-                "Total irradiation reaching the ground on the julian day "+str(j)+" [MJ/m²]")"
-"""
-
-
-# Example of visualisation of the meshes generate on both sides of the PV panels to compute light
-"""
-import pyvista
-P = pyvista.Plotter()
-P.add_mesh(PV_1_3Dconfig.PV_central_PD)
-P.add_mesh(pyvista.PolyData(TopPoints[:,:-1]),color="blue")
-P.add_mesh(pyvista.PolyData(BotPoints[:,:-1]),color="red")
-P.show()
-"""
-
-# Method to compute the computational time of different parts of the model
-"""
-import time
-start = time.time()
-L.diffuse_map(180)
-time1 = time.time() - start
-print(time1)
-start = time.time()
-L.direct_map(Sun_positions_samp.solar_vector)
-time2 = time.time() - start
-print(time2)
-"""
-
-"""
-#Example of a way to combine multiple configurations of PV rows and integration of a barrier 
-#(Nicolas started to integrate the combination of mutpliple PV_central files in functions in the MaiBis.py)
-#### TEMPORARY: EXAMPLE OF a .OBJ importation and merging with the PV panels and merge of the 2 PV polydata
-import pyvista
-reader = pyvista.get_reader('INPUTS/HARDWARE/STRUCTURES/gen_siguesol.obj')
-structure = reader.read()
-
-xrng = np.arange(1.08, 2.08, 2, dtype=np.float32)
-yrng = np.arange(-1.54, -0.54, 2, dtype=np.float32)
-zrng = np.arange(-3.3, -2.3, 2, dtype=np.float32)
-
-x, y, z = np.meshgrid(xrng, yrng, zrng)    
-GlobalMesh = pyvista.StructuredGrid(x, y, z)
-structures = GlobalMesh.glyph(geom=structure, factor=0.001)
-structures = structures.rotate_z(-AV_1['CentralAzimut'])
-
-merged = PV_1_3Dconfig.PV_central_PD.merge(structures)
-PV_1_3Dconfig.PV_central_PD.plot()
-structures.plot()
-merged.plot()
-"""
-
 # PV production model based on a geometric approach
 PV_central = PV_Production(PV_params_dict)
 PV_central.get_several_years_of_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears_data)
@@ -222,7 +107,7 @@ PV_central.get_several_years_of_electricity_production(Sun_positions_complete, L
 
 ### CROP MODEL
 #Temporary line, this parameter (option_2D) should be in SCENARIOS input files (general parameters)
-option_2D = 1 # 0 pour pas de spatialisation et 1 pour une spatialisation du modèle de culture
+option_2D = 1 # 0 if no spatialization and 1 for a spatialization of the crop model
 agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      L.daily_irr_spat,
                                      Loc_1)
@@ -242,17 +127,10 @@ else:
     #choosing variables among variable_to_save.yml
 
     #################################################################################
-    '''Adding a function to save simulation metadata'''
+    '''Adding a function to save simulation metadata and inputs'''
     #################################################################################
 
-    import yaml
-    import subprocess
-    import pandas as pd
-    from datetime import datetime
-    import json
-
-
-    def save_simulation_metadata(config, Loc_1, crop_config, output_path="OUTPUTS/simulation_metadata.yaml"):
+    def save_simulation_metadata(config, Loc_1, crop_config, output_path=os.path.join("OUTPUTS", "simulation_metadata.yaml")):
         # Creating dictionary
         metadata = {}
 
@@ -268,14 +146,12 @@ else:
 
         # Adding parameters from YAML and csv files contents
         try:
-            metadata['soil_init'] = YAML_Inputs_provider(file=f"CROPS/GRASSIM/soil/{config['SoilInit']}").inputs
-            metadata['crop_init'] = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['CropInit']}").inputs
-            metadata['kc_values'] = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['Kc_values']}").inputs
-            metadata['pft_composition'] = YAML_Inputs_provider(file=f"CROPS/GRASSIM/{config['PFT_composition']}").inputs
-            metadata['pft_values'] = pd.read_csv(f"INPUTS/CROPS/GRASSIM/{config['PFT_values']}", sep=";",
-                                                 decimal='.').to_dict(orient='list')
-            metadata['management'] = YAML_Inputs_provider(
-                file=f"CROPS/GRASSIM/management/{config['Management']}").inputs
+            metadata['soil_init'] = YAML_Inputs_provider(file=os.path.join("CROPS","GRASSIM","soil",config['SoilInit'])).inputs
+            metadata['crop_init'] = YAML_Inputs_provider(file=os.path.join("CROPS","GRASSIM","crop",config['CropInit'])).inputs
+            metadata['kc_values'] = YAML_Inputs_provider(file=os.path.join("CROPS","GRASSIM","crop",config['Kc_values'])).inputs
+            metadata['pft_composition'] = YAML_Inputs_provider(file=os.path.join("CROPS","GRASSIM",config['PFT_composition'])).inputs
+            metadata['pft_values'] = pd.read_csv(os.path.join("INPUTS","CROPS","GRASSIM",config['PFT_values']), sep=";",decimal='.').to_dict(orient='list')
+            metadata['management'] = YAML_Inputs_provider(file=os.path.join("CROPS","GRASSIM","management",config['Management'])).inputs
         except Exception as e:
             metadata['error_loading_yaml_inputs'] = str(e)
 
@@ -298,20 +174,18 @@ else:
 #################################################################################
 
 #importing observed data as a dataframe
-import pandas as pd
-path_csv_obs = r"BENCHMARKING/OBSERVED_DATA/data_obs_example.csv"
+path_csv_obs = os.path.join("BENCHMARKING", "OBSERVED_DATA", "data_obs_example.csv")
 observed_df= pd.read_csv(path_csv_obs,sep=",", decimal='.',parse_dates=['Date'])
 print(observed_df)
 
 #importing simulated data
 #NB : I should use directly the dictionary agro_results and not the csv saved before but problem to isolate cut_dates
-path_csv_sim = r"OUTPUTS/mean_data_dates.csv"
+path_csv_sim = os.path.join("OUTPUTS", "mean_data_dates.csv")
 simulated_df = pd.read_csv(path_csv_sim,sep=",", decimal='.',parse_dates=['Date'])
-# Filtrer df2 pour ne garder que les dates présentes dans df1
+# Filter df2 to keep only dates present in df1 (matching dates, e.g. dates of cut)
 simulated_df = simulated_df[simulated_df['Date'].isin(observed_df['Date'])]
 print(simulated_df)
 
-import numpy as np
 def evaluate_model_performance(simulated_df, observed_df, variables, output_file=None):
     """
     Compare simulated value of variables of interest with observed/reference values.
@@ -375,6 +249,6 @@ def evaluate_model_performance(simulated_df, observed_df, variables, output_file
 
 variables_to_compare = ['exported_BM', 'exported_N', 'exported_digestibleOM']
 # Compute performance index and save them
-result_df = evaluate_model_performance(simulated_df, observed_df, variables_to_compare, output_file='OUTPUTS/model_performance.csv')
+result_df = evaluate_model_performance(simulated_df, observed_df, variables_to_compare, output_file=os.path.join('OUTPUTS','model_performance.csv'))
 
 print(result_df)
