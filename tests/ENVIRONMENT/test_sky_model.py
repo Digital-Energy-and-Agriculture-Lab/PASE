@@ -84,3 +84,10 @@ def test_patches_sum_solid_angles(mf):
     sum_solid_angles = sky.reinhart_patches['solid_angle_sr'].sum()
     assert math.isclose(sum_solid_angles, 2*np.pi, rel_tol=5e-3)
 
+def test_compute_solid_angle_elev_azim():
+    assert sky.compute_solid_angle_from_elev_azim(45, 2)
+
+def test_compute_solid_angle_cone():
+    assert math.isclose(sky.compute_solid_angle_cone(5),
+                        0.024,
+                        rel_tol=1e-2)
