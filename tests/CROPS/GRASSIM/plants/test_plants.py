@@ -3,14 +3,14 @@ import pandas as pd
 from pase.CROPS.GRASSIM.plants.plants import Plants
 import os
 if os.environ.get("CI")=="true":
-    fname="tests/pase/CROPS/GRASSIM/plants/Parameters_values_PFT.csv"
+    fname="tests/CROPS/GRASSIM/plants/Parameters_values_PFT.csv"
     pft_values = pd.read_csv(fname, header=0, sep=";", decimal='.')
 else:
     try:
         fname="Parameters_values_PFT.csv"
         pft_values = pd.read_csv(fname, header=0, sep=";", decimal='.')
     except FileNotFoundError:
-        fname="tests/pase/CROPS/GRASSIM/plants/Parameters_values_PFT.csv"
+        fname="tests/CROPS/GRASSIM/plants/Parameters_values_PFT.csv"
         pft_values = pd.read_csv(fname, header=0, sep=";", decimal='.')
 
 
