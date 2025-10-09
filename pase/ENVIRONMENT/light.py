@@ -904,7 +904,7 @@ class Ray_casting_scene:
                                       geo,
                                       "Direct map [-]")
 
-    def visualize_diffuse_light_map(self, Sun_P_map_to_visualize=None):
+    def visualize_diffuse_light_map(self, Sun_P_map_to_visualize):
         """
         Open the visualization of the diffuse light map for a specific
         tilt of the PV modules if there is a rotation axis
@@ -923,7 +923,8 @@ class Ray_casting_scene:
 
         if type(self.geometry) == list:
             geo = self.geometry[Sun_P_map_to_visualize]
-            diffuse_mask = self.diffuse_mask[:, Sun_P_map_to_visualize]
+            diffuse_shaded_weights_map = self.diffuse_shaded_weights_map[:,
+                                         Sun_P_map_to_visualize, :]
         else:
             geo = self.geometry
             diffuse_shaded_weights_map = self.diffuse_shaded_weights_map
