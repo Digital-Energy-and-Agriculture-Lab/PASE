@@ -1,0 +1,44 @@
+name:
+   Value: "3D 20 LPI UV-LF"
+   Type: str
+   Definition: product name
+viewing_angle:
+   Value: 37.0
+   Type: float
+   Limit: [0, 90]
+   Unit: degrees [°]
+   Definition: viewing angle as defined by manufacturer
+pitch_checker_range_min:
+   Value: 20.0
+   Type: float
+   Limit: [0, 10000]
+   Unit: lines per inch [LPI]
+   Definition: minimum number of lines per inch
+pitch_checker_range_max:
+   Value: 20.12
+   Type: float
+   Limit: [0, 10000]
+   Unit: lines per inch [LPI]
+   Definition: maximum number of lines per inch
+DiffuserDimensionZ:
+   Value: 0.003
+   Type: float
+   Limit: [0, 100]
+   Unit: meters [m]
+   Definition: thickness as defined by manufacturer
+DiffuserDimensionX:
+   Value: 2.384
+   Type: float
+   Limit: [0, 100]
+   Unit: meters [m]
+   Definition: size as defined by manufacturer
+DiffuserDimensionY:
+   Value: 1.2
+   Type: float
+   Limit: [0, 100]
+   Unit: meters [m]
+   Definition: size as defined by manufacturer
+resin:
+   Value: "PetgUV – Polyethylenterephthalate copolymer sheet with UV protection"
+   Type: string
+   Definition: resin as defined by manufacturer
