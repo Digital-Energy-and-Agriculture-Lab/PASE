@@ -372,13 +372,13 @@ class Ray_casting_scene:
     The class is initiate with a mesh containing the source points and a geometry
     '''
     #The class light shade scene init with a geometry (pyvista.polydata) and a mesh instance
-    def __init__(self,mesh,geometry):
+    def __init__(self,mesh,geometry, diffusers=None):
         self.mesh = mesh
         self.sourcepoints = self.mesh.get_sourcepoints()
         self.geometry = geometry
         self.n_sourcepoints = self.sourcepoints.shape[0]
         self.sources_flag_dict = mesh.get_sources_flag_dict()
-        
+        self.diffusers=diffusers
         
     def get_light_maps(self, sun_P, scheme='Reinhart', MF=1, n_small_suns=180, visualization=False, Sun_P_map_to_visualize=None):
     
@@ -396,6 +396,7 @@ class Ray_casting_scene:
                                              n_small_suns=n_small_suns)
                 sv[0,:] = sun_P[time,:]
                 dirrr_map = self.direct_map(sv, geometry)
+
                 self.dir_map[:,time] = dirrr_map 
                 self.diff_map[:,time] = difff_map
         else:
@@ -404,7 +405,11 @@ class Ray_casting_scene:
                                              MF=MF,
                                              n_small_suns=n_small_suns)
             self.dir_map = self.direct_map(sun_P, self.geometry)
-            
+            self.diffu_map = self.diffuser_map(sun_P, self.geometry,
+                                             scheme=scheme,
+                                             MF=MF,
+                                             n_small_suns=n_small_suns,
+                                             diffusers=self.diffusers)
             
         if visualization == True:
             self.visualize_direct_light_map(Sun_P_map_to_visualize)
@@ -447,9 +452,9 @@ class Ray_casting_scene:
            Diffu (np.array 1 x n):  Providing a vector with the fraction ([0-1]) of diffuse light 
                                    for each of the "n" source points defined in the mesh
         """
-
+        geometry =  geometry.threshold(value=0, scalars="type",method='lower').extract_surface()
         # Handle empty geometry: return full diffuse light
-        if geometry.n_faces == 0 :
+        if geometry.n_faces_strict == 0 :
             print("Geometry is empty. Returning full diffuse illumination.")
             return np.ones(self.n_sourcepoints, dtype=np.float16)
     
@@ -464,8 +469,7 @@ class Ray_casting_scene:
             pTarget = fibonacci_half_sphere(n_small_suns)
         else:
             raise NotImplementedError('Unrecognized sky discretization scheme')
-        
-        
+
         #Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
         SourcePoints = np.repeat(np.column_stack((
                                                   self.sourcepoints[:,0],
@@ -520,6 +524,80 @@ class Ray_casting_scene:
 
         #Computation of the sky view by removing the fraction of intercepted ray at each location
         Diffu[unique.astype("int")] = 1 - np.sum(_cos_zenith_angle_blocked[unique.astype("int"), :], axis=1)/np.sum(_cos_zenith_angle_all[unique.astype("int"), :], axis=1)
+
+        return Diffu
+
+    def diffuser_map(self, sun_P, geometry, diffusers, scheme='Reinhart', MF=1, n_small_suns=180):
+        geometry = geometry.threshold(value=1, scalars="type").extract_surface()
+        # Handle empty geometry: return full diffuse light
+        if geometry.n_faces_strict == 0:
+            print("Geometry is empty. Returning full diffuse illumination.")
+            return np.zeros(self.n_sourcepoints, dtype=np.float16)
+
+        # Get direction of ray to reach the small suns and compute the sky view of each point
+        if scheme.lower() == 'reinhart':
+            sky = ReinhartSky(MF=MF)
+            pTarget = np.column_stack([sky.reinhart_patches.x,
+                                       sky.reinhart_patches.y,
+                                       sky.reinhart_patches.z])
+            n_small_suns = len(sky.reinhart_patches)
+        elif scheme.lower() == 'fibonacci':
+            pTarget = fibonacci_half_sphere(n_small_suns)
+        else:
+            raise NotImplementedError('Unrecognized sky discretization scheme')
+        # Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
+        SourcePoints = np.repeat(np.column_stack((
+            self.sourcepoints[:, 0],
+            self.sourcepoints[:, 1],
+            self.sourcepoints[:, 2]
+        )),
+            n_small_suns,
+            axis=0)
+        W = diffusers.get_light_direction(sun_P, pTarget)
+        # Creation of the target points array (Nx3) with N = len(Source) * len(n_small_suns)
+        TargetPoints = np.tile(pTarget, [self.n_sourcepoints, 1])
+        target_ID = np.tile(np.arange(0, pTarget.shape[0], 1),self.n_sourcepoints)
+        # Computation of the ray interception of the N rays
+        # id_rays_stopped provided the index of the ray which has been intercepted
+        intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
+                                                                        TargetPoints,
+                                                                        first_point=False,
+                                                                        retry=False)
+
+        id_rays_stopped_filtred = self.self_intercept(SourcePoints, intercept_points, id_rays_stopped, tol=0.01)
+        target_ID_stopped = target_ID[id_rays_stopped_filtred]
+        # Creation of a vector providing the sourceID from which each ray has been shooted
+        weight = W[:,target_ID_stopped]
+        SourceID = np.repeat(np.linspace(0,
+                                         self.n_sourcepoints - 1,
+                                         self.n_sourcepoints),
+                             n_small_suns,
+                             axis=0)
+
+        # Touched provide a list with the sourceID of the intercept ray
+        # Then the number of time a ray from a position has been intercepted is counted
+        # and given in the counts variable
+        Touched = SourceID[id_rays_stopped_filtred]
+        unique, counts = np.unique(Touched, return_counts=True)
+
+        # Compute the cos(zenith angle) of all the small suns for the normalization
+        _azimuth_angle_all, _zenith_angle_all = cf.get_zenith_angle_from_cart(TargetPoints)
+        _cos_zenith_angle_all = np.cos(_zenith_angle_all).reshape(self.n_sourcepoints, n_small_suns)
+
+        # Compute the cos(zenith angle) of the small suns that do NOT contribute to the diffuse map
+        # (i.e. rays that were intercepted)
+
+        _mask = np.zeros(_cos_zenith_angle_all.size, bool)
+        _mask[id_rays_stopped_filtred] = 0
+        _cos_zenith_angle_blocked = _cos_zenith_angle_all.copy()
+        _mask = _mask.reshape(self.n_sourcepoints, n_small_suns)
+        _cos_zenith_angle_blocked[_mask] = 0
+
+        # Creation of the empty matrix of sky view
+        Diffu = np.ones(self.n_sourcepoints, dtype=np.float16)
+
+        # Computation of the sky view by removing the fraction of intercepted ray at each location
+        Diffu[unique.astype("int")] = np.sum(_cos_zenith_angle_blocked[unique.astype("int"), :], axis=1)
 
         return Diffu
 
@@ -587,7 +665,7 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full direct light
-        if geometry.n_faces == 0 :
+        if geometry.n_faces_strict == 0 :
             n_sun_positions = sun_P.shape[0]
             print("Geometry is empty. Returning full direct illumination.")
             return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
@@ -632,9 +710,7 @@ class Ray_casting_scene:
             direct_ID_t_map = direct_1D_map
     
         return direct_ID_t_map
-    
-       
-    
+
     def get_daily_irradiation_map(self, SP_sampled, light_data, visualization=False, year=None, julian_day=None):
         """
         Public method, compute the daily diffuse direct and total irradiation for each location of the input mesh.
