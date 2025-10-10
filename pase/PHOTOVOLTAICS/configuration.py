@@ -99,20 +99,29 @@ class PV_Configuration_3D:
                       PV_i['RepetitionDistanceOfPVBlocksX'])
         
         two_facets_rel_position = PV_i['TwoFacetsRelativePosition']
+        diffuser_dimX = PV_i['DiffuserDimensionX']
+        diffuser_dimY = PV_i['DiffuserDimensionY']
+        diffuser_dimZ = PV_i['DiffuserDimensionZ']
+        diffuser_row_end = PV_i['DiffusersAtRowEnds']
+        diffuser_between_panels = PV_i['DiffusersBetweenPanels']
+        diffuser_fillXaxis = PV_i['DiffusersFillXAxis']
         self.rot_axis_nbr = PV_i['RotationAxisNumber']
-        
         self.visualization = visualization
         
         if panel_thickness is True:
             first_panel = self.create_first_panel_3D(panel_dimX, panel_dimY, PV_i["PanelDimensionZ"])
+            first_diffuser = self.create_first_panel_3D(diffuser_dimX, diffuser_dimY, diffuser_dimZ) if diffuser_between_panels == True else None
         else:
-            first_panel = self.create_first_panel(panel_dimX, panel_dimY,PV_i["PanelDimensionZ"]/2)
-            
+            first_panel = self.create_first_panel(panel_dimX, panel_dimY, PV_i["PanelDimensionZ"] / 2)
+            first_diffuser = self.create_first_panel(diffuser_dimX, diffuser_dimY, diffuser_dimZ / 2) if diffuser_between_panels == True else None
         PV_block_PD, xyz_block = self.create_block_of_panels(repet_dist_panelsX, 
                                                              repet_dist_panelsY,
                                                              n_panelsX,
                                                              n_panelsY,
-                                                             first_panel)  
+                                                             first_panel,
+                                                             diffuser_row_end,
+                                                             first_diffuser)
+
         
         if PV_i['RotationAxisNumber'] == 0:        
             PV_block_PD = self.rotation_1st_axis(PV_block_PD, tilt)
@@ -164,7 +173,6 @@ class PV_Configuration_3D:
                                         [3, 1, 2, 3],])  # second triangular mesh
         
         first_panel = pyV.PolyData(first_panel_vertices, first_panel_meshes)
-        
         return first_panel
     
     
@@ -199,24 +207,31 @@ class PV_Configuration_3D:
                                          ])  # second triangular mesh
          
          first_panel = pyV.PolyData(first_panel_vertices, first_panel_meshes)
-         
          return first_panel
         
     
     def create_block_of_panels(self, repet_dist_panelsX, repet_dist_panelsY,
-                               n_panelsX, n_panelsY, fst_panel):
+                               n_panelsX, n_panelsY, fst_panel,diff_row_end,fst_diffuser):
 
         xrng = repet_dist_panelsX * np.arange(-(n_panelsX - 1) / 2, (n_panelsX + 1) / 2)
         yrng = repet_dist_panelsY * np.arange(-(n_panelsY - 1) / 2, (n_panelsY + 1) / 2)
         zrng = np.arange(0, 1, 2, dtype=np.float32)
-        
+
+        row_end_corr = 1 if diff_row_end else -1
+        ydf = repet_dist_panelsY * np.arange(-(n_panelsY+row_end_corr - 1) / 2, (n_panelsY+row_end_corr + 1) / 2)
+
         x, y, z = np.meshgrid(xrng, yrng, zrng)            
         GlobalMesh = pyV.StructuredGrid(x, y, z)
         PV_block_polydata  = GlobalMesh.glyph(geom=fst_panel, factor=1)
-        
+        PV_block_polydata['type'] = np.full(PV_block_polydata.n_points,0)
+        x, y, z = np.meshgrid(xrng, ydf, zrng)
+        GlobalMesh2 = pyV.StructuredGrid(x, y, z)
+        Diff_block_polydata = GlobalMesh2.glyph(geom=fst_diffuser, factor=1)
+        Diff_block_polydata['type'] = np.full(Diff_block_polydata.n_points,1)
+        PV_block_polydata = PV_block_polydata.merge(Diff_block_polydata)
         #From Stackoverflow 3D coordinates from meshgrid
-        xyz = np.stack(np.meshgrid(xrng, yrng, zrng),axis = -1).reshape(-1,3)  
-        
+        yrng = np.concatenate((yrng, ydf))
+        xyz = np.stack(np.meshgrid(xrng, yrng, zrng),axis = -1).reshape(-1,3)
         return PV_block_polydata, xyz
         
     def rotation_1st_axis(self, PV_polydata_or_multiblock, tilt, center=None):
@@ -242,8 +257,11 @@ class PV_Configuration_3D:
         zrng = np.arange(height, height*2, height, dtype=np.float32)
         x, y, z = np.meshgrid(xrng, yrng, zrng)
         
-        GlobalMesh = pyV.StructuredGrid(x, y, z)        
-        PV_central_polydata = GlobalMesh.glyph(geom=PV_block_polydata, factor=1)        
+        GlobalMesh = pyV.StructuredGrid(x, y, z)
+        print(PV_block_polydata['type'])
+        PV_central_polydata = GlobalMesh.glyph(geom=PV_block_polydata, factor=1)
+        PV_central_polydata['type'] = PV_block_polydata['type']*n_blocksX*n_blocksY
+        print(PV_central_polydata['type'])
         PV_central_polydata = PV_central_polydata.rotate_z(-azimut)
         
         if self.rot_axis_nbr == 0:   
@@ -266,8 +284,8 @@ class PV_Configuration_3D:
         
         if self.visualization:
             plotter = pyV.Plotter(lighting=None)
-            plotter.add_mesh(PV_central_polydata, color='black')
-            
+            plotter.add_mesh(PV_central_polydata.threshold(value=0, scalars="type", method='lower'), color='black')
+            plotter.add_mesh(PV_central_polydata.threshold(value=1, scalars="type"), color='skyblue')
             ground = np.array([[-100, 100, 0],
                                [100, 100, 0],
                                [-100, -100, 0],
