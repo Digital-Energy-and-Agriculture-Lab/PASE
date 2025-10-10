@@ -13,11 +13,18 @@ from pase.user_support_tools import PASE_Logger
 
 class YAML_Inputs_provider:
     
-    def __init__(self, file=None, path='INPUTS', subpath=None):
+    def __init__(self, file=None, path='INPUTS', subpath=None, parentdir=None):
         if subpath is not None:
-            fname = os.path.join(path, subpath, file)
+            if parentdir is not None:
+                fname = os.path.join('..', '..', path, subpath, file)
+            else:
+                fname = os.path.join(path, subpath, file)
         else:
-            fname = os.path.join(path, file)
+            if parentdir is not None:
+                fname = os.path.join('..', '..', path, file)
+            else:
+                fname = os.path.join(path, file)
+
 
         with open (fname, 'r') as inputs_file:
 
@@ -180,7 +187,7 @@ class YAML_Inputs_provider:
 
 class Inputs_aggregator:
 
-    def __init__(self, inputs):
+    def __init__(self, inputs: list):
         self.aggregated_inputs = dict()
 
         self.aggregate_inputs(inputs)
