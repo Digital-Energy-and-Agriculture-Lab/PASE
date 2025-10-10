@@ -47,7 +47,7 @@ NumberOfPVBlocksX:
    Unit: dimensionless [-]
    Definition: Number of blocks on the x axis of the photovoltaic central (x axis being the potential second rotation axis of the block of panels)
 NumberOfPVBlocksY:
-   Value: 8
+   Value: 1
    Type: integer
    Limit: [0, 1000]
    Unit: dimensionless [-]

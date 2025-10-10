@@ -8,12 +8,14 @@ variables:
   ENV_YML: environment_unix.yml
   # micromamba uses a read-only root; create envs under /tmp or $CI_PROJECT_DIR/.venv
   MAMBA_ROOT_PREFIX: "$CI_PROJECT_DIR/.mamba"
+  MAMBA_CACHE_DIR: "/cache/mamba/pkgs"
 
 cache:
-  key: "${CI_COMMIT_REF_SLUG}"
+  key:
+    files:
+      - environment_unix.yml
   paths:
-    - .mamba/pkgs/    # cached conda packages
-    - .mamba/envs/    # cached envs (optional)
+    - /cache/mamba/pkgs/    # cached conda packages
 
 before_script:
   # show Python for debugging
@@ -54,3 +56,4 @@ pytest:
     paths:
       - junit.xml
   allow_failure: false
+

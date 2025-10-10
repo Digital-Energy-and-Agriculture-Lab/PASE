@@ -10,18 +10,18 @@ import numpy as np
 import os
 import pickle
 
-from pase.user_support_tools import PASE_Logger
-from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
-from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
-from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
-from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
-from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
-from pase.ENVIRONMENT.light import Ray_casting_scene
-from pase.ENVIRONMENT.mesh import Mesh
-from pase.ENVIRONMENT.sky_model import ReinhartSky
-from pase.PHOTOVOLTAICS.production import PV_Production
-from pase.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
+from MODULES.user_support_tools import PASE_Logger
+from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
+from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from MODULES.DATA_MANAGEMENT.input_checker import InputsEvaluator
+from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
+from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
+from MODULES.ENVIRONMENT.light import Ray_casting_scene
+from MODULES.ENVIRONMENT.mesh import Mesh
+from MODULES.ENVIRONMENT.sky_model import ReinhartSky
+from MODULES.PHOTOVOLTAICS.production import PV_Production
+from MODULES.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
 
 PASE_Logger()
 
@@ -69,7 +69,7 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
 # Instantiation of the 3D PV central
 PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
                                     Sun_positions_samp.solar_vector,
-                                    visualization=True)  # !!!! Problem with rotation angle that are negative
+                                    visualization=False)  # !!!! Problem with rotation angle that are negative
 
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
@@ -101,12 +101,12 @@ L.get_light_maps(Sun_positions_samp.solar_vector,
 
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP, Light_instance.data,
-                            visualization=True,
+                            visualization=False,
                             year=2005, julian_day=5)
 
-L.visualize_direct_light_map(1)
-L.visualize_diffuse_light_map(10)
-L.visualize_daily_irrad_map(2005, 15)
+# L.visualize_direct_light_map(1)
+# L.visualize_diffuse_light_map()
+# L.visualize_daily_irrad_map(2005, 15)
 
 
 ##############
@@ -129,11 +129,11 @@ agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      L.daily_irr_spat,
                                      Loc_1)
 # Display spatialized dry yield
-if crop_config['CropModel'] == ('simple' or 'stics'):
-    visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
-                                PV_1_3Dconfig.PV_central_PD, M, 2005,
-                                MM_DD='10-10', unit='g/m²')
-else:
-    visualize_map_of_a_variable(crop_config, agro_results,'BM',
-                                PV_1_3Dconfig.PV_central_PD, M, 2005,
-                                MM_DD='10-10', unit='t/ha')
+# if crop_config['CropModel'] == ('simple' or 'stics'):
+#     visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
+#                                 PV_1_3Dconfig.PV_central_PD, M, 2006,
+#                                 MM_DD='10-10', unit='g/m²')
+# else:
+#     visualize_map_of_a_variable(crop_config, agro_results,'BM',
+#                                 PV_1_3Dconfig.PV_central_PD, M, 2006,
+#                                 MM_DD='10-10', unit='t/ha')

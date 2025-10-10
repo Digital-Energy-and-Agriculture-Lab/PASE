@@ -10,18 +10,18 @@ import numpy as np
 import os
 import pickle
 
-from pase.user_support_tools import PASE_Logger
-from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
-from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
-from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
-from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
-from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
-from pase.ENVIRONMENT.light import Ray_casting_scene
-from pase.ENVIRONMENT.mesh import Mesh
-from pase.ENVIRONMENT.sky_model import ReinhartSky
-from pase.PHOTOVOLTAICS.production import PV_Production
-from pase.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
+from MODULES.user_support_tools import PASE_Logger
+from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
+from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from MODULES.DATA_MANAGEMENT.input_checker import InputChecker
+from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
+from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
+from MODULES.ENVIRONMENT.light import Ray_casting_scene
+from MODULES.ENVIRONMENT.mesh import Mesh
+from MODULES.ENVIRONMENT.sky_model import ReinhartSky
+from MODULES.PHOTOVOLTAICS.production import PV_Production
+from MODULES.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
 
 PASE_Logger()
 
@@ -30,12 +30,13 @@ PASE_Logger()
 ###############
 Loc_1 = YAML_Inputs_provider(file='Example1_loc.yaml', subpath='SCENARIOS').inputs
 # Import PV system and PV modules parameters
-AV_1 = YAML_Inputs_provider(file='Example1_AV.yaml', subpath='AV_CENTRAL').inputs
+AV_1 = YAML_Inputs_provider(file='Example2_tracking_AV.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='Example1_PV_Module.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
 crop_config = YAML_Inputs_provider(file='simple_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
 
-# InputsEvaluator is there to safeguard computing time and memory usage by checking some parameters values
-input_checker = InputsEvaluator(Loc_1, AV_1)
+# Using Sky Types characterization while simulating an AV central with solar
+# tracking is very computer intensive ; InputChecker asks the user to reconsider
+input_checker = InputChecker(Loc_1, AV_1)
 
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
@@ -69,7 +70,7 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
 # Instantiation of the 3D PV central
 PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
                                     Sun_positions_samp.solar_vector,
-                                    visualization=True)  # !!!! Problem with rotation angle that are negative
+                                    visualization=False)  # !!!! Problem with rotation angle that are negative
 
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
@@ -87,7 +88,7 @@ M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
 discrete_sky = ReinhartSky(MF=Loc_1['MF']).reinhart_patches
 
 # Computation of sun and light data
-Light_instance = Light(WD.nyears_data, Sun_positions_complete, Loc_1['DiffuseSkyType'])
+Light_instance = Light(WD.nyears_data, Sun_positions_complete)
 
 # Instantiation of light ray casting model (direct and diffuse) with points of interest and scene
 L = Ray_casting_scene(mesh=M,
@@ -102,11 +103,11 @@ L.get_light_maps(Sun_positions_samp.solar_vector,
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP, Light_instance.data,
                             visualization=True,
-                            year=2005, julian_day=5)
+                            year=2005, julian_day=4)
 
 L.visualize_direct_light_map(1)
-L.visualize_diffuse_light_map(10)
-L.visualize_daily_irrad_map(2005, 15)
+L.visualize_diffuse_light_map(1)
+L.visualize_daily_irrad_map(2005, 5)
 
 
 ##############
@@ -117,7 +118,7 @@ L.visualize_daily_irrad_map(2005, 15)
 PV_central = PV_Production(PV_params_dict)
 PV_central.get_several_years_of_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears_data)
 
-for _ in ['2005']:
+for _ in ['2005', '2006', '2007']:
     PV_prod = PV_central.production[_]
     print(f'PV production for year {_}: {PV_prod["P_central"].sum():.2f} MW·h')
 
@@ -131,9 +132,9 @@ agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
 # Display spatialized dry yield
 if crop_config['CropModel'] == ('simple' or 'stics'):
     visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
-                                PV_1_3Dconfig.PV_central_PD, M, 2005,
+                                PV_1_3Dconfig.PV_central_PD, M, 2006,
                                 MM_DD='10-10', unit='g/m²')
 else:
     visualize_map_of_a_variable(crop_config, agro_results,'BM',
-                                PV_1_3Dconfig.PV_central_PD, M, 2005,
+                                PV_1_3Dconfig.PV_central_PD, M, 2006,
                                 MM_DD='10-10', unit='t/ha')

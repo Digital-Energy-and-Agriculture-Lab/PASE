@@ -5,7 +5,7 @@ NumberOfPanelsX:
    Unit: dimensionless [-]
    Definition: Number of panels on the x axis in one block of panels (x axis being the second potential axis of rotation of the block of panels)
 NumberOfPanelsY:
-   Value: 8
+   Value: 4
    Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
@@ -23,7 +23,7 @@ RepetitionDistanceOfPanelsY:
    Unit: meters [m]
    Definition: Length between the repetition of 2 panels on the y axis of one block of panels
 RotationAxisNumber:
-   Value: 0
+   Value: 1
    Type: integer
    Limit: [0, 1]
    Unit: dimensionless [-]
@@ -47,7 +47,7 @@ NumberOfPVBlocksX:
    Unit: dimensionless [-]
    Definition: Number of blocks on the x axis of the photovoltaic central (x axis being the potential second rotation axis of the block of panels)
 NumberOfPVBlocksY:
-   Value: 8
+   Value: 1
    Type: integer
    Limit: [0, 1000]
    Unit: dimensionless [-]
@@ -59,7 +59,7 @@ RepetitionDistanceOfPVBlocksX:
    Unit: meters [m]
    Definition: Length between the repetition of 2 blocks of panels on the x axis of the photovoltaic central
 RepetitionDistanceOfPVBlocksY:
-   Value: 49.123456
+   Value: 49
    Type: float
    Limit: [NumberOfPanelsY*RepetitionDistanceOfPanelsY, 1000]
    Unit: meters [m]
