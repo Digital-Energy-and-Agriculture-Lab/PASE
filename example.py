@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct  2 14:14:59 2025
+
+@author: Romain
+"""
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -68,14 +74,30 @@ PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
 
+# Interest Zone Orientation Mode
+mode = Loc_1['InterestZoneOrientationMode']
+custom_angle = Loc_1['InterestZoneCustomAngle']
+
+if mode == "default":
+    zone_azimut = 0
+elif mode == "auto":
+    zone_azimut = AV_1['CentralAzimut']
+elif mode == "custom":
+    zone_azimut = custom_angle
+else:
+    raise ValueError(f"Unknown InterestZoneOrientationMode: {mode}")
+
 # Add of the points of interests on the ground for crop models
-M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
-                                  Loc_1['Xmax_InterestZone'],
-                                  Loc_1['Ymin_InterestZone'],
-                                  Loc_1['Ymax_InterestZone'],
-                                  Loc_1['dX_InterestZone'],
-                                  Loc_1['dY_InterestZone'],
-                                  flag="crop")
+M.add_oriented_plane_ground_mesh(
+    Loc_1['Xmin_InterestZone'],
+    Loc_1['Xmax_InterestZone'],
+    Loc_1['Ymin_InterestZone'],
+    Loc_1['Ymax_InterestZone'],
+    Loc_1['dX_InterestZone'],
+    Loc_1['dY_InterestZone'],
+    azimuth_deg=zone_azimut,
+    flag="crop"
+)
 
 # Computation of sun and light data
 Light_instance = Light(WD.nyears_data, Sun_positions_complete)
@@ -94,7 +116,7 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP, Light_instance.data, True,
                             2005, 5)
 
 L.visualize_direct_light_map(1)
-L.visualize_diffuse_light_map()
+#L.visualize_diffuse_light_map()
 L.visualize_daily_irrad_map(2007, 150)
 
 
@@ -121,8 +143,10 @@ agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
 if crop_config['CropModel'] == ('simple' or 'stics'):
     visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
                                 PV_1_3Dconfig.PV_central_PD, M, 2006, 
-                                MM_DD='10-10', unit='g/m²')
+                                MM_DD='06-06', unit='g/m²')
 else:
     visualize_map_of_a_variable(crop_config, agro_results,'BM',
                                 PV_1_3Dconfig.PV_central_PD, M, 2006,
-                                MM_DD='10-10', unit='t/ha')
+                                MM_DD='0606', unit='t/ha')
+
+
