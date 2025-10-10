@@ -46,49 +46,49 @@ Dict = M.get_sources_flag_dict()
 """
 
 class Mesh:
-    def __init__(self,automerge = True):
+    def __init__(self,automerge = True, default_azimut=0.0):
         
         #Attribut par encore utilise mais ayant pour but de fusionner les sources ayant le meme flag en leur attribuant le meme flagID
         self.automerge = automerge
         self.sourcepoints = np.empty((0, 4))
         self.sources_flag_dict = {}
         self.flag_key = 0
+        self.default_azimut = default_azimut
 
 
 # =============================================================================
 #     PUBLIC METHODS
 # =============================================================================
     
-
-
-    def add_plane_ground_regular_meshes(self, X_min, X_max, Y_min, Y_max, X_increment, Y_increment,flag = "ground", zcoord = 0):
+    
+   
+    def add_oriented_plane_ground_mesh(self,X_min, X_max, Y_min, Y_max,X_increment,
+                                       Y_increment,azimuth_deg=None,flag="ground",zcoord=0):
         """
-        Public method creating a regular rectangular mesh which is added in the sourcepoints class attribut
-        
-        Parameters:
-            X/Y_min,X/Y_max (float): Minimal and maximal distance of the X/Y coordinates
-            X/Y_increment (float): Distance between each X/Y points
-            flag  (str): name of the set of points
-            zcoord (float): coordinate on the z axis of the plane
-
-        Returns:
-           
+        Public method creating a regular rectangular mesh oriented according to
+        either the PV central azimut (default) or any user-provided orientation.
         """
         xrng = np.arange(X_min, X_max + X_increment, X_increment)
         yrng = np.arange(Y_min, Y_max + Y_increment, Y_increment)
-        zrng = zcoord
-        # Create coordinate arrays for each dimension using meshgrid
-        x_coords, y_coords, z_coords = np.meshgrid(xrng, yrng, zrng, indexing='ij')
-        
-        # Stack the coordinate arrays to create an array of coordinates
-        coordinates = np.stack((x_coords, y_coords, z_coords), axis=-1)
-        
-        # Reshape the coordinates to a 2D array (number of coordinates, number of dimensions)
-        coordinates_2d = coordinates.reshape(-1, coordinates.shape[-1])
-
-        self.add_sourcepoints(coordinates_2d,flag)
-   
+        x_coords, y_coords = np.meshgrid(xrng, yrng, indexing='ij')
+        coords = np.vstack([x_coords.ravel(), y_coords.ravel()])
     
+        # Si pas d’angle fourni → utiliser azimut par défaut
+        if azimuth_deg is None:
+            if hasattr(self, "default_azimut"):
+                azimuth_deg = self.default_azimut
+            else:
+                azimuth_deg = 0.0
+    
+        theta = np.deg2rad(-azimuth_deg)  # rotation selon convention
+        R = np.array([[np.cos(theta), -np.sin(theta)],
+                      [np.sin(theta),  np.cos(theta)]])
+        rotated = R @ coords
+        x_rot, y_rot = rotated[0, :], rotated[1, :]
+    
+        coordinates_3d = np.vstack([x_rot, y_rot, np.full_like(x_rot, zcoord)]).T
+        self.add_sourcepoints(coordinates_3d, flag)
+
 
 
     def add_PV_mesh(self, Geometry, flag="PV"):
@@ -194,6 +194,7 @@ class Mesh:
             SourceDict (dict): dictionnary providing the mapping between the FlagId (key) and the Flags (value)    
         """   
         return self.sources_flag_dict
+    
     
     
 # =============================================================================
