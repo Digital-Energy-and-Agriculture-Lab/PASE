@@ -626,6 +626,115 @@ class PVConfiguration3D(MultiBlockPASE):
                 f"Inconsistency: missing_in_blocks={missing}, orphan_blocks={orphans}"
             )
 
+    def visualize_simple(self) -> None:
+        """Minimal viewer for all PV centrals."""
+        try:
+            geom = self.polydata_all_centrals(extract_surface=True)
+        except Exception as _e:
+            logging.getLogger(__name__).warning("Visualization skipped (geometry build failed): %s", _e)
+            return
+
+        if not isinstance(geom, pyv.PolyData) or geom.n_points == 0:
+            logging.getLogger(__name__).info("Nothing to visualize: empty geometry.")
+            return
+
+        pl = pyv.Plotter()
+        pl.add_mesh(geom, color='black')
+        ground = np.array([[-100, 100, 0],
+                           [100, 100, 0],
+                           [-100, -100, 0],
+                           [100, -100, 0]])
+
+        ground_m = np.hstack([[3, 0, 1, 2],
+                              [3, 1, 2, 3], ])
+
+        grnd = pyv.PolyData(ground, ground_m)
+        pl.add_mesh(grnd, color='green', opacity=0.5)
+        labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)',
+                      ylabel='Y (NORTH)')
+        pl.add_axes(**labels)
+        light = pyv.Light()
+        light.set_direction_angle(30, 45)
+        pl.show_grid()
+        pl.show()
+
+    # ---- Block centers ----
+    def update_block_centers(self, source: str = "Center") -> None:
+        """Compute and attach the geometric center of each PV block.
+
+        Parameters
+        ----------
+        source : {"HingePoint", "Center"}
+            Column containing per-panel 3D points to average. Falls back to the
+            other if the requested one is missing.
+
+        Effects
+        -------
+        Adds/overwrites a column ``BlockCenter`` in ``self.df`` with 3-tuples.
+        The same center is replicated on all rows belonging to that block.
+
+        Raises
+        ------
+        KeyError
+            If neither 'HingePoint' nor 'Center' exist in ``self.df``.
+        ValueError
+            If the selected column does not contain 3D coordinates.
+        """
+        if self.df is None or self.df.empty:
+            return
+
+        # Select source column with fallback
+        cols = list(self.df.columns)
+        src = source if source in cols else ("HingePoint" if "HingePoint" in cols else ("Center" if "Center" in cols else None))
+        if src is None:
+            raise KeyError("Neither 'HingePoint' nor 'Center' present in df; cannot compute block centers.")
+
+        # Required grouping keys to define a block
+        for key in ("Central", "Block_X", "Block_Y"):
+            if key not in cols:
+                raise KeyError(f"Missing required column '{key}' to identify blocks.")
+
+        # Convert to numeric 3D arrays
+        def _to_vec(v):
+            arr = np.asarray(v, dtype=float)
+            if arr.shape != (3,) and not (arr.ndim == 1 and arr.size == 3):
+                raise ValueError(f"df['{src}'] must contain 3D coordinates; got shape {arr.shape}.")
+            return arr.reshape(3,)
+
+        tmp = self.df.copy()
+        tmp["_vec"] = tmp[src].apply(_to_vec)
+
+        centers = (
+            tmp.groupby(["Central", "Block_X", "Block_Y"])['_vec']
+               .apply(lambda a: np.vstack(a).mean(axis=0))
+               .rename("_BlockCenter")
+               .reset_index()
+        )
+
+        self.df = self.df.merge(centers, on=["Central", "Block_X", "Block_Y"], how="left")
+        self.df["BlockCenter"] = self.df["_BlockCenter"].apply(lambda v: tuple(map(float, v)))
+        self.df.drop(columns=["_BlockCenter"], inplace=True)
+
+    def get_block_centers_dict(self) -> Dict[int, Tuple[float, float, float]]:
+        """Return a mapping {ObjectID: BlockCenter}.
+
+        Returns
+        -------
+        dict
+            Keys are row indices (ObjectID), values are (x, y, z) tuples.
+
+        Raises
+        ------
+        KeyError
+            If 'BlockCenter' is not present. Call :meth:`update_block_centers`.
+        """
+        if "BlockCenter" not in self.df.columns:
+            self.update_block_centers()
+
+        # Ensure tuples
+        return {int(oid): (float(v[0]), float(v[1]), float(v[2])) for oid, v in self.df["BlockCenter"].items()}
+
+
     # ---- Defaults ----
     @staticmethod
     def _apply_defaults(pv_config: Dict[str, Any]) -> Dict[str, Any]:
@@ -697,15 +806,14 @@ class PVConfiguration3D(MultiBlockPASE):
         pyvista.PolyData
             Triangulated box mesh centered at the origin.
         """
-        half_thickness = thickness / 2.0
         box = pyv.Box(
             bounds=(
                 -width / 2,
                 width / 2,
                 -height / 2,
                 height / 2,
-                -half_thickness,
-                half_thickness,
+                -thickness / 2,
+                thickness / 2,
             )
         )
         return box.triangulate()
@@ -1034,21 +1142,137 @@ class PVConfiguration3D(MultiBlockPASE):
 
 # --------- Backward-compatible alias for PASE 1.x ----------
 class PV_Configuration_3D(PVConfiguration3D):
+
+
     """Backward-compatible alias with legacy signature (params_dict, solar_vector=None, visualization=False)."""
-    def __init__(self, params_dict: Optional[Dict[str, Any]] = None, *_ignore,
-                 visualization: bool = False, **__ignore) -> None:
-        super().__init__()
+    def __init__( self,
+        params_dict: Optional[Dict[str, Any]] = None,
+        sun_vector: Optional[np.ndarray] = None,
+        visualization: bool = False,
+        **kwargs: Any) -> None:
+        import traceback
+
+        # print("param dict:", params_dict)
+        # print("Constructed from:\n", "".join(traceback.format_stack(limit=8)))
+        super().__init__(**kwargs)
         if params_dict is not None:
+            if params_dict["RotationAxisNumber"] == 1:
+                params_dict["TiltY"] = 0
             self.create_regular_central(params_dict)
-        # 'visualization' kept for signature compatibility (no auto-render here).
+
+
+            if params_dict['RotationAxisNumber'] > 0:
+                self.PV_central_PD_list = []
+                self.get_tiltY_along_time(sun_vector, params_dict['CentralAzimut'], (params_dict['PanelDimensionX']*params_dict['NumberOfPanelsX']/
+                          params_dict['RepetitionDistanceOfPVBlocksX']))
+                print("New : " + str(self.tiltY_along_time))
+                for tilt in self.tiltY_along_time:
+                    PV_central = self.rotation_1st_axis(tilt)
+                    self.PV_central_PD_list.append(PV_central)
+        if visualization:
+            self.visualize_simple()
 
     @property
     def PV_central_PD(self) -> pyv.PolyData:
         """Merged PolyData of all centrals (as expected by Ray_casting_scene)."""
-        return self.polydata_all_centrals(extract_surface=True)
+        if hasattr(self,"PV_central_PD_list"):
+            return self.PV_central_PD_list
+        else:
+            return self.polydata_all_centrals(extract_surface=True)
 
     @property
     def PV_central_MB(self) -> 'MultiBlockPASE':
         """MultiBlock subset of PV* blocks, for legacy compatibility."""
         return self.get_polydata_by_flag("PV")
+
+    def rotation_1st_axis(self, tilt_deg, centers=None, return_multiblock=False):
+        """
+        Rotate each block around Y by `tilt_deg` (degrees).
+
+        - If `centers` is None, uses each panel's geometric center.
+        - If `return_multiblock` is False (default), returns a merged PolyData (combine()).
+          Otherwise returns the rotated MultiBlock.
+        """
+        # deep copy to avoid mutating the original
+        #print(tilt_deg)
+        temp = pyv.MultiBlock()
+        for i in range(len(self)):
+            temp.append(self[i].copy(deep=True) if isinstance(self[i], pyv.PolyData) else self[i])
+
+        centers = self.get_block_centers_dict()
+        # rotate block-by-block
+        for i in range(0,len(temp)):
+            panel = temp[i]
+            if not isinstance(panel, pyv.PolyData) or panel.n_points == 0:
+                continue
+        #    print(panel.field_data["ObjectID"])
+            c = centers[panel.field_data["ObjectID"][0]]
+         #   print(c)
+            if c is None:
+                panel.rotate_y(tilt_deg, inplace=True)
+            else:
+                panel.rotate_y(-tilt_deg, point=c, inplace=True)
+
+        return temp if return_multiblock else merge_polydata(temp)
+
+    def get_tiltY_along_time(self, sun_vect, azimut, GCR_x):
+
+        sun_vect_central_coord = self.get_sun_vect_in_central_coord(sun_vect, azimut)
+        true_tracking_angle = self.get_true_tracking_angle(sun_vect_central_coord)
+        backT_corr_angle = self.get_backT_corr_angle(true_tracking_angle, GCR_x)
+        tiltY_corrected = self.get_corrected_tracking_angle(true_tracking_angle,
+                                                             backT_corr_angle)
+        tiltY_limited = self.get_limitated_angle(tiltY_corrected)
+        self.tiltY_along_time = tiltY_limited*180/np.pi
+
+    def get_sun_vect_in_central_coord(self, sun_vect, azimut):
+        # Do not take into account the slope of the area and the slope of the
+        # rotation axis (see the previous framework to complete)
+        sun_vect_CC = np.zeros((len(sun_vect[:,0]),3))
+
+        sun_vect_CC[:,0] = sun_vect[:,0]*np.cos(azimut)\
+            - sun_vect[:,1]*np.sin(azimut)
+
+        sun_vect_CC[:,1] = sun_vect[:,0]*np.sin(azimut)\
+            + sun_vect[:,1]*np.cos(azimut)
+
+        sun_vect_CC[:,2] = sun_vect[:,2]
+
+        return sun_vect_CC
+
+
+    def get_true_tracking_angle(self, sun_v_central_coord):
+
+        true_tracking_angle = np.arctan2(sun_v_central_coord[:,0],
+                                         sun_v_central_coord[:,2])
+
+        return true_tracking_angle
+
+    def get_backT_corr_angle(self, true_angle, GCR_x):
+
+        value = np.abs(np.cos(true_angle)/GCR_x)
+
+        backT_corr_angle = np.zeros((len(true_angle)))
+        backT_corr_angle[value>=1] = 0
+        backT_corr_angle[value<1] = (-np.sign(true_angle[value<1])
+                                     *np.arccos((np.abs(np.cos(true_angle[value<1])))/
+                                                         GCR_x))
+
+        return backT_corr_angle
+
+    def get_corrected_tracking_angle(self, true_T_angle, backT_corr_angle):
+
+        corrected_tiltY = true_T_angle + backT_corr_angle
+
+        return corrected_tiltY
+
+    def get_limitated_angle(self, tiltY):
+
+        ind = np.where(tiltY>np.pi/3)
+        tiltY[ind] = np.pi/3
+        ind = np.where(tiltY<-np.pi/3)
+        tiltY[ind] = -np.pi/3
+
+        return tiltY
+
 

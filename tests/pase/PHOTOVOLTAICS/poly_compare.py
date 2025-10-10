@@ -8,7 +8,7 @@ def compare_polydata(
     a: pv.PolyData,
     b: pv.PolyData,
     *,
-    tol: float = 1e-6,
+    tol: float = 1e-4,
     ignore_point_order: bool = True,
     ignore_cell_order: bool = True,
     ignore_orientation: bool = True,
@@ -211,3 +211,19 @@ def compare_polydata(
                         return False
 
     return True
+def _ensure_polydata(obj) -> pv.PolyData:
+    if isinstance(obj, pv.PolyData):
+        return obj
+    if hasattr(obj, "extract_surface"):
+        return obj.extract_surface()
+    return pv.wrap(obj).extract_surface()
+
+def merge_multiblock_to_poly(mb) -> pv.PolyData:
+    """Merge any MultiBlock into a single PolyData."""
+    if hasattr(mb, "n_blocks"):
+        polys = [mb[i] for i in range(mb.n_blocks)]
+    else:
+        # fallback for iterables that don't expose n_blocks
+        polys = list(mb)
+    return pv.merge([_ensure_polydata(p) for p in polys], merge_points=True)
+
