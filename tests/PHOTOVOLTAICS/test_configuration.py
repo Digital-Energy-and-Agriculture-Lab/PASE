@@ -8,14 +8,26 @@ from pase.DATA_MANAGEMENT.yaml_inputs_provider import (YAML_Inputs_provider,
 
 from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
 
-pv_module_params = YAML_Inputs_provider(file= 'Example1_PV_Module.yaml',
-                                        path='tests',
-                                        subpath='PHOTOVOLTAICS',
-                                        parentdir=True).inputs
-pv_central_params = YAML_Inputs_provider(file= 'Example1_AV.yaml',
-                                        path='tests',
-                                        subpath='PHOTOVOLTAICS',
-                                        parentdir=True).inputs
+try:
+    parentdir = True
+    pv_module_params = YAML_Inputs_provider(file= 'Example1_PV_Module.yaml',
+                                            path='tests',
+                                            subpath='PHOTOVOLTAICS',
+                                            parentdir=parentdir).inputs
+    pv_central_params = YAML_Inputs_provider(file= 'Example1_AV.yaml',
+                                             path='tests',
+                                             subpath='PHOTOVOLTAICS',
+                                             parentdir=parentdir).inputs
+except FileNotFoundError:
+    parentdir = None
+    pv_module_params = YAML_Inputs_provider(file='Example1_PV_Module.yaml',
+                                            path='tests',
+                                            subpath='PHOTOVOLTAICS',
+                                            parentdir=parentdir).inputs
+    pv_central_params = YAML_Inputs_provider(file='Example1_AV.yaml',
+                                             path='tests',
+                                             subpath='PHOTOVOLTAICS',
+                                             parentdir=parentdir).inputs
 
 pv_dict = Inputs_aggregator([pv_module_params, pv_central_params]).aggregated_inputs
 

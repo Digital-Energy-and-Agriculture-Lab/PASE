@@ -197,8 +197,12 @@ class PV_Configuration_3D:
     def create_block_of_panels(self,
                                fst_panel):
 
-        xrng = self.repet_dist_panels_x * np.arange(-(self.n_panels_x - 1) / 2, (self.n_panels_x + 1) / 2)
-        yrng = self.repet_dist_panels_y * np.arange(-(self.n_panels_y - 1) / 2, (self.n_panels_y + 1) / 2)
+        xrng = np.linspace(self.repet_dist_panels_x*0.5*(1-self.n_panels_x),
+                         self.repet_dist_panels_x*0.5*(self.n_panels_x-1),
+                         self.n_panels_x, dtype=np.float32)
+        yrng = np.linspace(self.repet_dist_panels_y*0.5*(1-self.n_panels_y),
+                         self.repet_dist_panels_y*0.5*(self.n_panels_y-1),
+                         self.n_panels_y, dtype=np.float32)
         zrng = np.arange(0, 1, 2, dtype=np.float32)
         
         x, y, z = np.meshgrid(xrng, yrng, zrng)            
@@ -222,12 +226,12 @@ class PV_Configuration_3D:
         
     def create_central(self, PV_block_polydata, fst_panel=None, xyz_block=None):
         
-        xrng = np.arange(self.repet_dist_block_x*0.5*(1-self.n_blocks_x)+self.two_facets_rel_position,
-                         self.repet_dist_block_x*0.5*(self.n_blocks_x+1)+self.two_facets_rel_position,
-                         self.repet_dist_block_x, dtype=np.float32)
-        yrng = np.arange(self.repet_dist_block_y*0.5*(1-self.n_blocks_y),
-                         self.repet_dist_block_y*0.5*(self.n_blocks_y+1),
-                         self.repet_dist_block_y, dtype=np.float32)
+        xrng = np.linspace(self.repet_dist_block_x*0.5*(1-self.n_blocks_x)+self.two_facets_rel_position,
+                         self.repet_dist_block_x*0.5*(self.n_blocks_x-1)+self.two_facets_rel_position,
+                         self.n_blocks_x, dtype=np.float32)
+        yrng = np.linspace(self.repet_dist_block_y*0.5*(1-self.n_blocks_y),
+                         self.repet_dist_block_y*0.5*(self.n_blocks_y-1),
+                         self.n_blocks_y, dtype=np.float32)
         zrng = np.arange(self.height, self.height*2, self.height, dtype=np.float32)
         x, y, z = np.meshgrid(xrng, yrng, zrng)
         
