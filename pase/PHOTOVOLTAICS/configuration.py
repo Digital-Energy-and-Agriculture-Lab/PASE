@@ -756,6 +756,7 @@ class PVConfiguration3D(MultiBlockPASE):
         config = dict(pv_config)
         config.setdefault("PanelThickness", DEFAULT_PANEL_THICKNESS)
         config.setdefault("MeshConfig", False)
+        config.setdefault("RotationAxisNumber", 0)
         return config
 
     # ---- Panel primitives ----
@@ -1155,6 +1156,8 @@ class PV_Configuration_3D(PVConfiguration3D):
         # print("param dict:", params_dict)
         # print("Constructed from:\n", "".join(traceback.format_stack(limit=8)))
         super().__init__(**kwargs)
+        params_dict = self._apply_defaults(params_dict)
+
         if params_dict is not None:
             if params_dict["RotationAxisNumber"] == 1:
                 params_dict["TiltY"] = 0
