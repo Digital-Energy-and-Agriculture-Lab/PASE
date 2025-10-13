@@ -116,7 +116,10 @@ format, converting it into Pandas DataFrames or importing it through the
 The resulting weather DataFrames are organized in a dictionary by year. 
 Since the [PVGIS](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/getting-started-pvgis/api-non-interactive-service_en) class does not supply rainfall and air vapor pressure 
 data, users must provide a separate daily data file for these parameters if 
-they are needed for the simulations.
+they are needed for the simulations. 
+
+See the wiki page on [Daily weather files](https://gitlab.uliege.be/deal-public/pase/-/wikis/documentation/tutorial#daily-weather-files---precipitation-and-vapour-pressure-data) 
+for more information on the contents and structure of the data file for precipitation and vapor pressure.
 
 #### Agrivoltaic System Configuration Module:
 
