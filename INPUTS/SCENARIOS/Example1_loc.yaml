@@ -37,19 +37,19 @@ WeatherFileName:
       weather data csv file (pay attention to the format it should have) 
       if WeatherDataOption is 2.
 DailyWeatherFileName:
-   Value: PRECIP_VP_Loc1
+   Value: minimal_PRECIP_VP
    Type: string
    Definition: Name of the daily weather data csv file with precipitation and 
       vapour pressure (pay attention to the format it should have) 
       used if WeatherDataOption is 1 (PVGis used).
 SimulationStartingYear:
-   Value: 2015
+   Value: 2020
    Type: integer
    Limit: [1900, SimulationEndingYear]
    Unit: dimensionless [-]
    Definition: Starting year of the simulation, PvGis has data starting in 2005.
 SimulationEndingYear:
-   Value: 2015
+   Value: 2020
    Type: integer
    Limit: [SimulationStartingYear, 2023]
    Unit: dimensionless [-]
