@@ -17,7 +17,7 @@ import os
 
 from pase.user_support_tools import PASE_Logger
 from pase.ENVIRONMENT.aerodynamics import get_wind_speed_specific_height
-
+from pase.DATA_MANAGEMENT.helpers import aggregate_lat_lon, unpack_latlon, parse_date_range
 
 class Weather_data:
     
@@ -91,14 +91,9 @@ class Weather_data:
         self.nyears_daily_data = {}
         
         if csv_file is not None:
-            daily_csv = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', csv_file + '.csv'))
-
-            new_index2 = pd.date_range("01-01-"+str(2005)+" 00:00:00",
-                                       "31-12-"+str(2015)+" 00:00:00",
-                                       freq='D')
-            rain_vap_pressure = daily_csv.drop(['id','DAY'], axis=1).set_index(new_index2)
+            rain_vap_pressure = self.parse_agri4cast_weather_file(csv_file)
                    
-        if (freq_deter == 8760 or freq_deter == 8784):
+        if freq_deter == 8760 or freq_deter == 8784:
             n = 1
         elif (freq_deter == 35040 or freq_deter == 35136):
             n = 4
@@ -111,11 +106,16 @@ class Weather_data:
             PASE_Logger(msg, 'INFO')
             
             if csv_file is not None:
-                mask = ((new_index2>='01-01-'+year+' 00:00:00') & 
-                       (new_index2<'01-01-'+str(int(year)+1)+' 00:00:00'))
+                mask = ((rain_vap_pressure.index >= '01-01-'+year+' 00:00:00') &
+                       (rain_vap_pressure.index < '01-01-'+str(int(year)+1)+' 00:00:00'))
                 
                 daily_rain = rain_vap_pressure['PRECIPITATION'][mask].tolist()
-                vap_press = rain_vap_pressure['VAPOR_PRESSURE'][mask].tolist()
+                try:
+                    vap_press = rain_vap_pressure['VAPOR_PRESSURE'][mask].tolist()
+                except KeyError as e:
+                    vap_press = rain_vap_pressure['VAPOURPRESSURE'][
+                        mask].tolist()
+
             
             data_to_resample = self.nyears_data[year]
             
@@ -134,19 +134,100 @@ class Weather_data:
                 vap_press = data_to_resample['VAPOR_PRESSURE'].resample('D').mean().tolist()
                 daily_rain = data_to_resample['PRECIP'].resample('D').sum()
             
-            daily_weather = pd.DataFrame({'Daily_rad':daily_rad,
-                                          'Avg_temp':mean_temp,
-                                          'Min_temp':min_temp,
-                                          'Max_temp':max_temp,
-                                          'CO2':mean_CO2,
-                                          'Rain':daily_rain,
-                                          'Avg_WS_2m':WS_crop_2m,
-                                          'Vap_press':vap_press},
-                                         index=new_index)
+            try:
+                daily_weather = pd.DataFrame({'Daily_rad': daily_rad,
+                                              'Avg_temp': mean_temp,
+                                              'Min_temp': min_temp,
+                                              'Max_temp': max_temp,
+                                              'CO2': mean_CO2,
+                                              'Rain': daily_rain,
+                                              'Avg_WS_2m': WS_crop_2m,
+                                              'Vap_press': vap_press},
+                                             index=new_index)
+            except ValueError as e:
+                msg = (f'There is an error in the date range of the daily'
+                       f' weather data ; mismatch with the simulation period.'
+                       f'\nCheck that the daily weather data file covers the '
+                       f'same years as SimulationStartingYear and '
+                       f'SimulationEndingYear.')
+                PASE_Logger(msg=msg,
+                            level='ERROR')
+                raise ValueError(msg)
 
             self.nyears_daily_data[year] = daily_weather
            
-            
+    def parse_agri4cast_weather_file(self, fname):
+        # File as downloaded from Agri4Cast
+        daily_csv = pd.read_csv(
+            os.path.join('INPUTS', 'WEATHER_FILES', fname + '.csv'), sep=';')
+
+        if len(daily_csv.columns) == 1:
+            # File in the old format
+            daily_csv = pd.read_csv(os.path.join('INPUTS',
+                                                 'WEATHER_FILES',
+                                                 fname + '.csv'))
+
+        try:
+            # Filter the df to find the closest weather station
+            local_weather = self.filter_closest_station(daily_csv)
+        except KeyError as e:
+            # In the old suggested file format, there is no column "LATITUDE"
+            # or "LONGITUDE" (because the user was supposed to prepare the file
+            # by hand), which raises a KeyError. This except block handles
+            # retrocompatibility with this old format.
+            local_weather = daily_csv
+
+        date_range = parse_date_range(local_weather)
+
+        rain_vap_pressure = local_weather.set_index(date_range)
+
+        return rain_vap_pressure
+
+    def filter_closest_station(self, df):
+        """
+        Filter the Agri4Cast dataframe to extract only the data relevant to the
+        simulation site. If there is only one weather station, return the full
+        dataframe.
+
+        :param df: Agri4Cast data Dataframe.
+        :return:
+            filt_df: a dataframe that only contains the rows corresponding to
+                the weather station closest to the simulation location.
+        """
+        # Concat latitude and longitude
+        df['LATLON'] = aggregate_lat_lon(df['LATITUDE'], df['LONGITUDE'])
+
+        # Find unique lat-lon couples
+        latlon_uniques, latlon_ind, latlon_inv, latlon_counts = np.unique(
+            df['LATLON'],
+            return_index=True,
+            return_inverse=True,
+            return_counts=True)
+
+        if len(latlon_uniques) > 1:
+            # If there are several stations, filter to find the closest one to
+            # the site
+            lat_uniques, lon_uniques = unpack_latlon(latlon_uniques)
+
+            # Compute the distance between the site (self) and the stations
+            dists = np.sqrt((lat_uniques - self.latitude) ** 2
+                            + (lon_uniques - self.longitude) ** 2)
+
+            # Find the minimum distance
+            min_dist, id_min_dist = np.min(dists), np.argmin(dists)
+            closest_lat, closest_lon = lat_uniques[id_min_dist], lon_uniques[
+                id_min_dist]
+
+            # Create a logical mask on the closest lat-lon couple
+            mask_lat_lon = df['LATLON'].values == aggregate_lat_lon(
+                closest_lat, closest_lon)
+
+            filt_df = df[mask_lat_lon].sort_values(['DAY'])
+
+            return filt_df
+        else:
+            return df.sort_values(['DAY'])
+
              
 class PvGis:
 # Source : https://github.com/MechatronicsBlog/Weather_data_Python_PVGIS/blob/master/PvGis.py    
