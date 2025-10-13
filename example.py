@@ -106,7 +106,7 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP, Light_instance.data,
 
 L.visualize_direct_light_map(1)
 L.visualize_diffuse_light_map(10)
-L.visualize_daily_irrad_map(2005, 15)
+L.visualize_daily_irrad_map(Loc_1['SimulationStartingYear'], 15)
 
 
 ##############
@@ -117,8 +117,8 @@ L.visualize_daily_irrad_map(2005, 15)
 PV_central = PV_Production(PV_params_dict)
 PV_central.get_several_years_of_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears_data)
 
-for _ in ['2005']:
-    PV_prod = PV_central.production[_]
+for _ in range(Loc_1['SimulationStartingYear'], Loc_1['SimulationEndingYear']+1):
+    PV_prod = PV_central.production[str(_)]
     print(f'PV production for year {_}: {PV_prod["P_central"].sum():.2f} MW·h')
 
 # Crop model
@@ -131,9 +131,9 @@ agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
 # Display spatialized dry yield
 if crop_config['CropModel'] == ('simple' or 'stics'):
     visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
-                                PV_1_3Dconfig.PV_central_PD, M, 2005,
+                                PV_1_3Dconfig.PV_central_PD, M, Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='g/m²')
 else:
     visualize_map_of_a_variable(crop_config, agro_results,'BM',
-                                PV_1_3Dconfig.PV_central_PD, M, 2005,
+                                PV_1_3Dconfig.PV_central_PD, M, Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='t/ha')

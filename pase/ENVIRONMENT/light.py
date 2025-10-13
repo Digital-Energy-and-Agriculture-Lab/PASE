@@ -251,7 +251,8 @@ class Light:
         Kc = np.empty(len(GHI))
         Kc[:] = np.nan
 
-        Kc = np.divide(GHI, 0.84 * ENI / m * np.exp(-0.054 * m), out=Kc, where=GHI_non_zero)
+        Kc = np.divide(GHI, 0.84 * ENI / m * np.exp(-0.054 * m),
+                       out=Kc, where=GHI_non_zero)
 
         return Kc
 

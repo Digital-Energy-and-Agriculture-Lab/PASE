@@ -117,10 +117,10 @@ L.get_light_maps(Sun_positions_samp.solar_vector,
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
                             Light_instance.data,
                             visualization=True,
-                            year=2005, julian_day=5)
+                            year=2008, julian_day=5)
 
 L.visualize_direct_light_map(1)
-L.visualize_diffuse_light_map()
+L.visualize_diffuse_light_map(10)
 L.visualize_daily_irrad_map(2009, 150)
 
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
