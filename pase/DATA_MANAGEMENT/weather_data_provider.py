@@ -23,30 +23,30 @@ class Weather_data:
     
     def __init__(self, latitude, longitude, sim_starting_year, sim_ending_year, 
                  WD_option, file=None, daily_file=None):
+
+        self.latitude = latitude
+        self.longitude = longitude
+        self.sim_starting_year = sim_starting_year
+        self.sim_ending_year = sim_ending_year
+
+        self.nyears_data = {}
         
-        if WD_option == 2:
-            self.get_n_years_WD_from_csvfile(sim_starting_year,
-                                             sim_ending_year,
-                                             file)
+        if WD_option == 2:  # Read weather data file
+            self.get_n_years_WD_from_csvfile(file)
             self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]))
             
-        else:
-            self.get_n_years_hourly_WD_PVGis(latitude, longitude,
-                                             sim_starting_year, sim_ending_year)
+        else:  # Download weather data from PVGIS
+            self.get_n_years_hourly_WD_PVGis()
             self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]),
                                       daily_file)
-            
-        
-            
-    def get_n_years_hourly_WD_PVGis(self, lat, long, start_year, end_year):
-        
-        self.nyears_data = {}
-    
-        for year in range(start_year, end_year+1):
+
+    def get_n_years_hourly_WD_PVGis(self):
+
+        for year in range(self.sim_starting_year, self.sim_ending_year+1):
             msg = 'Get hourly weather data for year '+str(year)+' from PvGis'
             PASE_Logger(msg, 'INFO')
             pvgis = PvGis()
-            pvgis.latitude, pvgis.longitude = lat, long
+            pvgis.latitude, pvgis.longitude = self.latitude, self.longitude
             pvgis.start_date = datetime(year, 1, 1, 00, 00, 00)
             pvgis.end_date = datetime(year, 12, 31, 23, 59, 59)
             pvgis.rad_Database = 'PVGIS-SARAH3'
@@ -60,31 +60,21 @@ class Weather_data:
             one_year_dataframe = one_year_dataframe.rename(columns=rename_df)
             
             self.nyears_data[str(year)] = one_year_dataframe
-            
-            
-    def get_n_years_WD_from_csvfile(self, start_year, end_year, file):
+
+    def get_n_years_WD_from_csvfile(self, file):
         
-        self.nyears_data = {}
-        WD = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', file + '.csv'), delimiter = ',')
-        new_index = pd.date_range("01-01-"+str(start_year)+" 00:00:00",
-                                  "31-12-"+str(end_year)+" 23:45:00",
+        WD = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', file + '.csv'),
+                         delimiter=',')
+        new_index = pd.date_range("01-01-" + str(self.sim_starting_year)
+                                  + " 00:00:00",
+                                  "31-12-" + str(self.sim_ending_year)
+                                  + " 23:45:00",
                                   freq='15Min')
         WD = WD.set_index(new_index)
-        #WD['date'] = pd.to_datetime(WD['date'])
-        #WD['date'] = pd.to_datetime(WD['date'], format='%m-%d-%Y %H:%M:%S')
-        #WD = WD.set_index(WD['date'])        
-        
-        for year in range(start_year, end_year+1):
-        #    msg = 'Get hourly or finer resolution weather data for year '+str(year)
-        #    PASE_Logger(msg, 'INFO')
-                      
-        #    mask = ((WD['date']>='01-01-'+str(year)+' 00:00:00') & 
-        #           (WD['date']<'01-01-'+str(year+1)+' 00:00:00'))            
-        #    one_year_df = WD[mask]
+
+        for year in range(self.sim_starting_year, self.sim_ending_year+1):
             one_year_df = WD
             self.nyears_data[str(year)] = one_year_df
-            
-            
             
     def get_n_years_daily_WD(self, freq_deter, csv_file=None):
         
@@ -95,9 +85,9 @@ class Weather_data:
                    
         if freq_deter == 8760 or freq_deter == 8784:
             n = 1
-        elif (freq_deter == 35040 or freq_deter == 35136):
+        elif freq_deter == 35040 or freq_deter == 35136:
             n = 4
-        elif (freq_deter == 52560 or freq_deter == 52704):
+        elif freq_deter == 52560 or freq_deter == 52704:
             n = 6
 
         for year in self.nyears_data.keys():
@@ -119,7 +109,9 @@ class Weather_data:
             
             data_to_resample = self.nyears_data[year]
             
-            new_index = pd.date_range("01-01-"+year+" 00:00:00","31-12-"+year+" 00:00:00", freq='D')
+            new_index = pd.date_range("01-01-"+year+" 00:00:00",
+                                      "31-12-"+year+" 00:00:00",
+                                      freq='D')
            
             daily_rad = ((data_to_resample['G(h)'].resample('D').sum())
                          *60*(60/n)*10**-6).tolist()                          # W/m² to MJ/m²            
