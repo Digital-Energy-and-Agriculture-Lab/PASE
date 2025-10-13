@@ -1,5 +1,5 @@
 LocationName: 
-   Value: Siguesol
+   Value: Gembloux
    Type: string
    Definition: Name of the location
 TimeZone:
@@ -7,19 +7,19 @@ TimeZone:
    Type: string
    Definition: Precision on the time zone because otherwise, pvlib import sun positions in UTC0   
 Latitude:
-   Value: 50.376
+   Value: 50.565114
    Type: float
    Limit: [-90, 90]
    Unit: degrés décimaux [-]
    Definition: Latitude of the location
 Longitude:
-   Value: 5.677
+   Value: 4.702089
    Type: float
    Limit: [-180, 180]
    Unit: degrés décimaux [-]
    Definition: Longitude of the location
 Altitude:
-   Value: 433
+   Value: 165
    Type: float
    Limit: [0, 3000]
    Unit: meters [m]
@@ -33,23 +33,32 @@ WeatherDataOption:
 WeatherFileName:
    Value: Chanco_Chile_WD
    Type: string
-   Definition: Name of the hourly or more precise (10 min or 15 min) weather data csv file (pay attention to the format it should have) if WeatherDataOption is 2
+   Definition: Name of the hourly or more precise (10 min or 15 min) 
+      weather data csv file (pay attention to the format it should have) 
+      if WeatherDataOption is 2.
 DailyWeatherFileName:
    Value: PRECIP_VP_Loc1
    Type: string
-   Definition: Name of the daily weather data csv file with precipitation and vapour pressure (pay attention to the format it should have) if WeatherDataOption is 1 (PVGis used)
+   Definition: Name of the daily weather data csv file with precipitation and 
+      vapour pressure (pay attention to the format it should have) 
+      used if WeatherDataOption is 1 (PVGis used).
 SimulationStartingYear:
-   Value: 2005
+   Value: 2015
    Type: integer
    Limit: [1900, SimulationEndingYear]
    Unit: dimensionless [-]
-   Definition: Starting year of the simulation, PvGis has data from 2005 to 2016 comprise
+   Definition: Starting year of the simulation, PvGis has data starting in 2005.
 SimulationEndingYear:
-   Value: 2005
+   Value: 2015
    Type: integer
-   Limit: [SimulationStartingYear, 2022]
+   Limit: [SimulationStartingYear, 2023]
    Unit: dimensionless [-]
-   Definition: Ending year of the simulation (included in the simulation)
+   Definition: Ending year of the simulation (included in the simulation). 
+      PVGIS databases have data until
+      2023 (SARAH3 database - Europe, Central Asia, Africa and South America (partly)),
+      2020 (SARAH2 - Europe, Asia, Africa and South America (below 20 S)),
+      2015 (NSRDB - Americas (above 20 S)),
+      2023 (ERA5 - reanalysis database for "rest of the world).
 PrecisionLevelOnSunPosition:
    Value: 1
    Type: integer
