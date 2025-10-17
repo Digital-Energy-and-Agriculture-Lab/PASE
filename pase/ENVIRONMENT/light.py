@@ -820,9 +820,12 @@ class Ray_casting_scene:
         mask = self.diffuse_shaded_weights_map  # no tracking: (nSourcePoints, nSkyPatches) ; tracking: (nSourcePoints, Ntimesteps, nSkyPatches)
         rd = radiance_distr.astype(mask.dtype, copy=False)
 
-        if mask.ndim == 1:
+        if mask.ndim == 1:  # No panels
             # elementwise multiply -> same length
-            return rd * mask
+            # rd: shape (Nskypatches,)
+            # mask: shape (Nsourcepoints,)
+            # goal: result shape (Nsourcepoints, Nskypatches)
+            return np.multiply(mask[:, None], rd[None, :])
 
         if type(self.geometry) == list:  # sun tracking
             # There should be either the case ndim == 2 or 3, but not both I think
@@ -844,9 +847,9 @@ class Ray_casting_scene:
         else:
             # mask shape is (Nsourcepoints, Nskypatches)
             res = np.empty_like(mask, dtype=rd.dtype)
-            # res[:] = rd[:, None]  # TODOdone: switch to rd[None, :]
             res[:] = rd[None, :]
             res *= mask
+            # res shape is (Nsourcepoints, Nskypatches)
             return res
 
     def compute_daily_diff_irradiation(self, df, n_freq, indices=None):
@@ -930,8 +933,15 @@ class Ray_casting_scene:
             geo = self.geometry
             diffuse_shaded_weights_map = self.diffuse_shaded_weights_map
 
+        try:
+            map_to_display = np.array(diffuse_shaded_weights_map.sum(axis=1))
+        except np.exceptions.AxisError as e:
+            print(f'{e} ; \n Other shape ...')
+            map_to_display = np.array(diffuse_shaded_weights_map)
+
+
         open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
-                                      np.array(diffuse_shaded_weights_map.sum(axis=1), dtype=np.float32),
+                                      np.array(map_to_display, dtype=np.float32),
                                       geo,
                                       "Unweighted shaded diffuse fuzzy mask [-]")
 
