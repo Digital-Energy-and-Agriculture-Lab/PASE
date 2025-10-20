@@ -757,6 +757,7 @@ class PVConfiguration3D(MultiBlockPASE):
         config.setdefault("PanelThickness", DEFAULT_PANEL_THICKNESS)
         config.setdefault("MeshConfig", False)
         config.setdefault("RotationAxisNumber", 0)
+        config.setdefault("CentralAzimut",0)
         return config
 
     # ---- Panel primitives ----
@@ -1170,7 +1171,8 @@ class PV_Configuration_3D(PVConfiguration3D):
                           params_dict['RepetitionDistanceOfPVBlocksX']))
                 print("New : " + str(self.tiltY_along_time))
                 for tilt in self.tiltY_along_time:
-                    PV_central = self.rotation_1st_axis(tilt)
+                    params_dict["TiltY"] = tilt
+                    PV_central = self.create_tilted_central(params_dict)  # degrees
                     self.PV_central_PD_list.append(PV_central)
         if visualization:
             self.visualize_simple()
@@ -1188,7 +1190,157 @@ class PV_Configuration_3D(PVConfiguration3D):
         """MultiBlock subset of PV* blocks, for legacy compatibility."""
         return self.get_polydata_by_flag("PV")
 
-    def rotation_1st_axis(self, tilt_deg, centers=None, return_multiblock=False):
+    def create_tilted_central(self, pv_config: Dict[str, Any]) -> pyv.PolyData:
+        """
+        Generate a regular grid (a "central") of PV panels, update geometry and metadata.
+
+        Required Keys (angles in **degrees**)
+        ---------------------------------
+        PanelDimensionX, PanelDimensionY, PanelThickness,
+        RepetitionDistanceOfPanelsX, RepetitionDistanceOfPanelsY,
+        NumberOfPanelsX, NumberOfPanelsY,
+        RepetitionDistanceOfPVBlocksX, RepetitionDistanceOfPVBlocksY,
+        NumberOfPVBlocksX, NumberOfPVBlocksY,
+        Height, CentralAzimut, TiltY
+
+        Parameters
+        ----------
+        pv_config : dict
+            Configuration dictionary. Missing optional keys are defaulted by
+            ``_apply_defaults``.
+
+        Raises
+        ------
+        ValueError
+            If required parameters are missing, counts < 1, or dimensions <= 0.
+
+        Notes
+        -----
+        - Angles are provided in **radians** but converted to **degrees** for PyVista.
+        - Each created panel receives ``field_data``: ``ObjectID`` (int64) and ``Type=1`` (int32).
+        - Appends the created panels to the multiblock, updates ``self.df``,
+          and increments ``central_id`` and ``object_id`` accordingly.
+        """
+        config = self._apply_defaults(pv_config)
+
+        required = [
+            "PanelDimensionX", "PanelDimensionY", "PanelThickness",
+            "RepetitionDistanceOfPanelsX", "RepetitionDistanceOfPanelsY",
+            "NumberOfPanelsX", "NumberOfPanelsY",
+            "RepetitionDistanceOfPVBlocksX", "RepetitionDistanceOfPVBlocksY",
+            "NumberOfPVBlocksX", "NumberOfPVBlocksY",
+            "Height", "CentralAzimut", "TiltY",
+        ]
+        missing = [k for k in required if k not in config]
+        if missing:
+            raise ValueError(f"Missing required parameters: {', '.join(missing)}")
+
+        # Extract & validate
+        panel_width = float(config["PanelDimensionX"])  # X
+        panel_height = float(config["PanelDimensionY"])  # Y
+        thickness = self._coerce_thickness(config["PanelThickness"])  # Z thickness (0 => 2D)
+        #print(thickness)
+
+        panel_spacing_x = float(config["RepetitionDistanceOfPanelsX"])  # pitch X
+        panel_spacing_y = float(config["RepetitionDistanceOfPanelsY"])  # pitch Y
+        panels_per_block_x = int(config["NumberOfPanelsX"])  # per block
+        panels_per_block_y = int(config["NumberOfPanelsY"])  # per block
+
+        block_spacing_x = float(config["RepetitionDistanceOfPVBlocksX"])  # block pitch X
+        block_spacing_y = float(config["RepetitionDistanceOfPVBlocksY"])  # block pitch Y
+        num_blocks_x = int(config["NumberOfPVBlocksX"])  # blocks
+        num_blocks_y = int(config["NumberOfPVBlocksY"])  # blocks
+
+        base_height = float(config["Height"])  # elevation
+        azimuth_deg = float(config["CentralAzimut"])  # degrees
+        tilt_deg = float(config["TiltY"])            # degrees
+
+        if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
+            raise ValueError("All count parameters must be >= 1")
+        if any(v <= 0 for v in
+               [panel_width, panel_height, panel_spacing_x, panel_spacing_y, block_spacing_x, block_spacing_y]):
+            raise ValueError("All dimension parameters must be > 0")
+
+        # Angles already in degrees (PyVista expects degrees)
+
+        # Base panel primitive
+        if thickness > 0.0:
+            base_panel = self._create_panel_3d(panel_width, panel_height, thickness)
+        else:
+            base_panel = self._create_panel_2d(panel_width, panel_height, 0.0)
+
+        # Compute all positions & block centers
+        positions, block_centers, grid_indices = self._compute_panel_grid_positions(
+            num_blocks_x, num_blocks_y,
+            panels_per_block_x, panels_per_block_y,
+            block_spacing_x, block_spacing_y,
+            panel_spacing_x, panel_spacing_y,
+            base_height,
+        )
+
+        # Precompute area (constant per panel primitive)
+        base_area = float(panel_width * panel_height)
+
+        # ---- Creation loop (vectorized positions + single loop) ----
+        pieces: List[Tuple[int, pyv.PolyData]] = []
+        df_rows: Dict[int, Dict[str, Any]] = {}
+        N = positions.shape[0]
+
+        for idx in range(N):
+            bx, by, mx, my = map(int, grid_indices[idx])
+            offx, offy, offz = map(float, positions[idx])
+            cx, cy, cz = map(float, block_centers[idx])
+
+            panel = (
+                base_panel.copy()
+                .translate([offx, offy, offz])
+                .rotate_y(tilt_deg, point=(cx, cy, cz))
+                .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
+          #  .rotate_x(tilt_deg, point=rotated_center)
+            )
+
+            oid = self.object_id
+            name = f"PV_{oid}"
+
+            # field_data for robust mapping
+            try:
+                panel.field_data["ObjectID"] = np.array([oid], dtype=np.int64)
+                panel.field_data["Type"] = np.array([1], dtype=np.int32)  # 1 = PV
+            except Exception:
+                pass
+
+            pieces.append((oid, panel))
+            df_rows[oid] = {
+                "Central": self.central_id,
+                "Block_X": bx,
+                "Block_Y": by,
+                "Module_X": mx,
+                "Module_Y": my,
+                "Type": "PV",
+                "Center": tuple(map(float, panel.center)),
+                "Bounds": tuple(map(float, panel.bounds)),
+                "Area": base_area,  # area preserved under rigid transforms
+                "Azimuth_deg": azimuth_deg,
+                "Tilt_deg": tilt_deg,
+                # Default tracking geometry: per-panel center pivot, X then Y axes
+                "HingePoint": (float(panel.center[0]), float(panel.center[1]), float(panel.center[2])),
+                "HingeAxis": (1.0, 0.0, 0.0),
+                "SecondAxis": (0.0, 1.0, 0.0),
+            }
+
+            # Advance ObjectID and caches (temporary indices are overwritten after append)
+            self.object_id += 1
+
+        # Append to MultiBlock in a second pass
+        start_pos = self.n_blocks
+        for k, (oid, panel) in enumerate(pieces):
+            if k == 0:
+                central = panel
+            else:
+                central += panel
+        return central
+
+    def rotation_1st_axis(self, tilt_deg,azimuth_deg, centers=None, return_multiblock=False):
         """
         Rotate each block around Y by `tilt_deg` (degrees).
 
