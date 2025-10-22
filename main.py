@@ -101,7 +101,7 @@ M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
 discrete_sky = ReinhartSky(MF=Loc_1['MF']).reinhart_patches
 
 # Computation of sun and light data
-Light_instance = Light(WD.nyears_data, Sun_positions_complete)
+Light_instance = Light(WD.nyears_data, Sun_positions_complete, Loc_1['DiffuseSkyType'])
 
 # Instantiation of light ray casting model (direct and diffuse) with points of interest and scene
 L = Ray_casting_scene(mesh=M,
@@ -121,7 +121,7 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP,
 
 L.visualize_direct_light_map(1)
 L.visualize_diffuse_light_map(10)
-L.visualize_daily_irrad_map(2009, 150)
+L.visualize_daily_irrad_map(2008, 150)
 
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
 #DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])
