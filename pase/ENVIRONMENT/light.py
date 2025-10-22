@@ -137,13 +137,12 @@ class Light:
                 rad_top_atm = SP.sp_leapY['Top_atm_radiation'].to_numpy()
                 apparent_sun_zenith = SP.sp_leapY['apparent_zenith'].to_numpy()
                 sun_elevation = SP.sp_leapY['elevation'].to_numpy()
-                n_timesteps = 24*366
             else:
                 rad_top_atm = SP.sp_nonleapY['Top_atm_radiation'].to_numpy()
                 apparent_sun_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
                 sun_elevation = SP.sp_nonleapY['elevation'].to_numpy()
-                n_timesteps = 24 * 365
-
+            
+            n_timesteps = len(sun_elevation)
             kt = self.get_clearness_sky_index(rad_top_atm, GHI)    
             DHI = self.get_diffuse_horizontal_radiation(kt, GHI)
             BHI = self.get_beam_horizontal_radiation(GHI, DHI)
@@ -166,7 +165,7 @@ class Light:
             else:
                 # Compute from weather data
                 # Extraterrestrial Normal Irradiance (used for the Kc and Cle below)
-                ENI = get_extra_radiation(WD[year]['DateTime'].dt.dayofyear.values)
+                ENI = get_extra_radiation(WD[year].index.dayofyear.values)
 
                 # Meteorological indices Clear Sky Index (Kc) and Cloudless index
                 # (Cle) from Igawa (2014)
@@ -860,6 +859,7 @@ class Ray_casting_scene:
         T = dhi.shape[0]
 
         outs = [self.get_shaded_radiance_contrib(az[i], el[i], sky_type[i]) for i in range(T)]
+        
         # Determine if outputs are 2D or 3D per-time and stack appropriately
         if outs[0].ndim == 2:  # No tracking
             stacked = np.stack(outs, axis=0)   # (T, M, P) if each out is (M,P)
