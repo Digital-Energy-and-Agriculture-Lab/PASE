@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pase.DATA_MANAGEMENT.helpers import aggregate_lat_lon, unpack_latlon, parse_date_range
+from pase.DATA_MANAGEMENT.helpers import (aggregate_lat_lon, unpack_latlon,
+                                          parse_date_range, get_sampling_period)
 
 
 def test_aggregate_lat_lon_floats():
@@ -42,3 +43,12 @@ def test_parse_date_range():
     assert (date_range == pd.date_range('01-01-2005 00:00:00',
                                       '31-12-2008 00:00:00',
                                       freq='D')).all()
+
+def test_get_sampling_period():
+    series = pd.Series(['01/01/2021 00:00', '01/01/2021 00:15'])
+
+    sampling_period = get_sampling_period(series)
+
+    # assert sampling_period == datetime.timedelta(0, 900)
+    assert sampling_period == '900s'
+
