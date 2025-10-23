@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
-#Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
+#Author : Bouvry Arnaud (abouvry@uliege.be)
 #This file is part of the PASE software, and is distributed under the MIT license.
 """"
 Benchmark the diffuse irradiance map
@@ -13,23 +13,24 @@ import numpy as np
 import pandas as pd
 import pyvista as pyV
 
-from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.benchmarking import export_benchmark, sign_commit_hash
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
-from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
-from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
-from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
-from MODULES.ENVIRONMENT.light import Ray_casting_scene
-from MODULES.ENVIRONMENT.mesh import Mesh
-from MODULES.PHOTOVOLTAICS.production import PV_Production
-from MODULES.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
+from pase.user_support_tools import PASE_Logger
+from pase.DATA_MANAGEMENT.benchmarking import export_benchmark, sign_commit_hash
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
+from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
+from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
+from pase.ENVIRONMENT.light import Ray_casting_scene
+from pase.ENVIRONMENT.sky_model import ReinhartSky
+from pase.ENVIRONMENT.mesh import Mesh
+from pase.PHOTOVOLTAICS.production import PV_Production
+from pase.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
 
 PASE_Logger()
 
 DEBUG = False
 PLOT = False
-SAVE = True
+SAVE = False
 
 # Instantiation of the 3D PV central
 PV_params_dict = {'PanelDimensionX': 1,
@@ -68,8 +69,6 @@ y_sensors = np.arange(start, stop+step, step=step)
 for y, x in product(y_sensors, x_sensors):
     M.add_sensor(x, y,0)
 
-# Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
-L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central_PD)
 
 MFs = [1, 2, 4, 8]
 results_indices = ['point ID', 0, 1, 2, 3, 4, 5, 6, 7, 8, 'COV corners', 'COV midpoints', 'Test result']
@@ -79,37 +78,43 @@ results_cols = ['point ID']
 for MF in MFs:
     results_cols.append(f'MF: {MF}')
 
-    diffuse_map = L.diffuse_map(L.geometry,
-                                scheme='Reinhart',
-                                MF=MF,
-                                n_small_suns=0)
+    discrete_sky = ReinhartSky(MF=MF).reinhart_patches
 
-    L.diff_map = diffuse_map
+    # Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
+    L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central_PD, discrete_sky=discrete_sky)
+
+    L.diffuse_mask = L.get_diffuse_mask(L.geometry)
+
+    L.get_diffuse_weights_map()
+
+    L.get_diffuse_shaded_weights_map()
 
     if PLOT:
         L.visualize_diffuse_light_map()
 
+    L.diffuse_shaded_weights_map = L.diffuse_shaded_weights_map.sum(axis=0)
+
     print(f'{MF=}')
-    print(L.diff_map[0:3])
-    print(L.diff_map[3:6])
-    print(L.diff_map[6:9])
+    print(L.diffuse_shaded_weights_map[0:3])
+    print(L.diffuse_shaded_weights_map[3:6])
+    print(L.diffuse_shaded_weights_map[6:9])
 
     # Analyze corners
 
     corners_ids = [0, 2, 6, 8]
     print(10 * '-')
     print("Corners' values:")
-    print(L.diff_map[corners_ids])
-    print('coef of var =', L.diff_map[corners_ids].std()/L.diff_map[corners_ids].mean())
-    cov_corners = L.diff_map[corners_ids].std()/L.diff_map[corners_ids].mean()
+    print(L.diffuse_shaded_weights_map[corners_ids])
+    print('coef of var =', L.diffuse_shaded_weights_map[corners_ids].std() / L.diffuse_shaded_weights_map[corners_ids].mean())
+    cov_corners = L.diffuse_shaded_weights_map[corners_ids].std() / L.diffuse_shaded_weights_map[corners_ids].mean()
 
     # Analyze midpoints
     midpoints_ids = [1, 3, 5, 7]
     print(10 * '-')
     print("Midpoints' values:")
-    print(L.diff_map[midpoints_ids])
-    print('coef of var =', L.diff_map[midpoints_ids].std()/L.diff_map[midpoints_ids].mean())
-    cov_midpoints = L.diff_map[midpoints_ids].std()/L.diff_map[midpoints_ids].mean()
+    print(L.diffuse_shaded_weights_map[midpoints_ids])
+    print('coef of var =', L.diffuse_shaded_weights_map[midpoints_ids].std() / L.diffuse_shaded_weights_map[midpoints_ids].mean())
+    cov_midpoints = L.diffuse_shaded_weights_map[midpoints_ids].std() / L.diffuse_shaded_weights_map[midpoints_ids].mean()
 
 
     print(20*'=')
@@ -125,7 +130,10 @@ for MF in MFs:
         result = 'FAILED'
         print('Test failed.')
         # results.append({f'{MF=}': 'FAIL', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
-    results.append([L.diff_map[0], L.diff_map[1], L.diff_map[2], L.diff_map[3], L.diff_map[4], L.diff_map[5], L.diff_map[6], L.diff_map[7], L.diff_map[8], cov_corners, cov_midpoints, result])
+    results.append([L.diffuse_shaded_weights_map[0], L.diffuse_shaded_weights_map[1], L.diffuse_shaded_weights_map[2],
+                    L.diffuse_shaded_weights_map[3], L.diffuse_shaded_weights_map[4], L.diffuse_shaded_weights_map[5],
+                    L.diffuse_shaded_weights_map[6], L.diffuse_shaded_weights_map[7], L.diffuse_shaded_weights_map[8],
+                    cov_corners, cov_midpoints, result])
     print('')
 
 print('Computation is over')
@@ -155,7 +163,7 @@ if DEBUG:
 
     plotter.add_axes(**labels)
 
-    spatialized_variable = np.array(L.diff_map, dtype=np.float32)
+    spatialized_variable = np.array(L.diffuse_mask, dtype=np.float32)
     lgd_title = 'Diffuse map'
     plotter.add_mesh(L.sourcepoints[:,:-1],
                      scalars=spatialized_variable,

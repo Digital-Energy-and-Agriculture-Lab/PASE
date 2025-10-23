@@ -1,16 +1,38 @@
+# Python clutter
 *__pycache__*
+*.egg-info
+.coverage
 
-*.log
+# pytest
+.coverage
+htmlcov/*
 
-*.png
-
+# IDE clutter
 .idea/
 
+# Outputs (graphs, data, logs, profiling, ...)
+*.png
 *.csv
+*.log
+*.prof
+*.out
+*.svg
 
-
+# STICS clutter
 *.sti
 *param_files/*
 *default/*
 *logs/*
 *STICS/*
+
+# Profiling and tests outputs
+*.prof
+*.out
+htmlcov
+.coverage
+
+# Temporary files directory
+TEMPORARY_FILES/
+
+# IPython Notebook clutter
+*.ipynb_checkpoints

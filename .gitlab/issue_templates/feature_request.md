@@ -18,4 +18,4 @@
 
 (List relevant linked features and branches of the project, typically if this feature request is the child of another branch)
 
-
+/label ~new
