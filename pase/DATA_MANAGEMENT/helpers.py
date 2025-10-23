@@ -1,3 +1,4 @@
+from datetime import datetime
 import numpy as np
 import pandas as pd
 
@@ -25,3 +26,15 @@ def unpack_latlon(latlon):
 def parse_date_range(df):
     dates = pd.to_datetime(df['DAY'], format="%Y%m%d")
     return pd.date_range(start=dates.min(), end=dates.max(), freq="D")
+
+def get_sampling_period(series, format = '%d/%m/%Y %H:%M'):
+    """
+
+    :param series: pandas Series object containing timestamp strings
+    :return:
+    """
+    t1 = datetime.strptime(series[1], format)
+    t0 = datetime.strptime(series[0], format)
+    dt = t1 - t0
+
+    return f'{dt.seconds}s'
