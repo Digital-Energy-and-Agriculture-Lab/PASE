@@ -401,7 +401,18 @@ class PvGis:
         if self._verbose:
             print("Request send")
 
-        res = requests.get(self.API_HOURLY_TIME_SERIES, params=payload)
+        try:
+            res = requests.get(self.API_HOURLY_TIME_SERIES, params=payload)
+        except requests.exceptions.ConnectionError as e:
+            msg = (f'{e} \nThe connection to the PVGIS server is down. '
+                   f'Either the PVGIS server is having issues, or you do not '
+                   f'have an internet connection. If you keep seeing this '
+                   f'message, run simulations with WeatherDataOption: 2 and '
+                   'provide a weather data csv file or wait for the PVGIS '
+                   'situation to be resolved.')
+            PASE_Logger(msg=msg,
+                        level='ERROR')
+            raise ConnectionError(msg)
 
         if self._verbose:
             print('Request:', res.url)
