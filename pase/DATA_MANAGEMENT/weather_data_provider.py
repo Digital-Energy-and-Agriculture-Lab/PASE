@@ -73,7 +73,7 @@ class Weather_data:
         new_index = pd.date_range("01-01-" + str(self.sim_starting_year)
                                   + " 00:00:00",
                                   "31-12-" + str(self.sim_ending_year)
-                                  + " 23:45:00",
+                                  + " 23:59:59",
                                   freq=sampling_period)
 
         WD = WD.set_index(new_index)
