@@ -180,3 +180,91 @@ def test_alias_pv_configuration_3d_multiblock_subset_equivalence():
     sub_names = [sub.get_block_name(i) for i in range(sub.n_blocks)]
     dir_names = [direct.get_block_name(i) for i in range(direct.n_blocks)]
     assert sub_names == dir_names
+
+@pytest.fixture
+def cfg():
+    """Fresh instance with a consistent schema for add_custom_polydata."""
+    c = PVConfiguration3D()
+    return c
+
+
+def tuple_allclose(a, b, atol=1e-9):
+    return np.allclose(np.asarray(a, float), np.asarray(b, float), atol=atol, rtol=0)
+
+
+def test_add_custom_polydata_nominal(cfg):
+    # Simple geometry: cube
+    cube = pyv.Cube(center=(1.0, 2.0, 3.0), x_length=2.0, y_length=1.0, z_length=4.0)
+
+    info = {
+        "Type": "Obstacle",
+        "Central": "PLANT_A",
+        "Block_X": 10,
+        "Block_Y": 5,
+        "Module_X": 3,
+        "Module_Y": 7,
+        "Azimuth_deg": 180.0,
+        "Tilt_deg": 30.0,
+    }
+
+    oid = cfg.add_custom_polydata(cube, info, name="Custom")
+
+    # 1) The identifier must be a non-negative integer and index self.df
+    assert isinstance(oid, int) and oid >= 0
+    assert oid in cfg.df.index
+
+    # 2) The multiblock must contain the added block with the correct name
+    #    The method does append(name=f"Custom{oid}")
+    assert cfg.n_blocks >= 1
+    last_name = cfg.get_block_name(cfg.n_blocks - 1)
+    assert last_name == f"Custom{oid}"
+
+    # 3) Essential fields in the df row
+    row = cfg.df.loc[oid]
+    assert row["Type"] == "Obstacle"
+    assert row["Central"] == "PLANT_A"
+    assert row["Block_X"] == 10
+    assert row["Block_Y"] == 5
+    assert row["Module_X"] == 3
+    assert row["Module_Y"] == 7
+    assert row["Azimuth_deg"] == 180.0
+    assert row["Tilt_deg"] == 30.0
+
+    # 4) Verify computed Center / Bounds / Area
+    mesh = cube  # the method copies for calculations; expected values = cube's ones
+    expected_center = tuple(map(float, mesh.center))
+    expected_bounds = tuple(map(float, mesh.bounds))
+    expected_area = float(mesh.area)
+
+    assert tuple_allclose(row["Center"], expected_center)
+    assert tuple_allclose(row["Bounds"], expected_bounds)
+    assert np.isfinite(row["Area"]) and abs(row["Area"] - expected_area) < 1e-9
+
+
+def test_add_custom_polydata_requires_type(cfg):
+    cube = pyv.Cube()
+    with pytest.raises(ValueError):
+        cfg.add_custom_polydata(cube, info={}, name="Custom")
+
+
+def test_add_custom_polydata_converts_non_polydata(cfg):
+    # Create a non-PolyData dataset (StructuredGrid), convertible via extract_surface()
+    x = np.linspace(0, 1, 3)
+    y = np.linspace(0, 1, 3)
+    xx, yy = np.meshgrid(x, y, indexing="ij")
+    zz = np.zeros_like(xx)
+
+    grid = pyv.StructuredGrid(xx, yy, zz)
+
+    info = {"Type": "Obstacle"}
+
+    oid = cfg.add_custom_polydata(grid, info, name="Custom")
+
+    # Addition succeeded and row is present in df
+    assert oid in cfg.df.index
+    row = cfg.df.loc[oid]
+    assert row["Type"] == "Obstacle"
+
+    # The multiblock must contain the new block
+    print(oid)
+    assert cfg.get_block_by_oid(oid) is not None

@@ -9,7 +9,7 @@ from datetime import datetime
 import numpy as np
 import os
 import pickle
-
+import pyvista as pyv
 from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
@@ -70,6 +70,18 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
 PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
                                     Sun_positions_samp.solar_vector,
                                     visualization=True)  # !!!! Problem with rotation angle that are negative
+
+
+# #  Add custom polydata, for example a cube (not yet compatible with the tracking)
+# cube = pyv.Cube(center=(0, 0, 1.0), x_length=1.0, y_length=1.0, z_length=1.0)
+# info_cube = {
+#     "Type": "Obstacle",         # <- requis
+#     "Central": 0
+# }
+#
+# # Add the cube
+# oid_cube = PV_1_3Dconfig.add_custom_polydata(cube, info_cube, name="Custom")
+# PV_1_3Dconfig.polydata_all_centrals().plot()
 
 # Initiation of the object containing points of interest to compute light
 M = Mesh()

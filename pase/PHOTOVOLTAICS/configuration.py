@@ -506,6 +506,93 @@ class PVConfiguration3D(MultiBlockPASE):
             except Exception:
                 pass
 
+    def add_custom_polydata(self, geometry: pyv.PolyData, info: Dict[str, Any],name = "Custom") -> int:
+        """
+        Add a custom PolyData to the in-memory registry and append a row to the single DataFrame `self.df`.
+
+        - The `info` dict MUST contain at least the 'Type' key.
+        - Other fields must match the existing columns (see df.columns).
+          Extra keys are cleanly ignored to preserve a common schema.
+
+        Parameters
+        ----------
+        geometry : pv.PolyData
+            Geometry to register (no transformation applied here). If it is not already a
+            PolyData, a best-effort conversion is attempted via
+            `extract_surface().triangulate().cast_to_polydata()`.
+        info : dict
+            Metadata to inject into the DataFrame. Supported fields:
+              - Central, Block_X, Block_Y, Module_X, Module_Y, Type (required),
+                Azimuth_deg, Tilt_deg, HingePoint, HingeAxis, SecondAxis.
+
+        Returns
+        -------
+        int
+            Newly assigned object_id.
+        """
+
+        # Validation/conversion PolyData
+        if not isinstance(geometry, pyv.PolyData):
+            try:
+                geometry = geometry.extract_surface().triangulate()
+            except Exception as e:
+                raise TypeError("`geometry` n'est pas un pv.PolyData et n'a pas pu être converti.") from e
+
+        # Dict validation
+        if "Type" not in info or not info["Type"]:
+            raise ValueError("Le dict `info` doit contenir au minimum la clé 'Type'.")
+
+        # New object_id
+        oid = self.object_id
+        # Deep copy to avoid source modification
+        mesh = geometry.copy(deep=True)
+
+        # Computation of the properties
+        try:
+            cx, cy, cz = map(float, mesh.center)
+        except Exception:
+            cx = cy = cz = np.nan
+        try:
+            xmin, xmax, ymin, ymax, zmin, zmax = mesh.bounds
+        except Exception:
+            xmin = xmax = ymin = ymax = zmin = zmax = np.nan
+        area = float(mesh.area) if hasattr(mesh, "area") else np.nan
+
+        # field_data for robust mapping
+
+        geometry.field_data["ObjectID"] = np.array([oid], dtype=np.int64)
+        geometry.field_data["Type"] = np.array([1], dtype=np.int32)  # 1 = PV
+
+        self.append(geometry, name=name + str(oid))
+        self._name_to_pos[name] = oid
+        self._oid_to_pos[oid] = oid
+        # Building the dataframe data
+        row = {
+            "Central": info.get("Central", np.nan),
+            "Block_X": info.get("Block_X", np.nan),
+            "Block_Y": info.get("Block_Y", np.nan),
+            "Module_X": info.get("Module_X", np.nan),
+            "Module_Y": info.get("Module_Y", np.nan),
+            "Type": info["Type"],
+            "Center": (cx, cy, cz),
+            "Bounds": (xmin, xmax, ymin, ymax, zmin, zmax),
+            "Area": area,
+            "Azimuth_deg": info.get("Azimuth_deg", np.nan),
+            "Tilt_deg": info.get("Tilt_deg", np.nan),
+            # Tracking geometry (optionnel)
+            "HingePoint": info.get("HingePoint", np.nan),
+            "HingeAxis": info.get("HingeAxis", np.nan),
+            "SecondAxis": info.get("SecondAxis", np.nan),
+        }
+
+        # Update of the df
+        s = pd.Series(row, index=self.df.columns, name=oid)
+        self.df.loc[oid] = s
+        self.object_id += 1
+
+        return oid
+
+
     def get_position_by_oid(self, oid: int) -> Optional[int]:
         """
         Return block position for a given ``ObjectID``.
@@ -1297,7 +1384,7 @@ class PV_Configuration_3D(PVConfiguration3D):
                 .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
             )
 
-            oid = self.object_id
+            oid = 0
             name = f"PV_{oid}"
 
             # field_data for robust mapping
@@ -1326,8 +1413,7 @@ class PV_Configuration_3D(PVConfiguration3D):
                 "SecondAxis": (0.0, 1.0, 0.0),
             }
 
-            # Advance ObjectID and caches (temporary indices are overwritten after append)
-            self.object_id += 1
+            oid += 1
 
         # Append to MultiBlock in a second pass
         start_pos = self.n_blocks
@@ -1360,10 +1446,10 @@ class PV_Configuration_3D(PVConfiguration3D):
             if not isinstance(panel, pyv.PolyData) or panel.n_points == 0:
                 continue
             c = centers[panel.field_data["ObjectID"][0]]
-            if c is None:
-                panel.rotate_y(tilt_deg, inplace=True)
-            else:
-                panel.rotate_y(-tilt_deg, point=c, inplace=True)
+          #  if c is None:
+          #      panel.rotate_y(tilt_deg, inplace=True)
+           # else:
+            panel.rotate_z(azimuth_deg, point=(0.0, 0.0, 0.0),inplace=True).rotate_y(tilt_deg, point=c, inplace=True).rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0),inplace=True)
 
         return temp if return_multiblock else merge_polydata(temp)
 
