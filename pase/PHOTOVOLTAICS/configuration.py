@@ -946,7 +946,6 @@ class PVConfiguration3D(MultiBlockPASE):
         panel_width = float(config["PanelDimensionX"])  # X
         panel_height = float(config["PanelDimensionY"])  # Y
         thickness = self._coerce_thickness(config["PanelThickness"])  # Z thickness (0 => 2D)
-        #print(thickness)
 
         panel_spacing_x = float(config["RepetitionDistanceOfPanelsX"])  # pitch X
         panel_spacing_y = float(config["RepetitionDistanceOfPanelsY"])  # pitch Y
@@ -1148,14 +1147,11 @@ class PV_Configuration_3D(PVConfiguration3D):
 
     """Backward-compatible alias with legacy signature (params_dict, solar_vector=None, visualization=False)."""
     def __init__( self,
-        params_dict: Optional[Dict[str, Any]] = None,
-        sun_vector: Optional[np.ndarray] = None,
-        visualization: bool = False,
-        **kwargs: Any) -> None:
-        import traceback
+                  params_dict: Optional[Dict[str, Any]] = None,
+                  sun_vector: Optional[np.ndarray] = None,
+                  visualization: bool = False,
+                  **kwargs: Any) -> None:
 
-        # print("param dict:", params_dict)
-        # print("Constructed from:\n", "".join(traceback.format_stack(limit=8)))
         super().__init__(**kwargs)
         params_dict = self._apply_defaults(params_dict)
 
@@ -1164,12 +1160,14 @@ class PV_Configuration_3D(PVConfiguration3D):
                 params_dict["TiltY"] = 0
             self.create_regular_central(params_dict)
 
-
             if params_dict['RotationAxisNumber'] > 0:
                 self.PV_central_PD_list = []
-                self.get_tiltY_along_time(sun_vector, params_dict['CentralAzimut'], (params_dict['PanelDimensionX']*params_dict['NumberOfPanelsX']/
-                          params_dict['RepetitionDistanceOfPVBlocksX']))
-                print("New : " + str(self.tiltY_along_time))
+                self.get_tiltY_along_time(sun_vector,
+                                          params_dict['CentralAzimut'],
+                                          (params_dict['PanelDimensionX']*
+                                           params_dict['NumberOfPanelsX']/
+                                           params_dict['RepetitionDistanceOfPVBlocksX']))
+
                 for tilt in self.tiltY_along_time:
                     params_dict["TiltY"] = tilt
                     PV_central = self.create_tilted_central(params_dict)  # degrees
@@ -1179,7 +1177,9 @@ class PV_Configuration_3D(PVConfiguration3D):
 
     @property
     def PV_central_PD(self) -> pyv.PolyData:
-        """Merged PolyData of all centrals (as expected by Ray_casting_scene)."""
+        """
+        Merged PolyData of all centrals (as expected by Ray_casting_scene).
+        """
         if hasattr(self,"PV_central_PD_list"):
             return self.PV_central_PD_list
         else:
@@ -1239,7 +1239,6 @@ class PV_Configuration_3D(PVConfiguration3D):
         panel_width = float(config["PanelDimensionX"])  # X
         panel_height = float(config["PanelDimensionY"])  # Y
         thickness = self._coerce_thickness(config["PanelThickness"])  # Z thickness (0 => 2D)
-        #print(thickness)
 
         panel_spacing_x = float(config["RepetitionDistanceOfPanelsX"])  # pitch X
         panel_spacing_y = float(config["RepetitionDistanceOfPanelsY"])  # pitch Y
@@ -1296,7 +1295,6 @@ class PV_Configuration_3D(PVConfiguration3D):
                 .translate([offx, offy, offz])
                 .rotate_y(tilt_deg, point=(cx, cy, cz))
                 .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
-          #  .rotate_x(tilt_deg, point=rotated_center)
             )
 
             oid = self.object_id
@@ -1340,16 +1338,17 @@ class PV_Configuration_3D(PVConfiguration3D):
                 central += panel
         return central
 
-    def rotation_1st_axis(self, tilt_deg,azimuth_deg, centers=None, return_multiblock=False):
+    def rotation_1st_axis(self, tilt_deg, azimuth_deg, centers=None,
+                          return_multiblock=False):
         """
         Rotate each block around Y by `tilt_deg` (degrees).
 
         - If `centers` is None, uses each panel's geometric center.
-        - If `return_multiblock` is False (default), returns a merged PolyData (combine()).
+        - If `return_multiblock` is False (default), returns a
+            merged PolyData (combine()).
           Otherwise returns the rotated MultiBlock.
         """
         # deep copy to avoid mutating the original
-        #print(tilt_deg)
         temp = pyv.MultiBlock()
         for i in range(len(self)):
             temp.append(self[i].copy(deep=True) if isinstance(self[i], pyv.PolyData) else self[i])
@@ -1360,9 +1359,7 @@ class PV_Configuration_3D(PVConfiguration3D):
             panel = temp[i]
             if not isinstance(panel, pyv.PolyData) or panel.n_points == 0:
                 continue
-        #    print(panel.field_data["ObjectID"])
             c = centers[panel.field_data["ObjectID"][0]]
-         #   print(c)
             if c is None:
                 panel.rotate_y(tilt_deg, inplace=True)
             else:
@@ -1429,5 +1426,3 @@ class PV_Configuration_3D(PVConfiguration3D):
         tiltY[ind] = -np.pi/3
 
         return tiltY
-
-
