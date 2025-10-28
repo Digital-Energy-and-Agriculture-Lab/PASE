@@ -1451,9 +1451,7 @@ class PV_Configuration_3D(PVConfiguration3D):
             if not isinstance(panel, pyv.PolyData) or panel.n_points == 0:
                 continue
             c = centers[panel.field_data["ObjectID"][0]]
-          #  if c is None:
-          #      panel.rotate_y(tilt_deg, inplace=True)
-           # else:
+
             panel.rotate_z(azimuth_deg, point=(0.0, 0.0, 0.0),inplace=True).rotate_y(tilt_deg, point=c, inplace=True).rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0),inplace=True)
 
         return temp if return_multiblock else merge_polydata(temp)
