@@ -9,7 +9,7 @@ from datetime import datetime
 import numpy as np
 import os
 import pickle
-
+import pyvista as pyv
 from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
@@ -71,6 +71,9 @@ PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
                                     Sun_positions_samp.solar_vector,
                                     visualization=True)  # !!!! Problem with rotation angle that are negative
 
+
+
+
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
 
@@ -125,9 +128,11 @@ for _ in range(Loc_1['SimulationStartingYear'], Loc_1['SimulationEndingYear']+1)
 #Temporary line, this parameter (option_2D) should be in SCENARIOS input files (general parameters)
 option_2D = 1 # 0: no 2D-spatialization ; 1 : 2D spatialization
 
-agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
-                                     L.daily_irr_spat,
-                                     Loc_1)
+agro_results = run_crop_simu(crop_config, option_2D,
+                             WD.nyears_daily_data,
+                             L.daily_irr_spat,
+                             Loc_1)
+
 # Display spatialized dry yield
 if crop_config['CropModel'] == ('simple' or 'stics'):
     visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
