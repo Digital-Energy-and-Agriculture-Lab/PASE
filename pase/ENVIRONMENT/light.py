@@ -137,13 +137,12 @@ class Light:
                 rad_top_atm = SP.sp_leapY['Top_atm_radiation'].to_numpy()
                 apparent_sun_zenith = SP.sp_leapY['apparent_zenith'].to_numpy()
                 sun_elevation = SP.sp_leapY['elevation'].to_numpy()
-                n_timesteps = 24*366
             else:
                 rad_top_atm = SP.sp_nonleapY['Top_atm_radiation'].to_numpy()
                 apparent_sun_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
                 sun_elevation = SP.sp_nonleapY['elevation'].to_numpy()
-                n_timesteps = 24 * 365
-
+            
+            n_timesteps = len(sun_elevation)
             kt = self.get_clearness_sky_index(rad_top_atm, GHI)    
             DHI = self.get_diffuse_horizontal_radiation(kt, GHI)
             BHI = self.get_beam_horizontal_radiation(GHI, DHI)
@@ -166,7 +165,7 @@ class Light:
             else:
                 # Compute from weather data
                 # Extraterrestrial Normal Irradiance (used for the Kc and Cle below)
-                ENI = get_extra_radiation(WD[year]['DateTime'].dt.dayofyear.values)
+                ENI = get_extra_radiation(WD[year].index.dayofyear.values)
 
                 # Meteorological indices Clear Sky Index (Kc) and Cloudless index
                 # (Cle) from Igawa (2014)
@@ -251,7 +250,8 @@ class Light:
         Kc = np.empty(len(GHI))
         Kc[:] = np.nan
 
-        Kc = np.divide(GHI, 0.84 * ENI / m * np.exp(-0.054 * m), out=Kc, where=GHI_non_zero)
+        Kc = np.divide(GHI, 0.84 * ENI / m * np.exp(-0.054 * m),
+                       out=Kc, where=GHI_non_zero)
 
         return Kc
 
@@ -523,7 +523,7 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full diffuse light
-        if geometry.n_faces == 0 :
+        if geometry.n_faces_strict == 0 :
             print("Geometry is empty. Returning full diffuse illumination.")
             return np.ones(self.n_sourcepoints, dtype=np.float16)
     
@@ -625,7 +625,7 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full direct light
-        if geometry.n_faces == 0 :
+        if geometry.n_faces_strict == 0 :
             n_sun_positions = sun_P.shape[0]
             print("Geometry is empty. Returning full direct illumination.")
             return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
@@ -819,9 +819,12 @@ class Ray_casting_scene:
         mask = self.diffuse_shaded_weights_map  # no tracking: (nSourcePoints, nSkyPatches) ; tracking: (nSourcePoints, Ntimesteps, nSkyPatches)
         rd = radiance_distr.astype(mask.dtype, copy=False)
 
-        if mask.ndim == 1:
+        if mask.ndim == 1:  # No panels
             # elementwise multiply -> same length
-            return rd * mask
+            # rd: shape (Nskypatches,)
+            # mask: shape (Nsourcepoints,)
+            # goal: result shape (Nsourcepoints, Nskypatches)
+            return np.multiply(mask[:, None], rd[None, :])
 
         if type(self.geometry) == list:  # sun tracking
             # There should be either the case ndim == 2 or 3, but not both I think
@@ -843,9 +846,9 @@ class Ray_casting_scene:
         else:
             # mask shape is (Nsourcepoints, Nskypatches)
             res = np.empty_like(mask, dtype=rd.dtype)
-            # res[:] = rd[:, None]  # TODOdone: switch to rd[None, :]
             res[:] = rd[None, :]
             res *= mask
+            # res shape is (Nsourcepoints, Nskypatches)
             return res
 
     def compute_daily_diff_irradiation(self, df, n_freq, indices=None):
@@ -856,6 +859,7 @@ class Ray_casting_scene:
         T = dhi.shape[0]
 
         outs = [self.get_shaded_radiance_contrib(az[i], el[i], sky_type[i]) for i in range(T)]
+        
         # Determine if outputs are 2D or 3D per-time and stack appropriately
         if outs[0].ndim == 2:  # No tracking
             stacked = np.stack(outs, axis=0)   # (T, M, P) if each out is (M,P)
@@ -904,7 +908,7 @@ class Ray_casting_scene:
                                       geo,
                                       "Direct map [-]")
 
-    def visualize_diffuse_light_map(self, Sun_P_map_to_visualize=None):
+    def visualize_diffuse_light_map(self, Sun_P_map_to_visualize):
         """
         Open the visualization of the diffuse light map for a specific
         tilt of the PV modules if there is a rotation axis
@@ -923,13 +927,21 @@ class Ray_casting_scene:
 
         if type(self.geometry) == list:
             geo = self.geometry[Sun_P_map_to_visualize]
-            diffuse_mask = self.diffuse_mask[:, Sun_P_map_to_visualize]
+            diffuse_shaded_weights_map = self.diffuse_shaded_weights_map[:,
+                                         Sun_P_map_to_visualize, :]
         else:
             geo = self.geometry
             diffuse_shaded_weights_map = self.diffuse_shaded_weights_map
 
+        try:
+            map_to_display = np.array(diffuse_shaded_weights_map.sum(axis=1))
+        except np.exceptions.AxisError as e:
+            print(f'{e} ; \n Other shape ...')
+            map_to_display = np.array(diffuse_shaded_weights_map)
+
+
         open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
-                                      np.array(diffuse_shaded_weights_map.sum(axis=1), dtype=np.float32),
+                                      np.array(map_to_display, dtype=np.float32),
                                       geo,
                                       "Unweighted shaded diffuse fuzzy mask [-]")
 

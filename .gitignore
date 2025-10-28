@@ -1,6 +1,7 @@
 # Python clutter
 *__pycache__*
 *.egg-info
+.coverage
 
 # pytest
 .coverage

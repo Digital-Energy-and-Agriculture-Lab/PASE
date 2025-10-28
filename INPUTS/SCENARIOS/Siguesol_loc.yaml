@@ -71,6 +71,14 @@ FibonacciSamples:
    Type: integer
    Limit: [1,100000]
    Definition: Samples in the Fibonacci sky subdivision scheme.
+DiffuseSkyType:
+   Value: From weather data
+   Type: string
+   Possibilities: [From weather data, Uniform]
+   Definition: Determine how to compute sky diffuse radiance distribution. 
+               "From weather data" uses a simplified implementation of Igawa (2014) 
+               to derive the sky type from weather data.
+               "Uniform" assumes uniform radiance distribution (faster but less accurate).
 Xmin_InterestZone:
    Value: -4
    Type: float

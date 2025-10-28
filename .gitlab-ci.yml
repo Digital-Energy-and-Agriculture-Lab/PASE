@@ -25,11 +25,6 @@ before_script:
   - python --version || true
   - if [ -d "$MAMBA_CACHE_DIR/pkgs" ]; then du -sh $MAMBA_CACHE_DIR/pkgs || true; else echo "No cache yet"; fi
 
-  # Increase file descriptor limit to 65536
-  - echo "Increasing file descriptor limit"
-  - ulimit -n 65536 || true
-
-
   # create conda environment from your environment YAML
   - echo "=== Creating conda environment ==="
   - |
@@ -38,6 +33,10 @@ before_script:
       ls -la
       exit 1
     fi
+
+  # Increase file descriptor limit to 65536
+  - echo "Increasing file descriptor limit"
+  - ulimit -n 65536 || true
 
   # create the environment using micromamba for speed (non-root)
   - micromamba create -y -n "$CONDA_ENV_NAME" -f "$ENV_YML"
