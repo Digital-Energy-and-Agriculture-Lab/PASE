@@ -71,7 +71,7 @@ def compare_polydata(
     Examples
     --------
     >>> import pyvista as pv
-    >>> from pase.tests.utils import compare_polydata
+    >>> from pase.tests.PHOTOVOLTAICS.poly_compare import compare_polydata
 
     >>> a = pv.Plane()
     >>> b = a.copy()
