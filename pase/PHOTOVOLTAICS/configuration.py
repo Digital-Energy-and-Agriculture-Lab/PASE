@@ -727,6 +727,7 @@ class PVConfiguration3D(MultiBlockPASE):
 
         pl = pyv.Plotter()
         pl.add_mesh(geom, color='black')
+
         ground = np.array([[-100, 100, 0],
                            [100, 100, 0],
                            [-100, -100, 0],
@@ -737,12 +738,16 @@ class PVConfiguration3D(MultiBlockPASE):
 
         grnd = pyv.PolyData(ground, ground_m)
         pl.add_mesh(grnd, color='green', opacity=0.5)
+
         labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)',
                       ylabel='Y (NORTH)')
         pl.add_axes(**labels)
+
         light = pyv.Light()
         light.set_direction_angle(30, 45)
+
         pl.show_grid()
+
         pl.show()
 
     # ---- Block centers ----
