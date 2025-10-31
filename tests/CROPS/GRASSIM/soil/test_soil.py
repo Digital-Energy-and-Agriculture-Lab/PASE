@@ -20,7 +20,7 @@ def test_compute_N_immobilization():
                     168, 168, 120, 96, 24]
     })
     soil=Soil(grid,init,soil_properties,variables_to_save)
-    soil.compute_water_balance(2, 0.2)
-    soil.compute_N_mineralization(0.115, 15, 13) #K=0.115, Tref= 15, Temp=13
-    soil.compute_N_immobilization()
+    soil.compute_water_balance(2, 0.2,method='Ruelle2018')
+    soil.compute_N_mineralization(0.115, 15, 13,method='Ruelle2018') #K=0.115, Tref= 15, Temp=13
+    soil.compute_N_immobilization(0.115, 15, 13, method='Ruelle2018')
     assert np.isclose(soil.immobilization[0,0],0.158906720500667,rtol=1e-8)
