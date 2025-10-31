@@ -92,7 +92,7 @@ def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
 
     crop.compute_fT()
     crop.compute_fPARi()
-    crop.compute_fW(soil.W)
+    crop.compute_fW(W=soil.W,method='Jouven2006')
     crop.compute_N_supply(Nmin=soil.Nmin, FNAmax=0.07, NSc=270)
     crop.compute_fN()
     crop.compute_N_demand()
@@ -104,10 +104,10 @@ def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
     crop.compute_actual_growth()
     crop.update_balance() # update BM compartments, OMD, sward height, age, based on actual growth
 
-    soil.compute_water_balance(PP=crop.PP, AET=crop.AET)
-    soil.compute_N_mineralization(K=crop.K, Tref=crop.Tref, Temp=crop.Temp) # parameters for soil activity (Ruelle et al., 2018)
-    soil.compute_N_immobilization()
-    soil.compute_N_leached()
+    soil.compute_water_balance(PP=crop.PP, AET=crop.AET,method='Ruelle2018')
+    soil.compute_N_mineralization(K=crop.K, Tref=crop.Tref, Temp=crop.Temp,method='Ruelle2018') # parameters for soil activity (Ruelle et al., 2018)
+    soil.compute_N_immobilization(K=crop.K, Tref=crop.Tref, Temp=crop.Temp,method='Ruelle2018')
+    soil.compute_N_leached(method='Ruelle2018')
     soil.compute_N2O_emissions()
     soil.compute_N_from_rain(crop.PP)
     soil.compute_Norg(percentageofNmin=crop.percentageofNmin, N_plant_litter=crop.N_plant_litter, fert_org=management.fert_org)
