@@ -151,82 +151,75 @@ class Soil():
             self.nyears_data[self.year][var] = {}
 
 
-    def compute_water_balance(self, PP, AET):
+    def compute_water_balance(self, PP, AET,method):
         """Compute water balance (water) [mm] and water stress (W) [%].
 
-        Water drainage is a simple proportion of water content.
-        From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
-
         Args:
+            method : method used to compute water_balance,
+                - 'Ruelle2018' were water drainage is a simple proportion of water content, from Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+                - 'Bonnard2025' were ater leaching is dependent on water infiltration capacity (InfRate) [mm/day] and the soil hydraulic conductivity at saturation (SatCond) [cm/day], from Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+            method type : str
             PP: daily precipitations [mm].
             PP type:
             AET: daily actual evapotranspiration [mm].
             AET type:
         """
-        self.water += PP - AET + self.not_runoff
-        self.water_leached = np.where(self.water < self.water_capacity, 0, 0.2*(self.water - self.water_capacity))
-        self.not_runoff = np.where(self.water < self.water_saturation, 0, 0.2*(self.water - self.water_saturation))
+        if method=='Ruelle2018':
+            self.water += PP - AET + self.not_runoff
+            self.water_leached = np.where(self.water < self.water_capacity, 0, 0.2*(self.water - self.water_capacity))
+            self.not_runoff = np.where(self.water < self.water_saturation, 0, 0.2*(self.water - self.water_saturation))
 
-        self.water -= self.water_leached
-        # water content limits
-        self.water = self.water.clip(0, self.water_saturation)
+            self.water -= self.water_leached
+            # water content limits
+            self.water = self.water.clip(0, self.water_saturation)
 
-        # Water (%)
-        self.W = (self.water - self.wilting_point) / (self.water_capacity - self.wilting_point)
-        self.W = self.W.clip(0, 1)
+            # Water (%)
+            self.W = (self.water - self.wilting_point) / (self.water_capacity - self.wilting_point)
+            self.W = self.W.clip(0, 1)
 
-    def compute_water_balance_BONNARD_25(self,PP,AET):
-        """Compute water balance (water) [mm] and water stress (W) [%].
+        elif method=='Bonnard2025':
+            # Limited infiltration by InfRate
+            infiltrated = np.minimum(PP, self.InfRate)
+            extra_water = PP - infiltrated
 
-        Water leaching is dependent on water infiltration capacity (InfRate) [mm/day] and the soil hydraulic conductivity at saturation (SatCond) [cm/day].
-        From Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+            self.water += infiltrated - AET + self.not_runoff
 
-        Args:
-            PP: daily precipitations [mm].
-            PP type:
-            AET: daily actual evapotranspiration [mm].
-            AET type:
-        """
-        # Limited infiltration by InfRate
-        infiltrated = np.minimum(PP, self.InfRate)
-        extra_water = PP - infiltrated
+            # Computing water_leached
+            self.water_leached = np.zeros_like(self.water)
+            mask_below_sat = (self.water > self.water_capacity) & (self.water < self.water_saturation)
+            Below_SatConD = np.zeros_like(self.water)
+            Below_SatConD[mask_below_sat] = self.SatConD[mask_below_sat] * np.exp(
+                48.2 * (self.water[mask_below_sat] - self.water_saturation[mask_below_sat]) * 1e-7
+            )
+            self.water_leached[mask_below_sat] = (
+                    Below_SatConD[mask_below_sat] / 100 * (self.water[mask_below_sat] - self.water_capacity[mask_below_sat])
+            )
+            mask_above_sat = self.water >= self.water_saturation
+            self.water_leached[mask_above_sat] = (
+                    self.SatConD[mask_above_sat] / 100 * (self.water_saturation[mask_above_sat] - self.water_capacity[mask_above_sat])
+            )
 
-        self.water += infiltrated - AET + self.not_runoff
+            # Updating water content
+            self.water -= self.water_leached
 
-        # Computing water_leached
-        self.water_leached = np.zeros_like(self.water)
-        mask_below_sat = (self.water > self.water_capacity) & (self.water < self.water_saturation)
-        Below_SatConD = np.zeros_like(self.water)
-        Below_SatConD[mask_below_sat] = self.SatConD[mask_below_sat] * np.exp(
-            48.2 * (self.water[mask_below_sat] - self.water_saturation[mask_below_sat]) * 1e-7
-        )
-        self.water_leached[mask_below_sat] = (
-                Below_SatConD[mask_below_sat] / 100 * (self.water[mask_below_sat] - self.water_capacity[mask_below_sat])
-        )
-        mask_above_sat = self.water >= self.water_saturation
-        self.water_leached[mask_above_sat] = (
-                self.SatConD[mask_above_sat] / 100 * (self.water_saturation[mask_above_sat] - self.water_capacity[mask_above_sat])
-        )
+            # Computing not-runoff as constant proportion of excess water
+            excess = self.water + extra_water - self.water_saturation
+            self.not_runoff = np.where(excess > 0, 0.2 * excess, 0)
 
-        # Updating water content
-        self.water -= self.water_leached
+            self.water = self.water.clip(0, self.water_saturation)
 
-        # Computing not-runoff as constant proportion of excess water
-        excess = self.water + extra_water - self.water_saturation
-        self.not_runoff = np.where(excess > 0, 0.2 * excess, 0)
+            # Computing W
+            self.W = (self.water - self.wilting_point) / (self.water_capacity - self.wilting_point)
+            self.W = self.W.clip(0, 1)
 
-        self.water = self.water.clip(0, self.water_saturation)
-
-        # Computing W
-        self.W = (self.water - self.wilting_point) / (self.water_capacity - self.wilting_point)
-        self.W = self.W.clip(0, 1)
-
-    def compute_N_mineralization(self, K, Tref, Temp):
+    def compute_N_mineralization(self, K, Tref, Temp,method):
         """Compute nitrogen mineralization based on water stress (W) air temperature (Temp) and soil organic nitrogen (Norg) [kgNorg ha^-1].
 
-        From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
-
         Args:
+            method : method used
+                - 'Ruelle2018' rom Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+                - 'Bonnard2025' from Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+            method type : str
             K: parameter influencing temperature influence on mineralization [-].
             K type:
             Tref: reference temperature for mineralization [°C].
@@ -234,98 +227,86 @@ class Soil():
             Temp: average daily temperature [°C].
             Temp type:
         """
-        self.g0 = (1 - 0.2) * self.W + 0.2
-        self.fT_nitro = np.exp(K * (Temp - Tref))
-        self.Vp = (0.0929 + (0.1833-0.0929) * np.exp(-0.2173*self.Norg/1000)) * (self.Norg/1000)
-        self.mineralization = self.g0 * self.fT_nitro * self.Vp
+        if method=='Ruelle2018':
+            self.g0 = (1 - 0.2) * self.W + 0.2
+            self.fT_nitro = np.exp(K * (Temp - Tref))
+            self.Vp = (0.0929 + (0.1833-0.0929) * np.exp(-0.2173*self.Norg/1000)) * (self.Norg/1000)
+            self.mineralization = self.g0 * self.fT_nitro * self.Vp
 
-    def compute_N_mineralization_BONNARD_25(self, K, Tref, Temp):
-        """Compute nitrogen mineralization based on water stress (W) air temperature (Temp) and soil organic nitrogen (Norg) [kgNorg ha^-1].
-
-        From Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
-
-        Args:
-            K: parameter influencing temperature influence on mineralization [-].
-            K type:
-            Tref: reference temperature for mineralization [°C].
-            Tref type:
-            Temp: average daily temperature [°C].
-            Temp type:
-        """
-        self.g0 = (1 - 0.2) * self.W + 0.2
-        self.g0 = self.g0.clip(0.2, 1)
-        self.fT_nitro = np.where(
-            Temp < 0,
-            0,
-            np.where(
-                Temp < 4,
-                (Temp / 4) * 0.28,
-                np.exp(K * (Temp - Tref))
+        elif method=='Bonnard2025':
+            self.g0 = (1 - 0.2) * self.W + 0.2
+            self.g0 = self.g0.clip(0.2, 1)
+            self.fT_nitro = np.where(
+                Temp < 0,
+                0,
+                np.where(
+                    Temp < 4,
+                    (Temp / 4) * 0.28,
+                    np.exp(K * (Temp - Tref))
+                )
             )
-        )
-        self.fT_nitro=self.fT_nitro.clip(0,1)
-        self.Vp = (0.0929 + (0.1833-0.0929) * np.exp(-0.2173*self.Norg/1000)) * (self.Norg/1000)
-        self.mineralization = self.g0 * self.fT_nitro * self.Vp
+            self.fT_nitro=self.fT_nitro.clip(0,1)
+            self.Vp = (0.0929 + (0.1833-0.0929) * np.exp(-0.2173*self.Norg/1000)) * (self.Norg/1000)
+            self.mineralization = self.g0 * self.fT_nitro * self.Vp
 
-    def compute_N_immobilization(self):
+    def compute_N_immobilization(self,K,Tref,Temp,method):
         """Compute nitrogen immobilization based on water stress (W), air temperature (Temp) and soil mineral nitrogen (Nmin) [kgN ha^-1].
 
-        From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
-        """
-        self.Ip = 4. * self.Nmin / 1000
-        self.Ip = self.Ip.clip(0, None)
-        self.immobilization = self.g0 * self.fT_nitro * self.Ip
-
-    def compute_N_immobilization_BONNARD_25(self,K,Tref,Temp):
-        """Compute nitrogen immobilization based on water stress (W), air temperature (Temp) and soil mineral nitrogen (Nmin) [kgN ha^-1].
-
-        From Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
-
-        Args:
+        Args :
+            method : method used
+                - 'Ruelle2018' from Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+                - 'Bonnard2025' from Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+            method type : str
             K: parameter influencing temperature influence on mineralization [-].
-            K type:
+            K type: float
             Tref: reference temperature for mineralization [°C].
-            Tref type:
+            Tref type: float
             Temp: average daily temperature [°C].
-            Temp type:
+            Temp type: numpy array of shape (grid)
         """
-        self.Ip = 2.5* 4. * self.Nmin / 1000
-        self.Ip = self.Ip.clip(0, None)
-        self.fT_immo = np.where(
-            Temp < 0,
-            0,
-            np.where(
-                Temp < 4,
-                (Temp / 4) * 2,
-                np.exp(-K * (Temp - Tref))
+        if method=='Ruelle2018':
+            self.Ip = 4. * self.Nmin / 1000
+            self.Ip = self.Ip.clip(0, None)
+            self.immobilization = self.g0 * self.fT_nitro * self.Ip
+
+        elif method=='Bonnard2025':
+            self.Ip = 2.5* 4. * self.Nmin / 1000
+            self.Ip = self.Ip.clip(0, None)
+            self.fT_immo = np.where(
+                Temp <= 0,
+                0,
+                np.where(
+                    Temp < 4,
+                    (Temp / 4) * 2,
+                    np.exp(-K * (Temp - Tref))
+                )
             )
-        )
-        self.immobilization = self.g0 * self.fT_immo * self.Ip
+            self.immobilization = self.g0 * self.fT_immo * self.Ip
 
-    def compute_N_leached(self):
+    def compute_N_leached(self,method):
         """Compute nitrogen leaching (N_leached) [kgN ha^-1] based on proportion of water leached [mm].
 
-        From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+        Args :
+            method : method used
+                - 'Ruelle2018' from Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+                - 'Bonnard2025', Upper limit of N_leached at 0.7*Nmin, from Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+            method type : str
         """
-        self.N_leached = self.Nmin * (self.water_leached / self.water)
+        if method == 'Ruelle2018':
+            self.N_leached = self.Nmin * (self.water_leached / self.water)
 
-    def compute_N_leached_BONNARD_25 (self):
-        """Compute nitrogen leaching (N_leached) [kgN ha^-1] based on proportion of water leached [mm].
+        elif method == 'Bonnard2025':
+            n_leached_raw = self.Nmin * (self.water_leached / self.water)
 
-        Upper limit of N_leached at 0.7*Nmin
-        From Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
-        """
-        n_leached_raw = self.Nmin * (self.water_leached / self.water)
+            conditions_leached = [
+                n_leached_raw > 0.7 * self.Nmin
+            ]
 
-        conditions_leached = [
-            n_leached_raw > 0.7 * self.Nmin
-        ]
+            values_leached = [
+                0.7 * self.Nmin  # Upper limit
+            ]
 
-        values_leached = [
-            0.7 * self.Nmin  # Upper limit
-        ]
-
-        self.N_leached = np.select(conditions_leached, values_leached, default=n_leached_raw)
+            self.N_leached = np.select(conditions_leached, values_leached, default=n_leached_raw)
 
     def compute_N2O_emissions(self):
         """ Compute nitrogen dioxide emission based on mineral nitrogen (Nmin), water stress (W) and temperature (Temp) influencing denitrification.
