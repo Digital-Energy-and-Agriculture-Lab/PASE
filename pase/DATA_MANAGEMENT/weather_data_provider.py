@@ -17,7 +17,8 @@ import os
 
 from pase.user_support_tools import PASE_Logger
 from pase.ENVIRONMENT.aerodynamics import get_wind_speed_specific_height
-from pase.DATA_MANAGEMENT.helpers import aggregate_lat_lon, unpack_latlon, parse_date_range
+from pase.DATA_MANAGEMENT.helpers import (aggregate_lat_lon, unpack_latlon,
+                                          parse_date_range, get_sampling_period)
 
 class Weather_data:
     
@@ -64,12 +65,17 @@ class Weather_data:
     def get_n_years_WD_from_csvfile(self, file):
         
         WD = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', file + '.csv'),
-                         delimiter=',')
+                         delimiter=',|;')
+
+        # Get the sampling period as str to use below in pd.date_range
+        sampling_period = get_sampling_period(WD['date'])
+
         new_index = pd.date_range("01-01-" + str(self.sim_starting_year)
                                   + " 00:00:00",
                                   "31-12-" + str(self.sim_ending_year)
-                                  + " 23:45:00",
-                                  freq='15Min')
+                                  + " 23:59:59",
+                                  freq=sampling_period)
+
         WD = WD.set_index(new_index)
 
         for year in range(self.sim_starting_year, self.sim_ending_year+1):
@@ -150,14 +156,10 @@ class Weather_data:
            
     def parse_agri4cast_weather_file(self, fname):
         # File as downloaded from Agri4Cast
-        daily_csv = pd.read_csv(
-            os.path.join('INPUTS', 'WEATHER_FILES', fname + '.csv'), sep=';')
-
-        if len(daily_csv.columns) == 1:
-            # File in the old format
-            daily_csv = pd.read_csv(os.path.join('INPUTS',
-                                                 'WEATHER_FILES',
-                                                 fname + '.csv'))
+        daily_csv = pd.read_csv(os.path.join('INPUTS',
+                                             'WEATHER_FILES',
+                                             fname + '.csv'),
+                                sep=',|;')
 
         try:
             # Filter the df to find the closest weather station
@@ -399,7 +401,18 @@ class PvGis:
         if self._verbose:
             print("Request send")
 
-        res = requests.get(self.API_HOURLY_TIME_SERIES, params=payload)
+        try:
+            res = requests.get(self.API_HOURLY_TIME_SERIES, params=payload)
+        except requests.exceptions.ConnectionError as e:
+            msg = (f'{e} \nThe connection to the PVGIS server is down. '
+                   f'Either the PVGIS server is having issues, or you do not '
+                   f'have an internet connection. If you keep seeing this '
+                   f'message, run simulations with WeatherDataOption: 2 and '
+                   'provide a weather data csv file or wait for the PVGIS '
+                   'situation to be resolved.')
+            PASE_Logger(msg=msg,
+                        level='ERROR')
+            raise ConnectionError(msg)
 
         if self._verbose:
             print('Request:', res.url)
