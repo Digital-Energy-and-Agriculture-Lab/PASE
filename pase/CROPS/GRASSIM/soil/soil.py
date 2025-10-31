@@ -78,9 +78,9 @@ class Soil():
 
         Args:
             PP: daily precipitations [mm].
-            PP type:
+            PP type: numpy array of shape (grid)
             AET: daily actual evapotranspiration [mm].
-            AET type:
+            AET type: numpy array of shape (grid)
         """
         self.water += PP - AET + self.not_runoff
         self.water_leached = np.where(self.water < self.water_capacity, 0, 0.2*(self.water - self.water_capacity))
@@ -102,11 +102,11 @@ class Soil():
 
         Args:
             K: parameter influencing temperature influence on mineralization [-].
-            K type:
+            K type: float
             Tref: reference temperature for mineralization [°C].
-            Tref type:
+            Tref type: float
             Temp: average daily temperature [°C].
-            Temp type:
+            Temp type: numpy array of shape (grid)
         """
         self.g0 = (1 - 0.2) * self.W + 0.2
         self.fT_nitro = np.exp(K * (Temp - Tref))
@@ -146,6 +146,10 @@ class Soil():
         """Compute nitrogen suplly through rain (N_from_rain) [kgN ha^-1].
 
         From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
+
+        Args:
+            PP: daily precipitations [mm].
+            PP type: numpy array of shape (grid)
         """
         self.N_from_rain = 0.009 * PP
 
@@ -155,11 +159,11 @@ class Soil():
 
         Args:
             percentageofNmin: part of mineral nitrogen in organic fertilizer [-].
-            percentageofNmin type:
+            percentageofNmin type: float
             N_plant_litter: amount of organic nitrogen coming from material undergoing abscission [kgNorg ha^-1].
-            N_plant_litter type:
+            N_plant_litter type: numpy array of shape (grid)
             fert_org: amount of nitrogen in organic fertilizer [kgN ha^-1].
-            fert_org type:
+            fert_org type: float
         """
         self.Norg += \
                     self.immobilization \
@@ -173,15 +177,15 @@ class Soil():
 
         Args:
             percentageofNmin: part of mineral nitrogen in organic fertilizer [-].
-            percentageofNmin type:
+            percentageofNmin type: float
             NH3volatfactor: factor allowing to consider amount of N lost by volatilization [-].
-            NH3volatfactor type:
+            NH3volatfactor type: float
             N_uptake: mineral nitrogen absorbed by plants [kgN ha^-1].
-            N_uptake type:
+            N_uptake type: dictionary
             fert_org: amount of nitrogen in organic fertilizer [kgN ha^-1].
-            fert_org type:
+            fert_org type: float
             fert_min: amount of mineral nitrogen from mineral fertilization [kgN ha^-1].
-            fert_min type:
+            fert_min type: float
         """
         self.Nmin += \
                     self.mineralization \
