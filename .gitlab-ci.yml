@@ -1,40 +1,55 @@
-image: mambaorg/micromamba:1.4.0
+image: mambaorg/micromamba:1.5.6
 
 stages:
   - test
 
 variables:
   CONDA_ENV_NAME: ci-env
-  ENV_YML: environment_unix.yml
+  ENV_YML: environment_ci.yml
   # micromamba uses a read-only root; create envs under /tmp or $CI_PROJECT_DIR/.venv
   MAMBA_ROOT_PREFIX: "$CI_PROJECT_DIR/.mamba"
-  MAMBA_CACHE_DIR: "/cache/mamba/pkgs"
+  MAMBA_CACHE_DIR: "$CI_PROJECT_DIR/.mamba_cache"
+  # avoid interactive backends in CI
+  MPLBACKEND: Agg
 
 cache:
   key:
     files:
-      - environment_unix.yml
+      - environment_ci.yml
   paths:
-    - /cache/mamba/pkgs/    # cached conda packages
+    - .mamba_cache/pkgs/   # cached conda packages
 
 before_script:
-  # show Python for debugging
+  # --- Diagnostics ---
+  - echo "=== Python and cache diagnostics ==="
   - python --version || true
+  - if [ -d "$MAMBA_CACHE_DIR/pkgs" ]; then du -sh $MAMBA_CACHE_DIR/pkgs || true; else echo "No cache yet"; fi
+
   # create conda environment from your environment YAML
+  - echo "=== Creating conda environment ==="
   - |
     if [ ! -f "$ENV_YML" ]; then
       echo "Environment file $ENV_YML not found. Listing repo root:"
       ls -la
       exit 1
     fi
+
+  # Increase file descriptor limit to 65536
+  - echo "Increasing file descriptor limit"
+  - ulimit -n 65536 || true
+
   # create the environment using micromamba for speed (non-root)
   - micromamba create -y -n "$CONDA_ENV_NAME" -f "$ENV_YML"
+
   # activate the environment for the remainder of the script
   - eval "$(micromamba shell hook)"
   - micromamba activate "$CONDA_ENV_NAME"
+
   # ensure pytest is available (in case env yml omitted it)
   - python -m pytest --version
   - python --version
+
+  # sanity import test
   - |
     python -c "import importlib,sys; 
     pkgs=['vtk','pyembree','numpy','pandas','trimesh','rtree', 'pyvista']; 
