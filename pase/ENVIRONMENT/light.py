@@ -943,7 +943,7 @@ class Ray_casting_scene:
         open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
                                       np.array(map_to_display, dtype=np.float32),
                                       geo,
-                                      "Unweighted shaded diffuse fuzzy mask [-]")
+                                      "Unweighted shaded diffuse map [-]")
 
     def visualize_daily_irrad_map(self, year, julian_day):
         """
