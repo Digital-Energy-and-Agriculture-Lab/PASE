@@ -118,15 +118,23 @@ class Diffuser:
         ax.set_ylim(0, 90)
 
     def get_discretized_BSDF(self, discr):
+        discr2 = np.repeat(np.array([[1,1,-1]]), discr.shape[0], axis=0) * discr
+        sphere = np.concatenate([discr, discr2], axis = 0)
         pts = np.stack([self.x_sr, self.y_sr, self.z_sr], axis=2)
-        A = np.einsum('ijk, lk->ijl', pts, discr)
+        A = np.einsum('ijk, lk->ijl', pts, sphere)
         M = np.argmax(A, axis=2)
         ulist = [np.unique(M[i], return_counts=True) for i in range(M.shape[0])]
-        W = np.zeros((pts.shape[0], discr.shape[0]))
+        W = np.zeros((pts.shape[0], sphere.shape[0]))
         for i in range(M.shape[0]):
             W[i, ulist[i][0]] = ulist[i][1] / A.shape[1]
-        return W
+        W_u  = W[:,:discr.shape[0]]
+        return W_u
 
+    def get_pixelized_BSDF(self, discr, sigma_deg=2):
+        pts = np.stack([self.x_sr, self.y_sr, self.z_sr], axis=2)
+        sigma = np.deg2rad(sigma_deg)
+        n_pix = len(discr)
+        n_seg = len(pts) - 1
     def transfer_function(self, vect_sun, res):
         return NotImplementedError
 
@@ -138,12 +146,20 @@ class LenticularDiffuser(Diffuser):
     Omega = Lens aperture angle in degrees
     """
 
-    def __init__(self, omega=30, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, azimuth_diff, elevation_diff, omega=30, **kwargs):
+        super().__init__(azimuth_diff, elevation_diff)
         self.omega = np.deg2rad(omega)  # aperture angle
-        self.len_vector = np.array([np.cos(self.elevation_diff) * np.cos(self.azimuth_diff),
-                                    np.cos(self.elevation_diff) * np.sin(self.azimuth_diff),
+        l = np.array([[[0,1,0],[0,0,1]]]).T
+        l = rotation_coordinate(l,np.array([0,0,1]), self.azimuth_diff)
+        l = rotation_coordinate(l, np.array([0, 1, 0]), self.elevation_diff)
+        self.len_vector = l[:, 0,0]
+        self.normal =l[:,1,0]
+        """ self.len_vector = np.array([np.cos(self.elevation_diff) * np.sin(self.azimuth_diff),
+                                    np.cos(self.elevation_diff) * np.cos(self.azimuth_diff),
                                     np.sin(self.elevation_diff)])
+        self.normal = np.array([np.sin(self.elevation_diff)*np.cos(self.azimuth_diff),
+                           np.sin(self.elevation_diff)*np.sin(self.azimuth_diff),
+                           np.cos(self.elevation_diff)])"""
 
     def transfer_function(self, vect_sun, res=0.1):
         """
@@ -162,8 +178,8 @@ class LenticularDiffuser(Diffuser):
         """
         gamma = self.get_gamma_angle(vect_sun, res)
         beta= self.get_beta_angle(vect_sun, res)
-        x = np.cos(gamma)
-        y = np.cos(beta) * np.sin(gamma)
+        x = np.cos(beta) * np.sin(gamma)
+        y = np.cos(gamma)
         z = np.sin(beta) * np.sin(gamma)
         return x, y, z
 
@@ -176,11 +192,8 @@ class LenticularDiffuser(Diffuser):
             vect_sun : sun vectors
             Anle_res : output angular resolution
         """
-        normal = np.array([np.cos(self.elevation_diff)*np.sin(self.azimuth_diff),
-                           np.cos(self.elevation_diff)*np.cos(self.azimuth_diff),
-                           np.sin(self.elevation_diff)])  # diffusers normal
         plan_sunl = np.cross(vect_sun, self.len_vector)
-        beta = np.arccos(np.dot(plan_sunl, normal) / (np.linalg.norm(plan_sunl, axis=1) * np.linalg.norm(normal)))
+        beta = np.arccos(np.dot(plan_sunl, self.normal) / (np.linalg.norm(plan_sunl, axis=1) * np.linalg.norm(self.normal)))
         beta_t = np.arange(-self.omega, self.omega + angle_res, angle_res)
         beta = beta[:, np.newaxis] + beta_t
         return beta
@@ -194,10 +207,9 @@ class LenticularDiffuser(Diffuser):
             vect_sun : sun vectors
             Anle_res : output angular resolution
         """
-        gamma = np.arccos(np.abs(np.dot(vect_sun, self.len_vector)) / (
-                    np.linalg.norm(vect_sun, axis=1) * np.linalg.norm(self.len_vector)))
-        ind = np.where((vect_sun[:, 0] < 0))
-        gamma[ind] = -gamma[ind] + np.pi
+        gamma = np.arccos(np.dot(vect_sun, self.len_vector))
+        #ind = np.where((vect_sun[:, 0] < 0))
+        #gamma[ind] = -gamma[ind] + np.pi
         gamma = gamma[:, np.newaxis]
         gamma = np.tile(gamma, (1, int((2 * self.omega + Angle_res) // Angle_res + 1)))  # shape (T, NPoints)
         return gamma
