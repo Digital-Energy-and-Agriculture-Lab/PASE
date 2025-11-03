@@ -482,9 +482,8 @@ class Ray_casting_scene:
         else:  # no sun tracking
             self.diffuse_mask = self.get_diffuse_mask(self.geometry)
             self.dir_mask = self.get_direct_mask(sun_P, self.geometry)
-            self.diffu_map = self.diffuser_map(sun_P, self.geometry,
-                                               diffusers=self.diffusers)
-
+            self.diffuser_mask = self.get_diffuser_mask(self.geometry)
+        self.compute_diffuser_map(sun_P)
         if visualization == True:
             self.visualize_direct_light_map(Sun_P_map_to_visualize)
             self.visualize_diffuse_light_map(Sun_P_map_to_visualize)
@@ -565,36 +564,30 @@ class Ray_casting_scene:
 
         return diffuse_mask
 
-    def diffuser_map(self, sun_P, geometry, diffusers, scheme='Reinhart', MF=1, n_small_suns=180):
+    def get_diffuser_mask(self, geometry):
         geometry = geometry.threshold(value=1, scalars="type").extract_surface()
         # Handle empty geometry: return full diffuse light
         if geometry.n_faces_strict == 0:
             print("Geometry is empty. Returning full diffuse illumination.")
             return np.zeros(self.n_sourcepoints, dtype=np.float16)
 
-        # Get direction of ray to reach the small suns and compute the sky view of each point
-        if scheme.lower() == 'reinhart':
-            sky = ReinhartSky(MF=MF)
-            pTarget = np.column_stack([sky.reinhart_patches.x,
-                                       sky.reinhart_patches.y,
-                                       sky.reinhart_patches.z])
-            n_small_suns = len(sky.reinhart_patches)
-        elif scheme.lower() == 'fibonacci':
-            pTarget = fibonacci_half_sphere(n_small_suns)
-        else:
-            raise NotImplementedError('Unrecognized sky discretization scheme')
+        pTarget = np.column_stack([self.discrete_sky.x,
+                                   self.discrete_sky.y,
+                                   self.discrete_sky.z])
+        n_sky_elements = len(self.discrete_sky)
+
         # Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
         SourcePoints = np.repeat(np.column_stack((
             self.sourcepoints[:, 0],
             self.sourcepoints[:, 1],
             self.sourcepoints[:, 2]
         )),
-            n_small_suns,
+            n_sky_elements,
             axis=0)
-        W = diffusers.get_light_direction(sun_P, pTarget)
+        #W = diffusers.get_light_direction(sun_P, pTarget)
         # Creation of the target points array (Nx3) with N = len(Source) * len(n_small_suns)
         TargetPoints = np.tile(pTarget, [self.n_sourcepoints, 1])
-        target_ID = np.tile(np.arange(0, pTarget.shape[0], 1),self.n_sourcepoints)
+        # target_ID = np.tile(np.arange(0, pTarget.shape[0], 1),self.n_sourcepoints)
         # Computation of the ray interception of the N rays
         # id_rays_stopped provided the index of the ray which has been intercepted
         intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
@@ -603,41 +596,19 @@ class Ray_casting_scene:
                                                                         retry=False)
 
         id_rays_stopped_filtred = self.self_intercept(SourcePoints, intercept_points, id_rays_stopped, tol=0.01)
-        target_ID_stopped = target_ID[id_rays_stopped_filtred]
-        # Creation of a vector providing the sourceID from which each ray has been shooted
-        weight = W[:,target_ID_stopped]
-        SourceID = np.repeat(np.linspace(0,
-                                         self.n_sourcepoints - 1,
-                                         self.n_sourcepoints),
-                             n_small_suns,
-                             axis=0)
+        diffuser_mask = np.zeros(self.n_sourcepoints * n_sky_elements, bool)
+        diffuser_mask[id_rays_stopped_filtred] = 1
 
-        # Touched provide a list with the sourceID of the intercept ray
-        # Then the number of time a ray from a position has been intercepted is counted
-        # and given in the counts variable
-        Touched = SourceID[id_rays_stopped_filtred]
-        unique, counts = np.unique(Touched, return_counts=True)
+        diffuser_mask = diffuser_mask.reshape(self.n_sourcepoints, n_sky_elements)
+        return diffuser_mask
 
-        # Compute the cos(zenith angle) of all the small suns for the normalization
-        _azimuth_angle_all, _zenith_angle_all = cf.get_zenith_angle_from_cart(TargetPoints)
-        _cos_zenith_angle_all = np.cos(_zenith_angle_all).reshape(self.n_sourcepoints, n_small_suns)
-
-        # Compute the cos(zenith angle) of the small suns that do NOT contribute to the diffuse map
-        # (i.e. rays that were intercepted)
-
-        _mask = np.zeros(_cos_zenith_angle_all.size, bool)
-        _mask[id_rays_stopped_filtred] = 0
-        _cos_zenith_angle_blocked = _cos_zenith_angle_all.copy()
-        _mask = _mask.reshape(self.n_sourcepoints, n_small_suns)
-        _cos_zenith_angle_blocked[_mask] = 0
-
-        # Creation of the empty matrix of sky view
-        Diffu = np.ones(self.n_sourcepoints, dtype=np.float16)
-
-        # Computation of the sky view by removing the fraction of intercepted ray at each location
-        Diffu[unique.astype("int")] = np.sum(_cos_zenith_angle_blocked[unique.astype("int"), :], axis=1)
-
-        return Diffu
+    def compute_diffuser_map(self, sun_P):
+        pTarget = np.column_stack([self.discrete_sky.x,
+                                   self.discrete_sky.y,
+                                   self.discrete_sky.z])
+        _cos_elev = self.discrete_sky['cos(z)']
+        weight = self.diffusers.get_light_direction(sun_P, pTarget)
+        self.diffuser_map = np.einsum('ij, j, kj->ik', weight, _cos_elev, self.diffuser_mask)
 
     def get_direct_map_by_flag(self,Flags):
         """
@@ -1011,6 +982,73 @@ class Ray_casting_scene:
                                       np.array(diffuse_shaded_weights_map.sum(axis=1), dtype=np.float32),
                                       geo,
                                       "Unweighted shaded diffuse fuzzy mask [-]")
+
+    def visualize_diffuser_light_map(self, Sun_P_map_to_visualize, sun_P):
+        """
+        Open the visualization of the diffuse light map for a specific
+        tilt of the PV modules if there is a rotation axis
+        (corresponding to a sun position from the sun positions sampled vector)
+
+        Parameters
+        ----------
+        Sun_P_map_to_visualize : integer
+            id of the sun position in the sun positions sampled vector
+
+        Returns
+        -------
+        None.
+
+        """
+        labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)', ylabel='Y (NORTH)')
+
+        plotter = pyV.Plotter()
+
+        plotter.add_mesh(self.geometry.threshold(value=0, scalars="type", method='lower'), color='black')
+        plotter.add_mesh(self.geometry.threshold(value=1, scalars="type"), color='skyblue')
+        ground = np.array([[-200, 200, 0],
+                           [200, 200, 0],
+                           [-200, -200, 0],
+                           [200, -200, 0]])
+
+        ground_m = np.hstack([[3, 0, 1, 2],
+                              [3, 1, 2, 3], ])
+
+        grnd = pyV.PolyData(ground, ground_m)
+
+        plotter.add_mesh(grnd, color='green')
+
+        plotter.add_axes(**labels)
+
+        plotter.add_mesh(self.sourcepoints[:, :-1],
+                         scalars=np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32),
+                         point_size=10,
+                         lighting=False,
+                         show_edges=False,
+                         scalar_bar_args={"title": 'Diffuser map'},
+                         clim=[np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32).min(),
+                               np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32).max()])
+        D = self.geometry.center_of_mass()
+        plotter.add_lines(np.array([D, D+sun_P[Sun_P_map_to_visualize]]), color='yellow', width=1)
+        plotter.add_lines(np.array([D, D + self.diffusers.normal]), color='black',width=1)
+        plotter.add_lines(np.array([D, D + self.diffusers.len_vector]), color = 'black', width = 1)
+        dr = 3*np.array([self.diffusers.x_sr[Sun_P_map_to_visualize, :],
+                       self.diffusers.y_sr[Sun_P_map_to_visualize, :],
+                       self.diffusers.z_sr[Sun_P_map_to_visualize, :],
+                       ])
+        dr = dr.T
+        N = dr.shape[0]
+        points = np.vstack([np.repeat(D[None, :], N, axis=0), D - dr])
+
+        lines = np.hstack([[2, i, i + N] for i in range(N)])
+        poly = pyV.PolyData(points, lines=lines)
+
+        plotter.add_mesh(poly, color='red', line_width=1)
+        plotter.show()
+        """open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
+                                      np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32),
+                                      self.geometry,
+                                      "Unweighted shaded diffuse fuzzy mask [-]")"""
+
 
     def visualize_daily_irrad_map(self, year, julian_day):
         """
