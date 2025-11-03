@@ -109,10 +109,10 @@ class PV_Configuration_3D:
         self.visualization = visualization
         
         if panel_thickness is True:
-            first_panel = self.create_first_panel_3D(PV_i["PanelDimensionZ"])
+            first_panel = self.create_first_panel_3D(self.panel_dim_x, self.panel_dim_y, PV_i["PanelDimensionZ"])
             first_diffuser = self.create_first_panel_3D(diffuser_dimX, diffuser_dimY, diffuser_dimZ) if diffuser_between_panels == True else None
         else:
-            first_panel = self.create_first_panel( PV_i["PanelDimensionZ"] / 2)
+            first_panel = self.create_first_panel(self.panel_dim_x, self.panel_dim_y, PV_i["PanelDimensionZ"] / 2)
             first_diffuser = self.create_first_panel(diffuser_dimX, diffuser_dimY, diffuser_dimZ / 2) if diffuser_between_panels == True else None
         PV_block_PD, xyz_block = self.create_block_of_panels(first_panel,
                                                              diffuser_row_end,
