@@ -10,6 +10,7 @@ import numpy as np
 import os
 import pickle
 
+from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
@@ -22,7 +23,7 @@ from pase.ENVIRONMENT.mesh import Mesh
 from pase.ENVIRONMENT.sky_model import ReinhartSky
 from pase.PHOTOVOLTAICS.production import PV_Production
 from pase.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
-
+from pase.ENVIRONMENT.diffuser import LenticularDiffuser
 PASE_Logger()
 # Import of general parameters
 Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inputs
@@ -30,12 +31,12 @@ Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inpu
 AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
 crop_config = YAML_Inputs_provider(file='grassim_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
-
+diffuser_config = YAML_Inputs_provider(file='dplenticular_3D 20 LPI UV-LF.yaml', subpath=os.path.join('HARDWARE', 'DIFFUSERS')).inputs
 # Using Sky Types characterization while simulating an AV central with solar
 # tracking is very computer intensive ; InputChecker asks the user to reconsider
 input_checker = InputsEvaluator(Loc_1, AV_1)
 
-PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
+PV_params_dict = Inputs_aggregator([AV_1, PV_module_1,diffuser_config]).aggregated_inputs
 
 # Import of weather data and computation of daily weather data
 WD = Weather_data(Loc_1['Latitude'],
@@ -103,10 +104,13 @@ discrete_sky = ReinhartSky(MF=Loc_1['MF']).reinhart_patches
 # Computation of sun and light data
 Light_instance = Light(WD.nyears_data, Sun_positions_complete)
 
+# Configuration of the diffuser
+Diffuser = LenticularDiffuser(AV_1['CentralAzimut'], PV_params_dict['TiltY'])
 # Instantiation of light ray casting model (direct and diffuse) with points of interest and scene
 L = Ray_casting_scene(mesh=M,
                       geometry=PV_1_3Dconfig.PV_central_PD,
-                      discrete_sky=discrete_sky)
+                      discrete_sky=discrete_sky,
+                      diffusers=Diffuser)
 
 # Run light ray casting model (direct and diffuse) with points of interest and scene
 L.get_light_maps(Sun_positions_samp.solar_vector,
@@ -119,10 +123,14 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP,
                             visualization=True,
                             year=2005, julian_day=5)
 
-L.visualize_direct_light_map(1)
-L.visualize_diffuse_light_map()
-L.visualize_daily_irrad_map(2009, 150)
-
+#L.visualize_direct_light_map(1)
+#L.visualize_diffuse_light_map(1)
+#L.visualize_daily_irrad_map(2008, 150)
+for i in range(len(Sun_positions_samp.solar_vector)//10): L.visualize_diffuser_light_map(48, Sun_positions_samp.solar_vector)
+open_pyvista_3D_visualization(L.sourcepoints[:, :-1],
+                                      np.array(L.diffuser_mask.mean(axis=1), dtype=np.float32),
+                                      L.geometry,
+                                      "Diffuser_mask")
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
 #DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])
 """
@@ -216,7 +224,7 @@ structures.plot()
 merged.plot()
 """
 
-# PV production model based on a geometric approach
+"""# PV production model based on a geometric approach
 PV_central = PV_Production(PV_params_dict)
 PV_central.get_several_years_of_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears_data)
 
@@ -239,3 +247,4 @@ else:
                                 PV_1_3Dconfig.PV_central_PD, M, 2008,
                                 MM_DD='10-10', unit='t/ha')
     save_csv('mean_data.csv', agro_results, ['BM'])
+"""
