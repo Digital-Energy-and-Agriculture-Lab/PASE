@@ -62,7 +62,7 @@ class Plants():
         
         self.BM = self.BMGV+self.BMGR+self.BMDV+self.BMDR
         self.OMDGV = self.maxOMDGV-(self.ageGV*(self.maxOMDGV-self.minOMDGV)/self.LLS) #organic mater digestibility of green vegetative biomass
-        self.OMDGR = self.maxOMDGV-(self.ageGR*(self.maxOMDGV-self.minOMDGV)/(self.ST2-self.ST1)) #organic mater digestibility of green reproductive biomass
+        self.OMDGR = self.maxOMDGR-(self.ageGR*(self.maxOMDGR-self.minOMDGR)/(self.ST2-self.ST1)) #organic mater digestibility of green reproductive biomass
         
         #we assume that at the beginning of the season the plant has at least the minimum amount of N needed for maximum growth
         self.Nconc = self.a_Ncrit*0.01 #*(BMGV+BMGR/1000)^-b_Ncrit
