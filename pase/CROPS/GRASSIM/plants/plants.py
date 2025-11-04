@@ -338,11 +338,11 @@ class Plants():
 
         Args:
             Nmin: soil mineral nitrogen [kgN ha^-1]
-            Nmin type:
+            Nmin type: Numpy array of shape (grid)
             FNAmax: maximal soil nitrogen availability factor [-]
-            FNAmax type:
+            FNAmax type: float
             NSc: soil mineral nitrogen content for maximal N availability [kgN ha^-1]
-            NSc type:
+            NSc type: int
         """
         FNA = FNAmax*(Nmin/NSc)
         FNA = np.clip(FNA, a_min=None, a_max=FNAmax)
