@@ -383,7 +383,7 @@ class Plants():
         self.fN = self.fN.clip(min=0, max=1)
         
         self.RNC = 0.4
-        self.fN = 0.35
+        self.fN = 1
 
 
     def compute_N_demand(self):
@@ -486,6 +486,24 @@ class Plants():
             self.BMDV / 10 / self.BDDV,
             self.BMDR / 10 / self.BDDR
         ])
+
+    def update_apex_grazed (self, cut_height, day, cut_dates) :
+        """Update apex_grazed from 0 to one if topping (cut) during reproductive growth (REP>0).
+        Once apex_grazed = 1, it remains 1, preventing future reproductive growth.
+
+        Args:
+            day: today's date
+            day type: datetime object"""
+
+        if day in cut_dates:
+            # condition : apex non encore brouté, croissance reproductive en cours, et hauteur > cut_height
+            condition = (
+                    (self.apex_grazed == 0)
+                    & (self.REP > 0)
+                    & ((self.BMGR / 10 / self.BDGR) > cut_height)
+            )
+
+            self.apex_grazed = np.where(condition, 1, self.apex_grazed)
 
     def update_age(self):
         """Update age of compartments [°C day] from biomass,growth,senescence, abscission and Temp [kgDM ha^-1]."""
