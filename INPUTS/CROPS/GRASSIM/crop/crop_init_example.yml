@@ -72,4 +72,9 @@ Tmax:
     Value : 18
     Type: float
     Limit: [0,100]
-    Definition : Maximum ST temp
+    Definition : Ceiling ST temp
+Tstop:
+    Value : 30
+    Type: float
+    Limit: [0,100]
+    Definition : Maximum ST temp (if method=STICS)

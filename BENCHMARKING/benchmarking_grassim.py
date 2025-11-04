@@ -151,11 +151,7 @@ else:
     visualize_map_of_a_variable(crop_config, agro_results,'BM',
                                 PV_1_3Dconfig.PV_central_PD, M, Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='t/ha')
-    save_csv('mean_data_dates.csv', agro_results, ['BM','BMGV','BMGR','BMDV', 'BMDR','exported_BM', 'exported_N', 'exported_digestibleOM',
-                                                   'fert_min','fert_org','mineralization','immobilization','W','N_leached','N_from_rain','N2Oemisson',
-                                                   'GRO','fT','fPARi','fW','AET','ST','FNA','SEA','RNC','fN',
-                                                   'N_supply','N_demand', 'N_uptake', 'sward_height','FNH','PropNplant',
-                                                   'NGV','NGR','NDV','NDR'])
+    save_csv('mean_data_dates.csv', agro_results, ['BM','exported_BM','ST'])
 
     #choosing variables among variable_to_save.yml
 
@@ -163,7 +159,7 @@ else:
 #Plots time series"
 ###################################################
 
-plot_variables([agro_results], ['exported_BM'], '2017-01-01', '2017-12-31')
+plot_variables([agro_results], ['ST'], '2020-01-01', '2020-12-31')
 
 
 #################################################################################
