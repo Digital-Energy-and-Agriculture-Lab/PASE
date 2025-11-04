@@ -461,6 +461,7 @@ class Plants():
         self.update_green_biomass()
         self.update_dead_biomass()
         self.update_total_biomass_and_sward_height()
+        self.update_age()
         self.update_digestibility()
         self.compute_digestible_organic_matter()
         self.update_nitrogen_content()
@@ -485,6 +486,38 @@ class Plants():
             self.BMDV / 10 / self.BDDV,
             self.BMDR / 10 / self.BDDR
         ])
+
+    def update_age(self):
+        """Update age of compartments [°C day] from biomass,growth,senescence, abscission and Temp [kgDM ha^-1]."""
+        mask_above_Tmin = self.Temp > self.Tmin
+
+        self.ageGV[mask_above_Tmin] = (
+                (self.BMGV[mask_above_Tmin] - self.SENGV[mask_above_Tmin])
+                / (self.BMGV[mask_above_Tmin] - self.SENGV[mask_above_Tmin] + self.GROGV[mask_above_Tmin])
+                * (self.ageGV[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageGV = np.maximum(self.ageGV, 0)  #to avoid negatives values because of floating point
+
+        self.ageGR[mask_above_Tmin] = (
+                (self.BMGR[mask_above_Tmin] - self.SENGR[mask_above_Tmin])
+                / (self.BMGR[mask_above_Tmin] - self.SENGR[mask_above_Tmin] + self.GROGR[mask_above_Tmin])
+                * (self.ageGR[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageGR = np.maximum(self.ageGR, 0)
+
+        self.ageDV[mask_above_Tmin] = (
+                (self.BMDV[mask_above_Tmin] - self.ABSDV[mask_above_Tmin])
+                / (self.BMDV[mask_above_Tmin] - self.ABSDV[mask_above_Tmin] + (1 - self.sigmaGV) * self.SENGV[mask_above_Tmin])
+                * (self.ageDV[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageDV = np.maximum(self.ageDV, 0)
+
+        self.ageDR[mask_above_Tmin] = (
+                (self.BMDR[mask_above_Tmin] - self.ABSDR[mask_above_Tmin])
+                / (self.BMDR[mask_above_Tmin] - self.ABSDR[mask_above_Tmin] + (1 - self.sigmaGR) * self.SENGR[mask_above_Tmin])
+                * (self.ageDR[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageDR = np.maximum(self.ageDR, 0)
 
     def update_digestibility(self):
         """Update digestibility (OMD) [g g^-1] based on age and seasonal temperature."""
