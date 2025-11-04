@@ -114,7 +114,7 @@ class Plants():
         Args:
             day: today's date
             day type: datetime object
-            WD: weather data (Rain [mm], Avg_temp [°C])
+            WD: weather data (Rain [mm], Avg_temp [°C], Max_Temp [°C])
             WD type: dictionary
             ET0: potential evapotranspiration [mm]
             ET0 type: float
@@ -127,6 +127,7 @@ class Plants():
         self.Temp = np.full(self.grid, WD['Avg_temp'])
         self.PARi = day_irr*0.48
         self.ET0 = ET0
+        self.Tmax = np.full(self.grid, WD['Max_temp'])
 
         if self.day.dayofyear == 1:
             self.ST = np.zeros(self.grid)
@@ -273,55 +274,62 @@ class Plants():
 
         self.fPARi = np.select(conditions_fPARi, values_fPARi, default=(1 / 22 * -self.PARi) + 27 / 22)
 
-    def compute_fW(self, W):
+    def compute_fW(self, W, method):
         """Compute a growth reduction function (fW) based on water stress (W) [-].
 
-        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
-
         Args:
+            method : method used
+                - 'Jouven2006' , default, from Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+                - 'Bonnard2025', quadratic function not dependent from ET0, from Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+            method type : str
             W: water stress
             W type: Numpy array of shape (grid)
         """
-        conditions_fW = [
-            self.ET0 < 3.81,                        # ET0 < 3.81
-            (self.ET0 >= 3.81) & (self.ET0 < 6.35),  # 3.81 <= ET0 < 6.35
-        ]
 
-        # Define corresponding values for each condition
-        values_fW = [
-            np.select(
-                [
-                    W < 0.2,                # W < 0.2
-                    W < 0.4,                # 0.2 <= W < 0.4
-                    W < 0.6,                # 0.4 <= W < 0.6
-                ],
-                [
-                    4 * W,                  # W < 0.2
-                    0.75 * W + 0.65,        # 0.2 <= W < 0.4
-                    0.25 * W + 0.85,        # 0.4 <= W < 0.6
-                ],
-                default=1                           # W >= 0.6
-            ),
-            np.select(
-                [
-                    W < 0.2,                # W < 0.2
-                    W < 0.4,                # 0.2 <= W < 0.4
-                    W < 0.6,                # 0.4 <= W < 0.6
-                    W < 0.8,                # 0.6 <= W < 0.8
-                ],
-                [
-                    2 * W,                  # W < 0.2
-                    1.5 * W + 0.1,          # 0.2 <= W < 0.4
-                    W + 0.3,                # 0.4 <= W < 0.6
-                    0.5 * W + 0.6,          # 0.6 <= W < 0.8
-                ],
-                default=W                    # W >= 0.8
-            )
-        ]
+        if method == 'Jouven2006':
+            conditions_fW = [
+                self.ET0 < 3.81,                        # ET0 < 3.81
+                (self.ET0 >= 3.81) & (self.ET0 < 6.35),  # 3.81 <= ET0 < 6.35
+            ]
 
-        # Apply np.select for the final result
-        self.fW = np.select(conditions_fW, values_fW, default=W)
-    
+            # Define corresponding values for each condition
+            values_fW = [
+                np.select(
+                    [
+                        W < 0.2,                # W < 0.2
+                        W < 0.4,                # 0.2 <= W < 0.4
+                        W < 0.6,                # 0.4 <= W < 0.6
+                    ],
+                    [
+                        4 * W,                  # W < 0.2
+                        0.75 * W + 0.65,        # 0.2 <= W < 0.4
+                        0.25 * W + 0.85,        # 0.4 <= W < 0.6
+                    ],
+                    default=1                           # W >= 0.6
+                ),
+                np.select(
+                    [
+                        W < 0.2,                # W < 0.2
+                        W < 0.4,                # 0.2 <= W < 0.4
+                        W < 0.6,                # 0.4 <= W < 0.6
+                        W < 0.8,                # 0.6 <= W < 0.8
+                    ],
+                    [
+                        2 * W,                  # W < 0.2
+                        1.5 * W + 0.1,          # 0.2 <= W < 0.4
+                        W + 0.3,                # 0.4 <= W < 0.6
+                        0.5 * W + 0.6,          # 0.6 <= W < 0.8
+                    ],
+                    default=W                    # W >= 0.8
+                )
+            ]
+
+            # Apply np.select for the final result
+            self.fW = np.select(conditions_fW, values_fW, default=W)
+
+        elif method == 'Bonnard2025':
+            self.fW=(-1.2387 * (W ** 2) + 2.2387 * W - 0.0056)* (18/self.Tmax)
+            self.fW = np.clip(self.fW, 0, 1)
 
     def compute_N_supply(self, Nmin, FNAmax, NSc):
         """Compute potential nitrogen supply of the soil [kgN ha^-1].

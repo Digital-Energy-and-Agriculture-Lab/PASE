@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import pyvista as pyv
 
+pyv.global_theme.allow_empty_mesh = True
 
 # ----- Constants -----
 EPS = 1e-12
@@ -1054,7 +1055,8 @@ class PVConfiguration3D(MultiBlockPASE):
         tilt_deg = float(config["TiltY"])            # degrees
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
-            raise ValueError("All count parameters must be >= 1")
+            print('Some parameters on number of panels/blocks of panels are set'
+                  ' to 0 ; there will be no panels in the simulation.')
         if any(v <= 0 for v in
                [panel_width, panel_height, panel_spacing_x, panel_spacing_y, block_spacing_x, block_spacing_y]):
             raise ValueError("All dimension parameters must be > 0")
