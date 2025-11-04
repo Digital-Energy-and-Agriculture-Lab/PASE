@@ -37,32 +37,32 @@ BMDR:
 ageGV:
     Value: 0
     Type: float
-    Limit: [0,200]
-    Unit: celcius degrees[°C]
+    Limit: [0,10000]
+    Unit: degrees-day[°C d]
     Definition: Age of green vegetative parts
 ageDV:
     Value: 0
     Type: float
-    Limit: [0,200]
-    Unit: celcius degrees[°C]
+    Limit: [0,10000]
+    Unit: degrees-day[°C d]
     Definition: Age of dead vegetative parts
 ageGR:
     Value: 0
     Type: float
-    Limit: [0,200]
-    Unit: celcius degrees[°C]
+    Limit: [0,10000]
+    Unit: degrees-day[°C]
     Definition: Age of green reproductive parts
 ageDR:
     Value: 0
     Type: float
-    Limit: [0,200]
-    Unit: celcius degrees[°C]
+    Limit: [0,10000]
+    Unit: degrees-day[°C]
     Definition: Age of dead reproductive parts
 apex_grazed:
     Value: 0
     Type: integer
     Limit: [0,1]
-    Definition: 1 if apex is grazes on the initial day, 0 if not
+    Definition: 1 if apex is grazed on the initial day, 0 if not, once set to 1, remains 1
 Tmin:
     Value : 0
     Type: float
