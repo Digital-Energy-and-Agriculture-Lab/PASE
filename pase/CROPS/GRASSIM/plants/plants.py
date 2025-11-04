@@ -57,7 +57,7 @@ class Plants():
         else :
             raise ValueError(f"BM_init_type '{self.inits['BM_init_type']}' is not valid")
         
-        for variable_name in ['ageGV', 'ageGR', 'ageDV', 'ageDR', 'apex_grazed', 'Tmin', 'Tmax']:
+        for variable_name in ['ageGV', 'ageGR', 'ageDV', 'ageDR', 'apex_grazed','Tmin','Tmax','Tstop']:
             setattr(self, variable_name, np.full(self.grid, self.inits[variable_name]))
         
         self.BM = self.BMGV+self.BMGR+self.BMDV+self.BMDR
@@ -163,18 +163,42 @@ class Plants():
         self.PGRO = self.PARi*self.RUEmax*(1-np.exp(-0.6*self.LAI))*10
 
 
-    def compute_st(self):
+    def compute_st(self,method='T_fixed'):
         """Compute sum of temperature (ST) [°C day] from January 1.
 
-        Tmin = minimal temperature for plant growth [°C]. Temp below Tmin do not influence ST.
-        Tmax= maximal temperature for plant growth [°C]. Temp above Tmax do not influence ST.
-        """
-        mask_in_range = (self.Temp >= self.Tmin) & (self.Temp <= self.Tmax)
-        mask_above_Tmax = (self.Temp > self.Tmax)
+        Args:
+            method = method used to compute ST, differs on the source and number of T° thresholds used
+                - T_fixed : use parameters Tmin and Tmax from yaml file (default)
+                - STICS : use parameters Tmin, Tmax and Tstop from yaml file, linear decrease after Tmax (Brisson et al., 2009 ; ISBN 978-2-7592-0169-3)
+                - T_from_PFT : use T0 adn Tlimit from the csv file with PFT_parameters
+            method type : str
 
-        self.ST[mask_in_range] += self.Temp[mask_in_range] - self.Tmin[mask_in_range]
-        self.ST[mask_above_Tmax] += self.Tmax[mask_above_Tmax] - self.Tmin[mask_above_Tmax]
-    
+        T0 or Tmin = minimal temperature for plant growth [°C]. Temp below do not influence ST.
+        Tlimit or Tmax = ceiling temperature for plant growth [°C]. Temp above Tlimit do not influence ST. Even linear decrease until Tstop in STICS method.
+        Tstop = maximal temperature where no more development and no ST contribution [°C]£
+        NB : GRASSIM phenological stages are parametrized with Tmin=0°C
+        """
+        if method == 'STICS':
+            mask_in_range = (self.Temp >= self.Tmin) & (self.Temp <= self.Tmax)
+            mask_above_Tmax = (self.Temp > self.Tmax) & (self.Temp < self.Tstop)
+
+            self.ST[mask_in_range] += self.Temp[mask_in_range] - self.Tmin[mask_in_range]
+            self.ST[mask_above_Tmax] += ((self.Tmax[mask_above_Tmax] - self.Tmin[mask_above_Tmax]) /
+                                         (self.Tmax[mask_above_Tmax] - self.Tstop[mask_above_Tmax]) *
+                                         ( self.Temp[mask_above_Tmax] - self.Tstop[mask_above_Tmax]))
+
+        elif method == 'T_from_PFT':
+            mask_in_range = (self.Temp >= self.T0) & (self.Temp <= self.Tlimit)
+            mask_above_Tlimit = (self.Temp > self.Tlimit)
+
+            self.ST[mask_in_range] += self.Temp[mask_in_range] - self.T0
+            self.ST[mask_above_Tlimit] += self.Tlimit - self.T0
+
+        elif method == 'T_fixed' :
+            mask_in_range = (self.Temp >= self.Tmin) & (self.Temp <= self.Tmax)
+            mask_above_Tmax = (self.Temp > self.Tmax)
+            self.ST[mask_in_range] += self.Temp[mask_in_range] - self.Tmin[mask_in_range]
+            self.ST[mask_above_Tmax] += self.Tmax[mask_above_Tmax] - self.Tmin[mask_above_Tmax]
 
     def compute_fAge(self):
         """Compute a function (fage) representing the effect of compartment age (AGE) [°C day] on senescence (SEN) and abscission (ABS) functions.

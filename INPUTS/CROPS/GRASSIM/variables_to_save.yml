@@ -8,6 +8,7 @@ soil_variables:
 
 crop_variables:
 - BM
+- ST
 - N_uptake
 - QNGV
 - FNH

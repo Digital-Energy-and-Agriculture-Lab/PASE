@@ -85,7 +85,7 @@ def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
     crop.compute_aet() # Uses Kc (BMGV in the future), needed for soil water balance
     crop.compute_potential_growth()
 
-    crop.compute_st()
+    crop.compute_st(method='T_fixed')
     crop.compute_fAge() # need st, used for SEN & ABS
     crop.compute_senescence_abscission()
     crop.compute_N_plant_litter()
