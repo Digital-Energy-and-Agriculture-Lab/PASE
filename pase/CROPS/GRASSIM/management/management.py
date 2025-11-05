@@ -146,6 +146,13 @@ class Management():
         self.fert_today_ = self.fert_today(day)
         self.rotate_today_ = self.rotate_today(day, crop)
 
+        if self.cut_today_:
+            crop.update_apex_grazed(
+                cut_height=self.config.get('cut_height', np.nan),
+                day=day,
+                cut_dates=self.cut_dates
+            )
+
         if self.rotate_today_:
             self.update_paddock()
         if self.cut_today_:

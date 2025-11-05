@@ -8,14 +8,23 @@ soil_variables:
 
 crop_variables:
 - BM
+- BMGV
+- BMGR
 - ST
+- OMDGV
+- OMDGR
 - N_uptake
 - QNGV
 - FNH
 - GRO
 - GROGV
 - SENGV
-- fW
+- ageGV
+- ageGR
+- ageDV
+- ageDR
+- fageGV
+- apex_grazed
 
 management_variables:
 - exported_BM

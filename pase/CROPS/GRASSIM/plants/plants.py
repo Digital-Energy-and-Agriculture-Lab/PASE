@@ -62,7 +62,7 @@ class Plants():
         
         self.BM = self.BMGV+self.BMGR+self.BMDV+self.BMDR
         self.OMDGV = self.maxOMDGV-(self.ageGV*(self.maxOMDGV-self.minOMDGV)/self.LLS) #organic mater digestibility of green vegetative biomass
-        self.OMDGR = self.maxOMDGV-(self.ageGR*(self.maxOMDGV-self.minOMDGV)/(self.ST2-self.ST1)) #organic mater digestibility of green reproductive biomass
+        self.OMDGR = self.maxOMDGR-(self.ageGR*(self.maxOMDGR-self.minOMDGR)/(self.ST2-self.ST1)) #organic mater digestibility of green reproductive biomass
         
         #we assume that at the beginning of the season the plant has at least the minimum amount of N needed for maximum growth
         self.Nconc = self.a_Ncrit*0.01 #*(BMGV+BMGR/1000)^-b_Ncrit
@@ -415,7 +415,7 @@ class Plants():
         self.fN = self.fN.clip(min=0, max=1)
         
         self.RNC = 0.4
-        self.fN = 0.35
+        self.fN = 1
 
 
     def compute_N_demand(self):
@@ -493,6 +493,7 @@ class Plants():
         self.update_green_biomass()
         self.update_dead_biomass()
         self.update_total_biomass_and_sward_height()
+        self.update_age()
         self.update_digestibility()
         self.compute_digestible_organic_matter()
         self.update_nitrogen_content()
@@ -517,6 +518,56 @@ class Plants():
             self.BMDV / 10 / self.BDDV,
             self.BMDR / 10 / self.BDDR
         ])
+
+    def update_apex_grazed (self, cut_height, day, cut_dates) :
+        """Update apex_grazed from 0 to one if topping (cut) during reproductive growth (REP>0).
+        Once apex_grazed = 1, it remains 1, preventing future reproductive growth.
+
+        Args:
+            day: today's date
+            day type: datetime object"""
+
+        if day in cut_dates:
+            # condition : apex non encore brouté, croissance reproductive en cours, et hauteur > cut_height
+            condition = (
+                    (self.apex_grazed == 0)
+                    & (self.REP > 0)
+                    & ((self.BMGR / 10 / self.BDGR) > cut_height)
+            )
+
+            self.apex_grazed = np.where(condition, 1, self.apex_grazed)
+
+    def update_age(self):
+        """Update age of compartments [°C day] from biomass,growth,senescence, abscission and Temp [kgDM ha^-1]."""
+        mask_above_Tmin = self.Temp > self.Tmin
+
+        self.ageGV[mask_above_Tmin] = (
+                (self.BMGV[mask_above_Tmin] - self.SENGV[mask_above_Tmin])
+                / (self.BMGV[mask_above_Tmin] - self.SENGV[mask_above_Tmin] + self.GROGV[mask_above_Tmin])
+                * (self.ageGV[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageGV = np.maximum(self.ageGV, 0)  #to avoid negatives values because of floating point
+
+        self.ageGR[mask_above_Tmin] = (
+                (self.BMGR[mask_above_Tmin] - self.SENGR[mask_above_Tmin])
+                / (self.BMGR[mask_above_Tmin] - self.SENGR[mask_above_Tmin] + self.GROGR[mask_above_Tmin])
+                * (self.ageGR[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageGR = np.maximum(self.ageGR, 0)
+
+        self.ageDV[mask_above_Tmin] = (
+                (self.BMDV[mask_above_Tmin] - self.ABSDV[mask_above_Tmin])
+                / (self.BMDV[mask_above_Tmin] - self.ABSDV[mask_above_Tmin] + (1 - self.sigmaGV) * self.SENGV[mask_above_Tmin])
+                * (self.ageDV[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageDV = np.maximum(self.ageDV, 0)
+
+        self.ageDR[mask_above_Tmin] = (
+                (self.BMDR[mask_above_Tmin] - self.ABSDR[mask_above_Tmin])
+                / (self.BMDR[mask_above_Tmin] - self.ABSDR[mask_above_Tmin] + (1 - self.sigmaGR) * self.SENGR[mask_above_Tmin])
+                * (self.ageDR[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageDR = np.maximum(self.ageDR, 0)
 
     def update_digestibility(self):
         """Update digestibility (OMD) [g g^-1] based on age and seasonal temperature."""
