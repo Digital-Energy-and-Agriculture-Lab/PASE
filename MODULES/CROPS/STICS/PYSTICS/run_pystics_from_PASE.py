@@ -56,7 +56,7 @@ def run_independant_usms_in_pystics(config, WD, daily_irr, scenario_P):
                 
                 # Read input files from pystics/parametrization_files/example folder for the USM associated to chosen species and variety
                 weather, crop, manage, soil, station, constants, initial = parametrization_from_stics_example_files(WD_file, Simu_init['Variety'], PASE=1)
-                
+                ## !! WARNING: check ETP calculation parameter !!!! To do this, set it to 2.
                 # Run the simulation
                 pystics_df, pystics_mat_list = run_pystics_simulation(weather, crop, soil, constants, manage, station, initial)
                 
