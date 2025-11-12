@@ -1,0 +1,275 @@
+from abc import ABC, abstractmethod
+import pyvista as pyv
+
+from pase.pase_math import compute_block_centers, compute_panel_grid_positions
+
+
+class PVStructurePart(ABC):
+    """Abstract interface for PV structures (panels, poles, trackers, etc.)."""
+
+    def __init__(self, shape_type, length, **kwargs):
+        self.shape_type = shape_type  # {circle, square, rectangle}
+
+        self.length = length
+
+        self.parse_kwargs(kwargs)
+
+        self.make_polydata()
+
+    def parse_kwargs(self, kwargs):
+        keys = kwargs.keys()
+
+        if 'radius' in keys:
+            self.radius = kwargs['radius']
+
+        if 'side' in keys:
+            self.side = kwargs['side']
+
+        if 'width' in keys:
+            self.width = kwargs['width']
+            self.height = kwargs['height']
+
+        if 'positioning' in keys:
+            self.pole_ground_positioning = kwargs['positioning']
+        else:
+            self.pole_ground_positioning = 0
+
+    def make_polydata(self):
+        """
+        Create a polydata attribute of shape self.shape_type, that is vertical.
+        It will be rotated in the extension classes.
+        """
+        if self.shape_type.lower() in ['circle', 'cylinder']:
+            self.polydata = pyv.Cylinder(center=(0, 0, 0),
+                                         direction=(0, 0, 1),
+                                         radius=self.radius,
+                                         height=self.length).triangulate()
+        elif self.shape_type.lower() == 'square':
+            self.polydata = pyv.Cube(center=(0, 0, 0),
+                                     x_length=self.side,
+                                     y_length=self.side,
+                                     z_length=self.length
+                                     ).triangulate()
+        elif self.shape_type.lower() == 'rectangle':
+            self.polydata = pyv.Cube(center=(0, 0, 0),
+                                     x_length=self.width,
+                                     y_length=self.height,
+                                     z_length=self.length).triangulate()
+
+
+class Pole(PVStructurePart):
+    def __init__(self, shape_type, length, **kwargs):
+        """
+        Create a vertical pole of shape shape_type and given length in meters.
+        Everything is handled by the parent class PVStructurePart.
+
+        :param shape_type: shape of the profile, choices :
+                           {'circle', 'cylinder', 'square', 'rectangle'}
+        :param length: length in meters [m]
+        :param kwargs: contains parameters of the profile : radius if it's a
+                       cylinder, width and height if rectangle, side if square
+        """
+        super().__init__(shape_type, length, **kwargs)
+
+        self.orientation = 'vertical'
+        self.polydata.translate((0, 0, length/2 + self.pole_ground_positioning), inplace=True)
+
+
+class Purlin(PVStructurePart):
+    def __init__(self, shape_type, length, panel_tilt_Y, **kwargs):
+        super().__init__(shape_type, length, **kwargs)
+
+        # Rotate to make horizontal along y
+        self.orientation = 'horizontal_y'
+        self.polydata.rotate_x(90, inplace=True)
+
+        # Tilt the purlin
+        self.tilt = panel_tilt_Y  # [°]
+        self.polydata.rotate_y(self.tilt, inplace=True)
+
+
+class Rafter(PVStructurePart):
+    def __init__(self, shape_type, length, panel_tilt_Y, **kwargs):
+        super().__init__(shape_type, length, **kwargs)
+
+        # Rotate to make horizontal along x
+        self.orientation = 'horizontal_x'
+        self.polydata.rotate_y(90, inplace=True)
+
+        # Tilt the purlin
+        self.tilt = panel_tilt_Y  # [°]
+        self.polydata.rotate_y(self.tilt, inplace=True)
+
+
+class HorizontalBar(PVStructurePart):
+    def __init__(self, shape_type, length, **kwargs):
+        super().__init__(shape_type, length, **kwargs)
+
+        # Rotate to make horizontal along y
+        self.orientation = 'horizontal_y'
+        self.polydata.rotate_x(90, inplace=True)
+
+
+class PVStructure(ABC):
+    """Abstract interface for PV structures (panels, poles, trackers, etc.)."""
+    def __init__(self, PV_i):
+        
+        self.panels_per_group = PV_i['PanelsPerGroup']
+        self.n_groups_in_block  = int(PV_i['NumberOfPanelsY']
+                                      * PV_i['NumberOfPanelsX']
+                                      /self.panels_per_group)
+        self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
+        self.structure_spacing_x = 0
+        self.structure_spacing_y = ((PV_i['RepetitionDistanceOfPanelsY']
+                                    * PV_i['NumberOfPanelsY'])
+                                    /self.n_groups_in_block)
+        self.structure_height = PV_i['StructureHeight']
+
+        self.pole_shape = PV_i['PoleShape']
+        self.pole_width    = PV_i['PoleWidth']
+        self.pole_height    = PV_i['PoleHeight']
+        self.pole_side = PV_i['PoleSide']
+        self.pole_radius = PV_i['PoleRadius']
+        self.pole_length    = PV_i['PoleLength']
+        self.pole_Rad    = PV_i['PoleRadius']
+        self.pole_ground_positioning = PV_i['PoleGroundPositioning']
+
+        self.purlin_shape = PV_i['PurlinShape']
+        self.purlin_width = PV_i['PurlinWidth']
+        self.purlin_height = PV_i['PurlinHeight']
+        self.purlin_side = PV_i['PurlinSide']
+        self.purlin_radius = PV_i['PurlinRadius']
+        self.purlin_length = self.structure_spacing_y
+
+        self.material = PV_i['Material']
+
+
+class AgrivoltaicFence(PVStructure):
+    def __init__(self, PV_i, **kwargs):
+        super().__init__(PV_i, **kwargs)
+
+        self.panel_width = float(PV_i["PanelDimensionX"])  # X
+        self.panel_height = float(PV_i["PanelDimensionY"])  # Y
+
+        self.panel_spacing_x = float(
+            PV_i["RepetitionDistanceOfPanelsX"])  # pitch X
+        self.panel_spacing_y = float(
+            PV_i["RepetitionDistanceOfPanelsY"])  # pitch Y
+        self.panels_per_block_x = int(PV_i["NumberOfPanelsX"])  # per block
+        self.panels_per_block_y = int(PV_i["NumberOfPanelsY"])  # per block
+
+        self.block_spacing_x = float(
+            PV_i["RepetitionDistanceOfPVBlocksX"])  # block pitch X
+        self.block_spacing_y = float(
+            PV_i["RepetitionDistanceOfPVBlocksY"])  # block pitch Y
+        self.num_blocks_x = int(PV_i["NumberOfPVBlocksX"])  # blocks
+        self.num_blocks_y = int(PV_i["NumberOfPVBlocksY"])  # blocks
+
+        self.base_height = float(PV_i["Height"])  # elevation
+
+    def make_fence_group(self) -> pyv.PolyData:
+        '''
+        creates a structure by combining vertical and horizontal bars 
+        '''
+
+        pole = Pole(self.pole_shape,
+                    length=self.pole_length,
+                    width=self.pole_width,
+                    height=self.pole_height,
+                    side=self.pole_side,
+                    radius=self.pole_radius,
+                    positioning=self.pole_ground_positioning)
+        pole.polydata.translate((0, -self.purlin_length/2, 0), inplace=True)
+        
+        purlin_1 = Purlin(self.purlin_shape,
+                          length=self.purlin_length,
+                          panel_tilt_Y=0.0,
+                          side=self.purlin_side,
+                          width=self.purlin_width,
+                          height=self.purlin_height,
+                          radius=self.purlin_radius)
+        purlin_1.polydata.translate((0.0,
+                                     0,
+                                     self.structure_height),
+                                    inplace=True)
+
+        # 2nd purlin is a copy of purlin1, translated downwards
+        purlin2 = purlin_1.polydata.copy().translate((0, 0, -self.vertical_spacing),
+                                            inplace=True)
+        
+        combined = (pole.polydata
+                    + purlin_1.polydata
+                    + purlin2).triangulate()
+
+        return combined
+
+    def multiFenceGroup(self) -> pyv.MultiBlock:
+
+        # Compute position of groups
+        positions, block_centers, grid_indices = compute_panel_grid_positions(
+            self.num_blocks_x, self.num_blocks_y,
+            self.panels_per_block_x, self.panels_per_block_y,
+            self.block_spacing_x, self.block_spacing_y,
+            self.panel_spacing_x, self.panel_spacing_y,
+            self.base_height,
+        )
+
+        blocks = pyv.MultiBlock()
+
+        for idx in range(self.n_groups_in_block):
+            g = self.make_fence_group()
+            offx, offy, offz = map(float, positions[idx])
+
+            g.translate((0, offy, 0),
+                        inplace=True)
+            blocks.append(g)
+
+        end_pole = Pole('square',
+                        length=self.pole_length,
+                        side=self.pole_width,
+                        positioning=self.pole_ground_positioning)
+        end_pole.polydata.translate((0,
+                                     offy+self.panel_spacing_y/2,
+                                     0.0),
+                                    inplace=True)
+        blocks.append(end_pole.polydata)
+        combined_blocks = blocks.combine()
+        combined_blocks.user_dict = {'Material': self.material}
+
+        return combined_blocks
+
+
+if __name__ == "__main__":
+    from pase.DATA_MANAGEMENT.yaml_inputs_provider import (YAML_Inputs_provider,
+                                                           Inputs_aggregator)
+    import os
+
+    AV_1 = YAML_Inputs_provider(
+        file="Example3_AV_agrivoltaic_fence.yaml",
+        subpath="AV_CENTRAL",
+        parentdir=2
+    ).inputs
+
+    PV_module_1 = YAML_Inputs_provider(
+        file="Example1_PV_Module_landscape.yaml",
+        subpath=os.path.join("HARDWARE", "PV_MODULES"),
+        parentdir=2
+    ).inputs
+
+    Structure = YAML_Inputs_provider(
+        file="agrivoltaic_fence.yaml",
+        subpath=os.path.join("HARDWARE", "STRUCTURES"),
+        parentdir=2
+    ).inputs
+
+    PV_params_dict = Inputs_aggregator([AV_1,
+                                        PV_module_1,
+                                        Structure]).aggregated_inputs
+
+    blocks = AgrivoltaicFence(PV_params_dict).multiFenceGroup()
+
+    pl = pyv.Plotter()
+    pl.add_mesh(blocks, show_edges=True)
+    pl.add_mesh(pyv.Sphere())
+    pl.show_axes()
+    pl.show()
