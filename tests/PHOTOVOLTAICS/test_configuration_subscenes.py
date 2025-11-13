@@ -25,7 +25,7 @@ def _create_three_centrals_with_prefixes():
         NumberOfPanelsX=2, NumberOfPanelsY=2,
         RepetitionDistanceOfPVBlocksX=3.6, RepetitionDistanceOfPVBlocksY=2.4,
         NumberOfPVBlocksX=1, NumberOfPVBlocksY=1,
-        CentralAzimut=0.0, TiltY=10.0,
+        CentralAzimut=0.0, TiltY=10.0, Hinge='center',
     )
     # Different heights to verify z_min ordering
     variants = [
@@ -168,7 +168,7 @@ def test_alias_pv_configuration_3d_multiblock_subset_equivalence():
         NumberOfPanelsX=2, NumberOfPanelsY=1,
         RepetitionDistanceOfPVBlocksX=3.4, RepetitionDistanceOfPVBlocksY=2.2,
         NumberOfPVBlocksX=1, NumberOfPVBlocksY=1,
-        Height=1.0, CentralAzimut=30.0, TiltY=15.0,
+        Height=1.0, CentralAzimut=30.0, TiltY=15.0, Hinge='center',
     )
     cfg_legacy = PV_Configuration_3D(params, visualization=False)
     sub = cfg_legacy.PV_central_MB
