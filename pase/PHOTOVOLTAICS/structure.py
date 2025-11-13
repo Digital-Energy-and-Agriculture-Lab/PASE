@@ -231,10 +231,14 @@ class AgrivoltaicFence(PVStructure):
                         inplace=True)
             blocks.append(g)
 
-        end_pole = Pole('square',
+        end_pole = Pole(self.pole_shape,
                         length=self.pole_length,
-                        side=self.pole_width,
+                        width=self.pole_width,
+                        height=self.pole_height,
+                        side=self.pole_side,
+                        radius=self.pole_radius,
                         positioning=self.pole_ground_positioning)
+
         end_pole.polydata.translate((0,
                                      offy+self.panel_spacing_y/2,
                                      0.0),
