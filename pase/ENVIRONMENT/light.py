@@ -523,7 +523,7 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full diffuse light
-        if geometry.n_faces_strict == 0 :
+        if geometry.number_of_cells == 0 :
             print("Geometry is empty. Returning full diffuse illumination.")
             return np.ones(self.n_sourcepoints, dtype=np.float16)
     
@@ -547,10 +547,22 @@ class Ray_casting_scene:
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
-                                                         TargetPoints,
-                                                         first_point=False,
-                                                         retry=False)
+        try:
+            intercept_points, id_rays_stopped, _ = (geometry
+                                                    .polydata_all_centrals()
+                                                    .multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False))
+
+        except AttributeError as e:
+            intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False)
+
         
         id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
 
@@ -625,7 +637,7 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full direct light
-        if geometry.n_faces_strict == 0 :
+        if geometry.number_of_cells == 0 :
             n_sun_positions = sun_P.shape[0]
             print("Geometry is empty. Returning full direct illumination.")
             return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
@@ -644,10 +656,17 @@ class Ray_casting_scene:
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
+        try:
+            intercept_points, id_rays_stopped, _ = geometry.polydata_all_centrals().multi_ray_trace(SourcePoints,
                                                          TargetPoints,
                                                          first_point=False,
                                                          retry=False)
+        except AttributeError as e:
+            intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False)
         
         #Creation of the initial direct map based on the shape of sun_Positions
         direct_1D_map = np.ones(len(TargetPoints[:,0]), dtype=np.uint16)
