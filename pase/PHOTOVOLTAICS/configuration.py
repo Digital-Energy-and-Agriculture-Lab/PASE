@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pyvista as pyv
 
-from pase.PHOTOVOLTAICS.structure import AgrivoltaicFence
+from pase.PHOTOVOLTAICS.structure import build_structure
 from pase.pase_math import (compute_panel_grid_positions,
                             compute_block_centers,
                             rotate_about_z)
@@ -1129,8 +1129,7 @@ class PVConfiguration3D(MultiBlockPASE):
 
         # Instantiate the base block (based on structure type)
         try:
-            if config['StructureType'].lower() == 'agrivoltaic fence':
-                base_struct = AgrivoltaicFence(config).multiFenceGroup()
+            base_struct = build_structure(config)
         except KeyError as e:
             logging.getLogger(__name__).warning('No StructureType defined;'
                                                 ' skipping structure part: %s',

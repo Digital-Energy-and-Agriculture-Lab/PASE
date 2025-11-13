@@ -14,7 +14,7 @@ dependencies:
   - windrose
   - pvlib
   - pyembree
-  - pyvista
+  - pyvista==0.44.1
   - pyyaml
   - seaborn
   - yaml

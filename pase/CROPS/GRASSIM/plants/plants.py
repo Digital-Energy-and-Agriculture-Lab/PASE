@@ -57,12 +57,12 @@ class Plants():
         else :
             raise ValueError(f"BM_init_type '{self.inits['BM_init_type']}' is not valid")
         
-        for variable_name in ['ageGV', 'ageGR', 'ageDV', 'ageDR', 'apex_grazed', 'Tmin', 'Tmax']:
+        for variable_name in ['ageGV', 'ageGR', 'ageDV', 'ageDR', 'apex_grazed','Tmin','Tmax','Tstop']:
             setattr(self, variable_name, np.full(self.grid, self.inits[variable_name]))
         
         self.BM = self.BMGV+self.BMGR+self.BMDV+self.BMDR
         self.OMDGV = self.maxOMDGV-(self.ageGV*(self.maxOMDGV-self.minOMDGV)/self.LLS) #organic mater digestibility of green vegetative biomass
-        self.OMDGR = self.maxOMDGV-(self.ageGR*(self.maxOMDGV-self.minOMDGV)/(self.ST2-self.ST1)) #organic mater digestibility of green reproductive biomass
+        self.OMDGR = self.maxOMDGR-(self.ageGR*(self.maxOMDGR-self.minOMDGR)/(self.ST2-self.ST1)) #organic mater digestibility of green reproductive biomass
         
         #we assume that at the beginning of the season the plant has at least the minimum amount of N needed for maximum growth
         self.Nconc = self.a_Ncrit*0.01 #*(BMGV+BMGR/1000)^-b_Ncrit
@@ -114,7 +114,7 @@ class Plants():
         Args:
             day: today's date
             day type: datetime object
-            WD: weather data (Rain [mm], Avg_temp [°C])
+            WD: weather data (Rain [mm], Avg_temp [°C], Max_Temp [°C])
             WD type: dictionary
             ET0: potential evapotranspiration [mm]
             ET0 type: float
@@ -127,6 +127,7 @@ class Plants():
         self.Temp = np.full(self.grid, WD['Avg_temp'])
         self.PARi = day_irr*0.48
         self.ET0 = ET0
+        self.Tmax = np.full(self.grid, WD['Max_temp'])
 
         if self.day.dayofyear == 1:
             self.ST = np.zeros(self.grid)
@@ -162,18 +163,42 @@ class Plants():
         self.PGRO = self.PARi*self.RUEmax*(1-np.exp(-0.6*self.LAI))*10
 
 
-    def compute_st(self):
+    def compute_st(self,method='T_fixed'):
         """Compute sum of temperature (ST) [°C day] from January 1.
 
-        Tmin = minimal temperature for plant growth [°C]. Temp below Tmin do not influence ST.
-        Tmax= maximal temperature for plant growth [°C]. Temp above Tmax do not influence ST.
-        """
-        mask_in_range = (self.Temp >= self.Tmin) & (self.Temp <= self.Tmax)
-        mask_above_Tmax = (self.Temp > self.Tmax)
+        Args:
+            method = method used to compute ST, differs on the source and number of T° thresholds used
+                - T_fixed : use parameters Tmin and Tmax from yaml file (default)
+                - STICS : use parameters Tmin, Tmax and Tstop from yaml file, linear decrease after Tmax (Brisson et al., 2009 ; ISBN 978-2-7592-0169-3)
+                - T_from_PFT : use T0 adn Tlimit from the csv file with PFT_parameters
+            method type : str
 
-        self.ST[mask_in_range] += self.Temp[mask_in_range] - self.Tmin[mask_in_range]
-        self.ST[mask_above_Tmax] += self.Tmax[mask_above_Tmax] - self.Tmin[mask_above_Tmax]
-    
+        T0 or Tmin = minimal temperature for plant growth [°C]. Temp below do not influence ST.
+        Tlimit or Tmax = ceiling temperature for plant growth [°C]. Temp above Tlimit do not influence ST. Even linear decrease until Tstop in STICS method.
+        Tstop = maximal temperature where no more development and no ST contribution [°C]£
+        NB : GRASSIM phenological stages are parametrized with Tmin=0°C
+        """
+        if method == 'STICS':
+            mask_in_range = (self.Temp >= self.Tmin) & (self.Temp <= self.Tmax)
+            mask_above_Tmax = (self.Temp > self.Tmax) & (self.Temp < self.Tstop)
+
+            self.ST[mask_in_range] += self.Temp[mask_in_range] - self.Tmin[mask_in_range]
+            self.ST[mask_above_Tmax] += ((self.Tmax[mask_above_Tmax] - self.Tmin[mask_above_Tmax]) /
+                                         (self.Tmax[mask_above_Tmax] - self.Tstop[mask_above_Tmax]) *
+                                         ( self.Temp[mask_above_Tmax] - self.Tstop[mask_above_Tmax]))
+
+        elif method == 'T_from_PFT':
+            mask_in_range = (self.Temp >= self.T0) & (self.Temp <= self.Tlimit)
+            mask_above_Tlimit = (self.Temp > self.Tlimit)
+
+            self.ST[mask_in_range] += self.Temp[mask_in_range] - self.T0
+            self.ST[mask_above_Tlimit] += self.Tlimit - self.T0
+
+        elif method == 'T_fixed' :
+            mask_in_range = (self.Temp >= self.Tmin) & (self.Temp <= self.Tmax)
+            mask_above_Tmax = (self.Temp > self.Tmax)
+            self.ST[mask_in_range] += self.Temp[mask_in_range] - self.Tmin[mask_in_range]
+            self.ST[mask_above_Tmax] += self.Tmax[mask_above_Tmax] - self.Tmin[mask_above_Tmax]
 
     def compute_fAge(self):
         """Compute a function (fage) representing the effect of compartment age (AGE) [°C day] on senescence (SEN) and abscission (ABS) functions.
@@ -273,55 +298,62 @@ class Plants():
 
         self.fPARi = np.select(conditions_fPARi, values_fPARi, default=(1 / 22 * -self.PARi) + 27 / 22)
 
-    def compute_fW(self, W):
+    def compute_fW(self, W, method):
         """Compute a growth reduction function (fW) based on water stress (W) [-].
 
-        From Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
-
         Args:
+            method : method used
+                - 'Jouven2006' , default, from Jouven et al. (2006), https://doi.org/10.1111/j.1365-2494.2006.00515.x.
+                - 'Bonnard2025', quadratic function not dependent from ET0, from Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
+            method type : str
             W: water stress
             W type: Numpy array of shape (grid)
         """
-        conditions_fW = [
-            self.ET0 < 3.81,                        # ET0 < 3.81
-            (self.ET0 >= 3.81) & (self.ET0 < 6.35),  # 3.81 <= ET0 < 6.35
-        ]
 
-        # Define corresponding values for each condition
-        values_fW = [
-            np.select(
-                [
-                    W < 0.2,                # W < 0.2
-                    W < 0.4,                # 0.2 <= W < 0.4
-                    W < 0.6,                # 0.4 <= W < 0.6
-                ],
-                [
-                    4 * W,                  # W < 0.2
-                    0.75 * W + 0.65,        # 0.2 <= W < 0.4
-                    0.25 * W + 0.85,        # 0.4 <= W < 0.6
-                ],
-                default=1                           # W >= 0.6
-            ),
-            np.select(
-                [
-                    W < 0.2,                # W < 0.2
-                    W < 0.4,                # 0.2 <= W < 0.4
-                    W < 0.6,                # 0.4 <= W < 0.6
-                    W < 0.8,                # 0.6 <= W < 0.8
-                ],
-                [
-                    2 * W,                  # W < 0.2
-                    1.5 * W + 0.1,          # 0.2 <= W < 0.4
-                    W + 0.3,                # 0.4 <= W < 0.6
-                    0.5 * W + 0.6,          # 0.6 <= W < 0.8
-                ],
-                default=W                    # W >= 0.8
-            )
-        ]
+        if method == 'Jouven2006':
+            conditions_fW = [
+                self.ET0 < 3.81,                        # ET0 < 3.81
+                (self.ET0 >= 3.81) & (self.ET0 < 6.35),  # 3.81 <= ET0 < 6.35
+            ]
 
-        # Apply np.select for the final result
-        self.fW = np.select(conditions_fW, values_fW, default=W)
-    
+            # Define corresponding values for each condition
+            values_fW = [
+                np.select(
+                    [
+                        W < 0.2,                # W < 0.2
+                        W < 0.4,                # 0.2 <= W < 0.4
+                        W < 0.6,                # 0.4 <= W < 0.6
+                    ],
+                    [
+                        4 * W,                  # W < 0.2
+                        0.75 * W + 0.65,        # 0.2 <= W < 0.4
+                        0.25 * W + 0.85,        # 0.4 <= W < 0.6
+                    ],
+                    default=1                           # W >= 0.6
+                ),
+                np.select(
+                    [
+                        W < 0.2,                # W < 0.2
+                        W < 0.4,                # 0.2 <= W < 0.4
+                        W < 0.6,                # 0.4 <= W < 0.6
+                        W < 0.8,                # 0.6 <= W < 0.8
+                    ],
+                    [
+                        2 * W,                  # W < 0.2
+                        1.5 * W + 0.1,          # 0.2 <= W < 0.4
+                        W + 0.3,                # 0.4 <= W < 0.6
+                        0.5 * W + 0.6,          # 0.6 <= W < 0.8
+                    ],
+                    default=W                    # W >= 0.8
+                )
+            ]
+
+            # Apply np.select for the final result
+            self.fW = np.select(conditions_fW, values_fW, default=W)
+
+        elif method == 'Bonnard2025':
+            self.fW=(-1.2387 * (W ** 2) + 2.2387 * W - 0.0056)* (18/self.Tmax)
+            self.fW = np.clip(self.fW, 0, 1)
 
     def compute_N_supply(self, Nmin, FNAmax, NSc):
         """Compute potential nitrogen supply of the soil [kgN ha^-1].
@@ -330,11 +362,11 @@ class Plants():
 
         Args:
             Nmin: soil mineral nitrogen [kgN ha^-1]
-            Nmin type:
+            Nmin type: Numpy array of shape (grid)
             FNAmax: maximal soil nitrogen availability factor [-]
-            FNAmax type:
+            FNAmax type: float
             NSc: soil mineral nitrogen content for maximal N availability [kgN ha^-1]
-            NSc type:
+            NSc type: int
         """
         FNA = FNAmax*(Nmin/NSc)
         FNA = np.clip(FNA, a_min=None, a_max=FNAmax)
@@ -383,7 +415,7 @@ class Plants():
         self.fN = self.fN.clip(min=0, max=1)
         
         self.RNC = 0.4
-        self.fN = 0.35
+        self.fN = 1
 
 
     def compute_N_demand(self):
@@ -461,6 +493,7 @@ class Plants():
         self.update_green_biomass()
         self.update_dead_biomass()
         self.update_total_biomass_and_sward_height()
+        self.update_age()
         self.update_digestibility()
         self.compute_digestible_organic_matter()
         self.update_nitrogen_content()
@@ -485,6 +518,56 @@ class Plants():
             self.BMDV / 10 / self.BDDV,
             self.BMDR / 10 / self.BDDR
         ])
+
+    def update_apex_grazed (self, cut_height, day, cut_dates) :
+        """Update apex_grazed from 0 to one if topping (cut) during reproductive growth (REP>0).
+        Once apex_grazed = 1, it remains 1, preventing future reproductive growth.
+
+        Args:
+            day: today's date
+            day type: datetime object"""
+
+        if day in cut_dates:
+            # condition : apex non encore brouté, croissance reproductive en cours, et hauteur > cut_height
+            condition = (
+                    (self.apex_grazed == 0)
+                    & (self.REP > 0)
+                    & ((self.BMGR / 10 / self.BDGR) > cut_height)
+            )
+
+            self.apex_grazed = np.where(condition, 1, self.apex_grazed)
+
+    def update_age(self):
+        """Update age of compartments [°C day] from biomass,growth,senescence, abscission and Temp [kgDM ha^-1]."""
+        mask_above_Tmin = self.Temp > self.Tmin
+
+        self.ageGV[mask_above_Tmin] = (
+                (self.BMGV[mask_above_Tmin] - self.SENGV[mask_above_Tmin])
+                / (self.BMGV[mask_above_Tmin] - self.SENGV[mask_above_Tmin] + self.GROGV[mask_above_Tmin])
+                * (self.ageGV[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageGV = np.maximum(self.ageGV, 0)  #to avoid negatives values because of floating point
+
+        self.ageGR[mask_above_Tmin] = (
+                (self.BMGR[mask_above_Tmin] - self.SENGR[mask_above_Tmin])
+                / (self.BMGR[mask_above_Tmin] - self.SENGR[mask_above_Tmin] + self.GROGR[mask_above_Tmin])
+                * (self.ageGR[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageGR = np.maximum(self.ageGR, 0)
+
+        self.ageDV[mask_above_Tmin] = (
+                (self.BMDV[mask_above_Tmin] - self.ABSDV[mask_above_Tmin])
+                / (self.BMDV[mask_above_Tmin] - self.ABSDV[mask_above_Tmin] + (1 - self.sigmaGV) * self.SENGV[mask_above_Tmin])
+                * (self.ageDV[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageDV = np.maximum(self.ageDV, 0)
+
+        self.ageDR[mask_above_Tmin] = (
+                (self.BMDR[mask_above_Tmin] - self.ABSDR[mask_above_Tmin])
+                / (self.BMDR[mask_above_Tmin] - self.ABSDR[mask_above_Tmin] + (1 - self.sigmaGR) * self.SENGR[mask_above_Tmin])
+                * (self.ageDR[mask_above_Tmin] + self.Temp[mask_above_Tmin])
+        )
+        self.ageDR = np.maximum(self.ageDR, 0)
 
     def update_digestibility(self):
         """Update digestibility (OMD) [g g^-1] based on age and seasonal temperature."""

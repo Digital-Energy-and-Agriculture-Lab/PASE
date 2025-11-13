@@ -4,6 +4,11 @@ import pyvista as pyv
 from pase.pase_math import compute_block_centers, compute_panel_grid_positions
 
 
+def build_structure(config_dict):
+    if config_dict['StructureType'].lower() == 'agrivoltaic fence':
+        return AgrivoltaicFence(config_dict).multi_fence_group()
+
+
 class PVStructurePart(ABC):
     """Abstract interface for PV structures (panels, poles, trackers, etc.)."""
 
@@ -96,7 +101,7 @@ class Rafter(PVStructurePart):
         self.orientation = 'horizontal_x'
         self.polydata.rotate_y(90, inplace=True)
 
-        # Tilt the purlin
+        # Tilt the rafter
         self.tilt = panel_tilt_Y  # [°]
         self.polydata.rotate_y(self.tilt, inplace=True)
 
@@ -181,29 +186,31 @@ class AgrivoltaicFence(PVStructure):
                     positioning=self.pole_ground_positioning)
         pole.polydata.translate((0, -self.purlin_length/2, 0), inplace=True)
         
-        purlin_1 = Purlin(self.purlin_shape,
+        horizontal_bar_top = HorizontalBar(self.purlin_shape,
                           length=self.purlin_length,
-                          panel_tilt_Y=0.0,
                           side=self.purlin_side,
                           width=self.purlin_width,
                           height=self.purlin_height,
                           radius=self.purlin_radius)
-        purlin_1.polydata.translate((0.0,
+        horizontal_bar_top.polydata.translate((0.0,
                                      0,
                                      self.structure_height),
                                     inplace=True)
 
-        # 2nd purlin is a copy of purlin1, translated downwards
-        purlin2 = purlin_1.polydata.copy().translate((0, 0, -self.vertical_spacing),
-                                            inplace=True)
+        # 2nd horizontal bar is a copy of horizontal_bar_top,
+        # translated downwards
+        horizontal_bar_bottom = (horizontal_bar_top.polydata
+                                 .copy().
+                                 translate((0, 0, -self.vertical_spacing),
+                                           inplace=True))
         
         combined = (pole.polydata
-                    + purlin_1.polydata
-                    + purlin2).triangulate()
+                    + horizontal_bar_top.polydata
+                    + horizontal_bar_bottom).triangulate()
 
         return combined
 
-    def multiFenceGroup(self) -> pyv.MultiBlock:
+    def multi_fence_group(self) -> pyv.MultiBlock:
 
         # Compute position of groups
         positions, block_centers, grid_indices = compute_panel_grid_positions(
@@ -266,7 +273,7 @@ if __name__ == "__main__":
                                         PV_module_1,
                                         Structure]).aggregated_inputs
 
-    blocks = AgrivoltaicFence(PV_params_dict).multiFenceGroup()
+    blocks = AgrivoltaicFence(PV_params_dict).multi_fence_group()
 
     pl = pyv.Plotter()
     pl.add_mesh(blocks, show_edges=True)
