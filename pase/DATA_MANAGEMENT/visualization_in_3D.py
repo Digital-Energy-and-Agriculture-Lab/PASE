@@ -35,7 +35,23 @@ def open_pyvista_3D_visualization(interest_points, spatialized_variable, scene, 
     
     plotter = pyV.Plotter()
 
-    plotter.add_mesh(scene, color='black')
+    try:
+        geom_panels = scene.polydata_by_property({'Type': ['PV']},
+                                                extract_surface=True)
+        geom_struct = scene.polydata_by_property({'Type': ['Structure block']},
+                                                extract_surface=True)
+        plotter.add_mesh(geom_panels, color='black')
+
+        if geom_struct.user_dict['Material'].lower() == 'metal':
+            struct_color = 'grey'
+        elif geom_struct.user_dict['Material'].lower() == 'wood':
+            struct_color = 'brown'
+        plotter.add_mesh(geom_struct, color=struct_color)
+    except Exception as _e:
+        print(f'No structure found: {_e}')
+        plotter.add_mesh(scene, color='black')
+
+
     ground = np.array([[-200, 200, 0],
                        [200, 200, 0],
                        [-200, -200, 0],
