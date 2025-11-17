@@ -238,6 +238,77 @@ class AgrivoltaicFence(PVStructure):
 
         return combined_blocks
 
+class PVTable (PVStructure):
+    def __init__(self, PV_i, **kwargs):
+        super().__init__(PV_i, **kwargs)
+
+        self.panel_width = float(PV_i["PanelDimensionX"])  # X
+        self.panel_height = float(PV_i["PanelDimensionY"])  # Y
+
+        self.panel_spacing_x = float(
+            PV_i["RepetitionDistanceOfPanelsX"])  # pitch X
+        self.panel_spacing_y = float(
+            PV_i["RepetitionDistanceOfPanelsY"])  # pitch Y
+        self.panels_per_block_x = int(PV_i["NumberOfPanelsX"])  # per block
+        self.panels_per_block_y = int(PV_i["NumberOfPanelsY"])  # per block
+
+        self.block_spacing_x = float(
+            PV_i["RepetitionDistanceOfPVBlocksX"])  # block pitch X
+        self.block_spacing_y = float(
+            PV_i["RepetitionDistanceOfPVBlocksY"])  # block pitch Y
+        self.num_blocks_x = int(PV_i["NumberOfPVBlocksX"])  # blocks
+        self.num_blocks_y = int(PV_i["NumberOfPVBlocksY"])  # blocks
+
+        self.base_height = float(PV_i["Height"])  # elevation
+
+    def make_table_part(self) -> pyv.PolyData:
+
+        pole = Pole(self.pole_shape,
+                    length=self.pole_length,
+                    width=self.pole_width,
+                    height=self.pole_height,
+                    side=self.pole_side,
+                    radius=self.pole_radius,
+                    positioning=self.pole_ground_positioning)
+        pole.polydata.translate((0, -self.purlin_length/2, 0), inplace=True)
+
+class HSATS(PVStructure):
+    """
+        HSATS = Horizontal Single Axis Tracking Structure
+    """
+    def __init__(self, PV_i, **kwargs):
+        super().__init__(PV_i, **kwargs)
+
+        self.panel_width = float(PV_i["PanelDimensionX"])  # X
+        self.panel_height = float(PV_i["PanelDimensionY"])  # Y
+
+        self.panel_spacing_x = float(
+            PV_i["RepetitionDistanceOfPanelsX"])  # pitch X
+        self.panel_spacing_y = float(
+            PV_i["RepetitionDistanceOfPanelsY"])  # pitch Y
+        self.panels_per_block_x = int(PV_i["NumberOfPanelsX"])  # per block
+        self.panels_per_block_y = int(PV_i["NumberOfPanelsY"])  # per block
+
+        self.block_spacing_x = float(
+            PV_i["RepetitionDistanceOfPVBlocksX"])  # block pitch X
+        self.block_spacing_y = float(
+            PV_i["RepetitionDistanceOfPVBlocksY"])  # block pitch Y
+        self.num_blocks_x = int(PV_i["NumberOfPVBlocksX"])  # blocks
+        self.num_blocks_y = int(PV_i["NumberOfPVBlocksY"])  # blocks
+
+        self.base_height = float(PV_i["Height"])  # elevation
+
+    def make_tracking_part(self) -> pyv.PolyData:
+
+        pole = Pole(self.pole_shape,
+                    length=self.pole_length,
+                    width=self.pole_width,
+                    height=self.pole_height,
+                    side=self.pole_side,
+                    radius=self.pole_radius,
+                    positioning=self.pole_ground_positioning)
+        pole.polydata.translate((0, -self.purlin_length/2, 0), inplace=True)
+
 
 if __name__ == "__main__":
     from pase.DATA_MANAGEMENT.yaml_inputs_provider import (YAML_Inputs_provider,
