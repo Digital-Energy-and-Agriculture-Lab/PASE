@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import pyvista as pyv
+import math
 
 from pase.pase_math import compute_block_centers, compute_panel_grid_positions
 
@@ -136,15 +137,21 @@ class PVStructure(ABC):
         self.pole_side = PV_i['PoleSide']
         self.pole_radius = PV_i['PoleRadius']
         self.pole_length    = PV_i['PoleLength']
-        self.pole_Rad    = PV_i['PoleRadius']
         self.pole_ground_positioning = PV_i['PoleGroundPositioning']
 
         self.purlin_shape = PV_i['PurlinShape']
         self.purlin_width = PV_i['PurlinWidth']
         self.purlin_height = PV_i['PurlinHeight']
         self.purlin_side = PV_i['PurlinSide']
-        self.purlin_radius = PV_i['PurlinRadius']
         self.purlin_length = self.structure_spacing_y
+        self.purlin_radius = PV_i['PurlinRadius']
+
+        self.rafter_shape = PV_i['RafterShape']
+        self.rafter_width = PV_i['RafterWidth']
+        self.rafter_height = PV_i['RafterHeight']
+        self.rafter_side = PV_i['RafterSide']
+        self.rafter_length = PV_i['RafterLength']
+        self.rafter_radius = PV_i['RafterRadius']
 
         self.material = PV_i['Material']
 
@@ -272,28 +279,54 @@ class PVTable (PVStructure):
 
         self.base_height = float(PV_i["Height"])  # elevation
 
-        self.pole_spacing = 2.0
+        self.pole_spacing = float(PV_i["PoleSpacingX"])
+
+        self.tilt = float(PV_i["TiltY"])
 
     def make_table_part(self) -> pyv.PolyData:
         PRS = self.make_PRStructure()
         
     
-    def make_poles(self) -> pyv.PolyData: #TODO: change function name
+    def make_PRStructure(self) -> pyv.PolyData: #TODO: change function name
         """
             PR is for Pole and rafter
         """
         pole = Pole(self.pole_shape,
-                    length=self.pole_length,
+                    length=(self.base_height + (self.pole_spacing/2) * math.tan(self.tilt)),
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
                     radius=self.pole_radius,
                     positioning=self.pole_ground_positioning)
-        pole.polydata.translate((0, -self.purlin_length/2, 0), inplace=True)
+        pole.polydata.translate((-self.pole_spacing, 
+                                 -self.purlin_length/2,
+                                 0), 
+                                inplace=True)
 
-        pole_2 = pole.polydata.copy().translate((self.pole_spacing,0,0 ))
+        pole_2 = Pole(self.pole_shape,
+                    length=(self.base_height - (self.pole_spacing/2) * math.tan(self.tilt)),
+                    width=self.pole_width,
+                    height=self.pole_height,
+                    side=self.pole_side,
+                    radius=self.pole_radius,
+                    positioning=self.pole_ground_positioning)
+        pole_2.polydata.translate((self.pole_spacing, 
+                                 -self.purlin_length/2,
+                                 0), 
+                                inplace=True)
+        
+        rafter = Rafter(self.rafter_shape,
+                        length=self.rafter_length,
+                        radius=self.rafter_radius,
+                        panel_tilt_Y=self.tilt)
+        rafter.polydata.translate((0,
+                                   -self.purlin_length/2,
+                                   self.base_height),
+                                   inplace= True)
 
-        return pole
+        combine = pole.polydata + pole_2.polydata + rafter.polydata
+
+        return combine
 
 
 class HSATS(PVStructure):
@@ -369,7 +402,7 @@ if __name__ == "__main__":
     ).inputs
 
     Structure = YAML_Inputs_provider(
-        file="agrivoltaic_fence.yaml",
+        file="PV_table.yaml",
         subpath=os.path.join("HARDWARE", "STRUCTURES"),
         parentdir=2
     ).inputs
@@ -378,11 +411,10 @@ if __name__ == "__main__":
                                         PV_module_1,
                                         Structure]).aggregated_inputs
 
-    blocks = HSATS(PV_params_dict).make_tracking_part()
+    blocks = PVTable(PV_params_dict).make_PRStructure()
 
     pl = pyv.Plotter()
     pl.add_mesh(blocks, show_edges=True)
-    pl.add_mesh(pyv.Sphere())
     pl.show_axes()
     pl.show_grid(color='gray')
     pl.show()

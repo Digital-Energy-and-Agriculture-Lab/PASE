@@ -29,7 +29,7 @@ RotationAxisNumber:
    Unit: dimensionless [-]
    Definition: Number of rotation axis that drive the block of panels
 TiltY:
-   Value: 45
+   Value: 20
    Type: float
    Limit: [-90, 90]
    Unit: degree [°]
@@ -41,7 +41,7 @@ Hinge:
    Definition: Do the panels rotate about the axis going through their center or
       the top of the panels (e.g. free-hanging panels) ?
 Height:
-   Value: 1.8
+   Value: 2.3
    Type: float
    Limit: [0.1, 20]
    Unit: meters [m]
