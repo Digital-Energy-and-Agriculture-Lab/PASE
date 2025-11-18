@@ -272,8 +272,16 @@ class PVTable (PVStructure):
 
         self.base_height = float(PV_i["Height"])  # elevation
 
-    def make_table_part(self) -> pyv.PolyData:
+        self.pole_spacing = 2.0
 
+    def make_table_part(self) -> pyv.PolyData:
+        PRS = self.make_PRStructure()
+        
+    
+    def make_poles(self) -> pyv.PolyData: #TODO: change function name
+        """
+            PR is for Pole and rafter
+        """
         pole = Pole(self.pole_shape,
                     length=self.pole_length,
                     width=self.pole_width,
@@ -282,6 +290,11 @@ class PVTable (PVStructure):
                     radius=self.pole_radius,
                     positioning=self.pole_ground_positioning)
         pole.polydata.translate((0, -self.purlin_length/2, 0), inplace=True)
+
+        pole_2 = pole.polydata.copy().translate((self.pole_spacing,0,0 ))
+
+        return pole
+
 
 class HSATS(PVStructure):
     """
@@ -320,6 +333,23 @@ class HSATS(PVStructure):
                     positioning=self.pole_ground_positioning)
         pole.polydata.translate((0, -self.purlin_length/2, 0), inplace=True)
 
+        support = Pole("rectangle",
+                    length=0.7,
+                    width=0.5,
+                    height=0.1,
+                    side=self.pole_side,
+                    radius=self.pole_radius,
+                    positioning=self.pole_ground_positioning)
+        support.polydata.translate((0, -self.purlin_length/2, self.pole_length), inplace=True)
+        cx, cy, cz = support.polydata.center
+        support.polydata.translate((-cx, -cy, -cz), inplace=True)
+        support.polydata.rotate_x(90, inplace=True)
+        support.polydata.translate((cx, cy, cz), inplace=True)
+
+        combine = (pole.polydata + support.polydata)
+
+        return combine
+
 
 if __name__ == "__main__":
     from pase.DATA_MANAGEMENT.yaml_inputs_provider import (YAML_Inputs_provider,
@@ -348,10 +378,11 @@ if __name__ == "__main__":
                                         PV_module_1,
                                         Structure]).aggregated_inputs
 
-    blocks = AgrivoltaicFence(PV_params_dict).multi_fence_group()
+    blocks = HSATS(PV_params_dict).make_tracking_part()
 
     pl = pyv.Plotter()
     pl.add_mesh(blocks, show_edges=True)
     pl.add_mesh(pyv.Sphere())
     pl.show_axes()
+    pl.show_grid(color='gray')
     pl.show()
