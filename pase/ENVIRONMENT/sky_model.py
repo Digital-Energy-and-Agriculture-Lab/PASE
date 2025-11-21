@@ -20,6 +20,7 @@ import pandas as pd
 from pathlib import Path
 from matplotlib import pyplot as plt
 import matplotlib
+from matplotlib.patches import Polygon
 if os.environ.get("CI") == "true":
     matplotlib.use('Agg')
 else:
@@ -29,6 +30,22 @@ else:
 from pase.conversion_functions import sph_to_cart
 
 _CIE_STANDARD_SKIES = None
+
+
+def subpatch_polygon(az_start_deg, az_stop_deg, el_start, el_end,
+                     nsteps=10):
+    th1 = np.deg2rad(np.linspace(az_start_deg, az_stop_deg, nsteps))
+    th2 = np.deg2rad(np.linspace(az_stop_deg, az_start_deg, nsteps))
+    rho_inner = (90 - el_start) / 90
+    rho_outer = (90 - el_end) / 90
+    rho1 = np.ones_like(th1) * rho_inner
+    rho2 = np.ones_like(th2) * rho_outer
+    th = np.concatenate([th1, th2])
+    rho = np.concatenate([rho1, rho2])
+    x = rho * np.cos(th)
+    y = rho * np.sin(th)
+    coords = np.column_stack([x, y])
+    return coords
 
 def _load_standard_skies() -> pd.DataFrame:
     """
@@ -407,6 +424,69 @@ class ReinhartSky:
 
         plt.show()
 
+    def patch_plot_value(self, values, cmap='viridis', clabel='', direction=True, show_colorbar=True):#value should be a flattened array of size N, N = number of patches
+        az = np.asarray(-self.reinhart_patches['az']) +270
+        el = np.asarray(self.reinhart_patches['el'])
+        daz = np.asarray(self.reinhart_patches['d_az'])
+        del_ = np.asarray(self.reinhart_patches['d_el'])
+        values = np.asarray(values)
+
+        N = len(values)
+
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.set_aspect("equal")
+        ax.axis("off")
+
+        cmap_obj = plt.get_cmap(cmap)
+        vmin, vmax = np.nanmin(values), np.nanmax(values)
+        norm = plt.Normalize(vmin, vmax)
+
+        for k in range(N):
+
+            azc = az[k]
+            elc = el[k]
+
+            AZ = np.array([azc - daz[k] / 2,
+                           azc + daz[k] / 2])
+
+            EL = np.array([elc - del_[k] / 2,
+                           elc + del_[k] / 2])
+
+            if el[k] !=90:
+                coords = subpatch_polygon(AZ[0], AZ[1], EL[0], EL[1])
+            else:
+                print(el[k])
+                theta = np.deg2rad(np.linspace(0, 360, 100))
+                x = del_[k] * np.cos(theta)/90
+                y = del_[k] * np.sin(theta)/90
+                coords = np.column_stack([x, y])
+
+            poly = Polygon(
+                coords,
+                closed=True,
+                facecolor=cmap_obj(norm(values[k])),
+                edgecolor="white",
+                linewidth=0.2
+            )
+            ax.add_patch(poly)
+
+        if direction:
+            ax.text(0, 1.05, '0°', ha='center', fontsize=12)
+            ax.text(0, -1.05, '180°', ha='center', fontsize=12)
+            ax.text(1.05, 0, '90°', ha='center', fontsize=12)
+            ax.text(-1.05, 0, '270it °', ha='center', fontsize=12)
+
+        if show_colorbar:
+            m = plt.cm.ScalarMappable(norm=norm, cmap=cmap_obj)
+            m.set_array(values)
+            cb = fig.colorbar(m, ax=ax, shrink=0.8)
+            cb.set_label(clabel)
+
+        ax.set_xlim(-1, 1)
+        ax.set_ylim(-1, 1)
+
+        plt.tight_layout()
+        return fig, ax
 
 class CIEStandardSky:
     """
