@@ -60,6 +60,30 @@ class Mesh:
 #     PUBLIC METHODS
 # =============================================================================
     
+    def set_interest_zone_orientation(self, Loc_1, AV_1):
+        """
+        Définit l'orientation par défaut (azimut) de la zone d'intérêt
+        selon le mode choisi dans le fichier SCENARIOS.
+
+        Modes :
+            - "default": azimut = 0°
+            - "auto": azimut = CentralAzimut (issu de AV_1)
+            - "custom": azimut = InterestZoneCustomAngle
+        """
+        mode = Loc_1['InterestZoneOrientationMode']
+        custom_angle = Loc_1['InterestZoneCustomAngle']
+
+        if mode == "default":
+            zone_azimut = 0
+        elif mode == "auto":
+            zone_azimut = AV_1['CentralAzimut']
+        elif mode == "custom":
+            zone_azimut = custom_angle
+        else:
+            raise ValueError(f"Unknown InterestZoneOrientationMode: {mode}")
+
+        self.default_azimut = zone_azimut
+        return zone_azimut  # optionnel, peut être utile pour affichage
     
    
     def add_oriented_plane_ground_mesh(self,X_min, X_max, Y_min, Y_max,X_increment,
