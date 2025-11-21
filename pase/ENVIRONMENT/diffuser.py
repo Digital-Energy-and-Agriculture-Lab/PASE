@@ -3,6 +3,7 @@ diffusers class
 """
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+from scipy.special import erf, i0
 import matplotlib.pyplot as plt
 from pyvista import Cube
 
@@ -71,23 +72,24 @@ class Diffuser:
     geometry : Diffuser geometry (pyVista)
     """
 
-    def __init__(self, azimuth, elevation, method='discrete'):
+    def __init__(self, azimuth, elevation, method='discrete', kernel = 'von_mises'):
         self.x_dr = None
         self.z_dr = None
         self.y_dr = None
         self.azimuth_diff = -np.radians(azimuth-90)
         self.elevation_diff = np.radians(elevation)
         self.method = method
+        self.kernel = kernel
 
 
-    def generate_direction_diffuser_referential(self, vect_sun):
+    def generate_direction_diffuser_referential(self, vect_sun, angle_discr):
         """
         Call the transfer function to compute the direction of the transferred light with a giver resolution.
         Input :
             vect_sun : the sun vectors
             res : the angle resolution for the transmitted light direction in degrees
         """
-        self.x_dr, self.y_dr, self.z_dr, self.rho, self.ds = self.transfer_function(vect_sun, self.method)
+        self.x_dr, self.y_dr, self.z_dr, self.rho, self.ds, self.o_angle = self.transfer_function(vect_sun, self.method, angle_discr)
 
     def get_direction_sky_referential(self):
         """
@@ -100,15 +102,15 @@ class Diffuser:
         vect_2 = rotation_coordinate(vect_1, y_vector, self.elevation_diff)
         self.x_sr, self.y_sr, self.z_sr = vect_2
 
-    def get_light_direction(self, vect_sun, discr, sigma):
+    def get_light_direction(self, vect_sun, discr, sigma, angle_discr):
         """
         General function to compute the directions and transform them in the right frame.
         Input :
             vect_sun : sun vectors
         """
-        self.generate_direction_diffuser_referential(vect_sun)
+        self.generate_direction_diffuser_referential(vect_sun, angle_discr)
         self.get_direction_sky_referential()
-        W = self.get_discretized_BSDF2(discr, sigma)
+        W = self.get_discretized_BSDF(discr, sigma, self.kernel)
         return W
     def get_BTDF_plot(self, azimuth, zenith):
         """
@@ -119,32 +121,38 @@ class Diffuser:
         ax.scatter(azimuth, zenith)
         ax.set_ylim(0, 90)
 
-    def get_discretized_BSDF(self, discr):
-        discr2 = np.repeat(np.array([[1,1,-1]]), discr.shape[0], axis=0) * discr
-        sphere = np.concatenate([discr, discr2], axis = 0)
-        pts = np.stack([self.x_sr, self.y_sr, self.z_sr], axis=2)
-        A = np.einsum('ijk, lk->ijl', pts, sphere)
-        M = np.argmax(A, axis=2)
-        ulist = [np.unique(M[i], return_counts=True) for i in range(M.shape[0])]
-        W = np.zeros((pts.shape[0], sphere.shape[0]))
-        for i in range(M.shape[0]):
-            W[i, ulist[i][0]] = ulist[i][1] / A.shape[1]
-        W_u  = W[:,:discr.shape[0]]
-        return W_u
-
-    def get_discretized_BSDF2(self, discr, sigma):
+    def get_discretized_BSDF(self, discr, sigma, kernel="gaussian"):
         sigma2 = np.concatenate([np.sqrt(sigma),np.sqrt(sigma)])[np.newaxis, np.newaxis, :]
         discr2 = np.repeat(np.array([[1, 1, -1]]), discr.shape[0], axis=0) * discr
         sphere = np.concatenate([discr, discr2], axis=0)
         pts = np.stack([self.x_sr, self.y_sr, self.z_sr], axis=2)
         A = np.einsum('ijk, lk->ijl', pts, sphere)
-        g = np.exp(-np.arccos(A) ** 2 / (2 * sigma2** 2))
+        g = self.get_integration_kernel(pts, sphere, sigma2, kernel=kernel) #np.exp(-np.arccos(A) ** 2 / (2 * sigma2** 2))
         norm = g.sum(axis=2)[:, :, np.newaxis]
         g_norm = g/norm
         W = np.einsum('ij,ij,ijl->il',self.rho, self.ds, g_norm)    #sum_j self.rho_ij*self.ds_ij *g(A, sigma2)_ijl) --> il #i solar dimension and l sky dimension
-        return W[:,:discr.shape[0]]
-    def transfer_function(self, vect_sun, method):
+        self.W = W[:,:discr.shape[0]]
+        return self.W
+    def transfer_function(self, vect_sun, method, angle_discr):
         return NotImplementedError
+
+    def get_integration_kernel(self, pts, sphere, sigma, kernel='gaussian'):
+        dist = np.einsum('ijk, lk->ijl', pts, sphere)
+        self.sigma = sigma
+        delta = self.o_angle[:,:,np.newaxis]
+        if kernel == 'gaussian':
+            g = np.exp(-np.arccos(dist) ** 2 / (2 * sigma** 2))
+        elif kernel == 'von_mises':
+            g = np.exp(dist*33)#/i0(1/sigma**2)
+        elif kernel == 'gauss_conv':
+            print('sigma', sigma.shape)
+            print('delta', delta.shape)
+            print('dist', dist.shape)
+            g = np.sqrt(np.pi/2)*sigma/delta * (erf((delta/2 - np.arccos(dist))/(np.sqrt(2)*sigma))-erf((-delta/2 - np.arccos(dist))/(np.sqrt(2)*sigma)))
+        else:
+            raise("Kernel not implemented. Valid values are 'gaussian', 'von_mises' or 'gauss_conv'")
+        return g
+
 
 
 class LenticularDiffuser(Diffuser):
@@ -154,7 +162,7 @@ class LenticularDiffuser(Diffuser):
     Omega = Lens aperture angle in degrees
     """
 
-    def __init__(self, azimuth_diff, elevation_diff, omega=30, **kwargs):
+    def __init__(self, azimuth_diff, elevation_diff, omega=30, res=None, **kwargs):
         super().__init__(azimuth_diff, elevation_diff)
         self.omega = np.deg2rad(omega)  # aperture angle
         l = np.array([[[0,1,0],[0,0,1]]]).T
@@ -162,14 +170,9 @@ class LenticularDiffuser(Diffuser):
         l = rotation_coordinate(l, np.array([0, 1, 0]), self.elevation_diff)
         self.len_vector = l[:, 0,0]
         self.normal =l[:,1,0]
-        """ self.len_vector = np.array([np.cos(self.elevation_diff) * np.sin(self.azimuth_diff),
-                                    np.cos(self.elevation_diff) * np.cos(self.azimuth_diff),
-                                    np.sin(self.elevation_diff)])
-        self.normal = np.array([np.sin(self.elevation_diff)*np.cos(self.azimuth_diff),
-                           np.sin(self.elevation_diff)*np.sin(self.azimuth_diff),
-                           np.cos(self.elevation_diff)])"""
+        self.res=res
 
-    def transfer_function(self, vect_sun, method):
+    def transfer_function(self, vect_sun, method, angle_discr):
         """
         Specific transfer function for lenticular diffusers.
 
@@ -185,19 +188,20 @@ class LenticularDiffuser(Diffuser):
             x, y, z : the direction of the transmitted light in the diffuser frame
         """
         if self.method == 'discrete':
-            res = 0.1
+            res = self.res*angle_discr if self.res is not None else 0.1
             gamma = self.get_gamma_angle(vect_sun, res)
             beta= self.get_beta_angle(vect_sun, res)
             x = -np.sin(gamma) * (np.sin(beta-res/2) - np.sin(beta+res/2))/res
             y = np.cos(gamma)
             z = -np.sin(gamma) * (np.cos(beta+res/2) - np.cos(beta-res/2))/res
             ds = np.sin(gamma) * res
+            o_angle = np.arccos(np.sin(gamma)**2/res**2 * (np.cos(res)-1)+np.cos(gamma)**2)
             L = ds.sum(axis=1)[:, np.newaxis]
             L = np.tile(L, (1, int((2 * self.omega + res) // res )))
             rho = 1/L
         else:
-            x, y, z, rho, ds = None, None, None, None, None
-        return x, y, z, rho, ds
+            x, y, z, rho, ds, o_angle = None, None, None, None, None, None
+        return x, y, z, rho, ds, o_angle
 
     def get_beta_angle(self, vect_sun, angle_res):
         """
