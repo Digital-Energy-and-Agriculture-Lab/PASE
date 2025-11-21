@@ -41,7 +41,6 @@ class PV_Production:
         self.GCR_x = (inputs['PanelDimensionX']*inputs['NumberOfPanelsX']/
                       self.block_space_x)
             
-    
     def get_several_years_of_electricity_production(self, SP, light, WD):
         
         self.production = {}
@@ -89,7 +88,6 @@ class PV_Production:
             
             self.production[year] = df 
 
-            
     def get_power_production(self, panels_T, GTI_front, GTI_rear, alpha=-0.4, T_std=25):
         
         one = np.ones((len(panels_T)))
@@ -108,7 +106,6 @@ class PV_Production:
         
         return front_power_panel, rear_power_panel, power_central
             
-                
     def get_GTI(self, sun_vect, app_zenith, light, GHI_reaching_ground,
                 albedo, SF_f, SF_r, tiltY):
         
@@ -151,7 +148,6 @@ class PV_Production:
             
         return GTI_front, GTI_rear
             
-            
     def compute_global_tilted_irradiance(self, Rb, GHI_ground, albedo, BHI,
                                          DHI, Ai, f, SF, tiltY):
         """
@@ -186,7 +182,6 @@ class PV_Production:
         
         return GTI
     
-             
     def get_cos_angle_btw_light_and_panels_normal(self, sun_vect, 
                                                   init_panel_normal,
                                                   tiltY):    
@@ -223,7 +218,6 @@ class PV_Production:
         
         return Rb
 
-        
     def get_panels_temperature(self, WS, T, tot_GTI):
         
         #Source : Thermal lost in PVsyst (https://www.pvsyst.com/help/thermal_loss.htm)
@@ -236,7 +230,6 @@ class PV_Production:
         panels_temp = T + 1/U*(alpha*tot_GTI*(1-self.panel_efficiency))
         
         return panels_temp
-    
     
     def get_tiltY_along_time(self, sun_vect):
         
@@ -257,7 +250,6 @@ class PV_Production:
             
         return tiltY, sun_vect_central_coord
             
-    
     def get_sun_vect_in_central_coord(self, sun_vect):
         # Do not take into account the slope of the area and the slope of the 
         # rotation axis (see the previous framework to complete)
@@ -272,7 +264,6 @@ class PV_Production:
         sun_vect_CC[:,2] = sun_vect[:,2]
         
         return sun_vect_CC
-    
     
     def get_true_tracking_angle(self, sun_v_central_coord):
                     
@@ -314,17 +305,17 @@ class PV_Production:
     def get_shading_factor_front(self, sun_vect_cc, tiltY):
         
         tiltY = tiltY*np.pi/180            
-        teta_r_front = np.arctan2(sun_vect_cc[:,2],sun_vect_cc[:,0])           # np.arctan2(y, x) gère les angles dans les bons gradiants 
-        teta_r_front[sun_vect_cc[:,2]<0] = np.nan                              # conversion degré-radian
+        teta_r_front = np.arctan2(sun_vect_cc[:,2],sun_vect_cc[:,0])           # np.arctan2(y, x) manages angles in the correct quadrants 
+        teta_r_front[sun_vect_cc[:,2]<0] = np.nan                              # conversion degree-radian
         
         N = tiltY.shape[0]
         SF_front = np.empty(N, dtype=float)
 
-        pos= tiltY>0 
+        pos = tiltY>0 
         neg = tiltY<0 
         zero = tiltY == 0
         
-        if np.any(pos) :
+        if np.any(pos) :                                                        # Isolating the moments when the tiltY is positive to compute the shading factor in the correct way
             
             ty=tiltY[pos]      
             tr=teta_r_front[pos]            
@@ -350,7 +341,7 @@ class PV_Production:
             
             SF_front[pos] = sf
             
-        if np.any(neg) :
+        if np.any(neg) :                                                         # Isolating the moments when the tiltY is negative to compute the shading factor in the correct way
             
             ty=tiltY[neg]      
             tr=teta_r_front[neg]            
@@ -381,76 +372,75 @@ class PV_Production:
                 
         return SF_front
     
-                       
     def get_shading_factor_rear(self, sun_vect_cc, tiltY):
         
-         tiltY = tiltY*np.pi/180            
-         teta_r_rear = np.arctan2(sun_vect_cc[:,2],sun_vect_cc[:,0])           # np.arctan2(y, x) gère les angles dans les bons gradiants 
-         teta_r_rear[sun_vect_cc[:,2]<0] = np.nan                                           # conversion degré-radian
-         
-         N = tiltY.shape[0]
-         SF_rear = np.empty(N, dtype=float)
-
-         pos= tiltY>0 
-         neg = tiltY<0 
-         zero = tiltY == 0
-         
-         if np.any(pos) :
-             
-             ty=tiltY[pos]      
-             tr=teta_r_rear[pos]            
-             one = np.ones((len(ty)))
-                                            
-             delta_H_h_l = (np.sin(ty)*self.block_dim_x)                         # Height difference between highest point of one panel and the lowest point of the panel just next to it
-             delta_L_h_l_rear = (self.block_space_x*one)+(np.cos(ty)*
-                                                           self.block_dim_x)        # Distance between the highest point of one panel and the lowest point of the panel just next to it
-
-             sun_elev_treshold_rear = np.arctan2(delta_H_h_l,-delta_L_h_l_rear)     # Sun elevation at which shade factor reaches 0, which is the min value of shade factor
-                 
-             shade_factor_max = one                                                 # Max value of the shade factor
-             shade_factor_min = 0   
-             
-             theta_max = np.pi
-             theta_min = sun_elev_treshold_rear
-                                 
-             sf = self._linear_equation(shade_factor_max,shade_factor_min,theta_max,theta_min,tr)
+        tiltY = tiltY*np.pi/180            
+        teta_r_rear = np.arctan2(sun_vect_cc[:,2],sun_vect_cc[:,0])           # np.arctan2(y, x) gère les angles dans les bons gradiants 
+        teta_r_rear[sun_vect_cc[:,2]<0] = np.nan                                           # conversion degré-radian
+        
+        N = tiltY.shape[0]
+        SF_rear = np.empty(N, dtype=float)
+        
+        pos= tiltY>0 
+        neg = tiltY<0 
+        zero = tiltY == 0
+        
+        if np.any(pos) :
             
-             
-             sf = np.where(tr < sun_elev_treshold_rear, 0.0, sf)                # When sun elevation is > treshold, then the SF is nul
-             sf = np.where(tr < (np.pi - ty), 1.0, sf) 
-             
-             SF_rear[pos] = sf
-             
-         if np.any(neg) :
-             
-             ty=tiltY[neg]      
-             tr=teta_r_rear[neg]            
-             one = np.ones((len(ty)))
-             
-             delta_H_h_l = (np.sin(-ty)*self.block_dim_x)                      # Height difference between highest point of one panel and the lowest point of the panel just next to it
-             delta_L_h_l_rear = (self.block_space_x*one)+(np.cos(ty)*
-                                                           self.block_dim_x)   # Distance between the highest point of one panel and the lowest point of the panel just next to it
-
-             sun_elev_treshold_rear = np.arctan2(delta_H_h_l,delta_L_h_l_rear) # Sun elevation at which shade factor reaches 0, which is the min value of shade factor
-                 
-             shade_factor_max = 0
-             shade_factor_min = one                                            
+            ty=tiltY[pos]      
+            tr=teta_r_rear[pos]            
+            one = np.ones((len(ty)))
+                                           
+            delta_H_h_l = (np.sin(ty)*self.block_dim_x)                         # Height difference between highest point of one panel and the lowest point of the panel just next to it
+            delta_L_h_l_rear = (self.block_space_x*one)+(np.cos(ty)*
+                                                          self.block_dim_x)        # Distance between the highest point of one panel and the lowest point of the panel just next to it
+        
+            sun_elev_treshold_rear = np.arctan2(delta_H_h_l,-delta_L_h_l_rear)     # Sun elevation at which shade factor reaches 0, which is the min value of shade factor
                 
-             theta_max = np.pi
-             theta_min = sun_elev_treshold_rear
-             
-             sf = self._linear_equation(shade_factor_max,shade_factor_min,theta_max,theta_min,tr)
-             
-             sf = np.where(tr > sun_elev_treshold_rear, 0.0, sf)
-             sf = np.where(tr > (-ty), 1.0, sf)        
-             
-             SF_rear[neg] = sf
-             
-         if np.any(zero):
-
-             SF_rear[zero] = 1
+            shade_factor_max = one                                                 # Max value of the shade factor
+            shade_factor_min = 0   
+            
+            theta_max = np.pi
+            theta_min = sun_elev_treshold_rear
+                                
+            sf = self._linear_equation(shade_factor_max,shade_factor_min,theta_max,theta_min,tr)
+           
+            
+            sf = np.where(tr < sun_elev_treshold_rear, 0.0, sf)                # When sun elevation is > treshold, then the SF is nul
+            sf = np.where(tr < (np.pi - ty), 1.0, sf) 
+            
+            SF_rear[pos] = sf
+            
+        if np.any(neg) :
+            
+            ty=tiltY[neg]      
+            tr=teta_r_rear[neg]            
+            one = np.ones((len(ty)))
+            
+            delta_H_h_l = (np.sin(-ty)*self.block_dim_x)                      # Height difference between highest point of one panel and the lowest point of the panel just next to it
+            delta_L_h_l_rear = (self.block_space_x*one)+(np.cos(ty)*
+                                                          self.block_dim_x)   # Distance between the highest point of one panel and the lowest point of the panel just next to it
+        
+            sun_elev_treshold_rear = np.arctan2(delta_H_h_l,delta_L_h_l_rear) # Sun elevation at which shade factor reaches 0, which is the min value of shade factor
+                
+            shade_factor_max = 0
+            shade_factor_min = one                                            
+               
+            theta_max = np.pi
+            theta_min = sun_elev_treshold_rear
+            
+            sf = self._linear_equation(shade_factor_max,shade_factor_min,theta_max,theta_min,tr)
+            
+            sf = np.where(tr > sun_elev_treshold_rear, 0.0, sf)
+            sf = np.where(tr > (-ty), 1.0, sf)        
+            
+            SF_rear[neg] = sf
+            
+        if np.any(zero):
+        
+            SF_rear[zero] = 1
          
-         return SF_rear
+        return SF_rear
         
     def _linear_equation (self,y_max,y_min,x_max,x_min,theta):
       
