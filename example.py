@@ -75,17 +75,7 @@ PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
 M = Mesh()
 
 # Interest Zone Orientation Mode
-mode = Loc_1['InterestZoneOrientationMode']
-custom_angle = Loc_1['InterestZoneCustomAngle']
-
-if mode == "default":
-    zone_azimut = 0
-elif mode == "auto":
-    zone_azimut = AV_1['CentralAzimut']
-elif mode == "custom":
-    zone_azimut = custom_angle
-else:
-    raise ValueError(f"Unknown InterestZoneOrientationMode: {mode}")
+M.set_interest_zone_orientation(Loc_1, AV_1)
 
 # Add of the points of interests on the ground for crop models
 M.add_oriented_plane_ground_mesh(
@@ -95,7 +85,6 @@ M.add_oriented_plane_ground_mesh(
     Loc_1['Ymax_InterestZone'],
     Loc_1['dX_InterestZone'],
     Loc_1['dY_InterestZone'],
-    azimuth_deg=zone_azimut,
     flag="crop"
 )
 
