@@ -127,9 +127,11 @@ class Soil():
         self.water = self.water_capacity
         self.W = (self.water - self.wilting_point) / (self.water_capacity - self.wilting_point)
 
-        #Conditions for mineralization
+        #Nitrogen parameters
         self.K = np.full(self.grid, self.soil_parameters['K'])
         self.Tref = np.full(self.grid, self.soil_parameters['Tref'])
+        self.NSc = np.full(self.grid, self.soil_parameters['NSc'])
+        self.FNAmax = np.full(self.grid, self.soil_parameters['FNAmax'])
 
     def init_daily_loop(self, day):
         """

@@ -7,7 +7,7 @@ def test_compute_N_immobilization():
     grid=(1,1)
     init=dict(not_runoff=0,Nmin=50,Norg=50,sand=25,clay=25,coarse=15,org=3,soil_depth=1000,max_soil_depth=1000,albedo=0.2)
     variables_to_save=[]
-    soil_parameters=dict(K=0.115,Tref=15)
+    soil_parameters=dict(K=0.115,Tref=15,FNAmax=0.4,NSc=200)
     soil_properties=pd.DataFrame({
         "Texture": [
             "Sand", "Loamy_Sand", "Sandy_Loam", "Loam", "Silty_Loam",

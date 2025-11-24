@@ -9,3 +9,13 @@ K:
     Type: float
     Limit: [0,1]
     Definition: Constant used in nitrogen mineralization equation
+NSc:
+    Value: 200.
+    Type: float
+    Limit: [0,1000]
+    Definition: Soil N concentration in 0-45cm stratum for maximal nitrogen availability
+FNAmax:
+    Value: 0.4
+    Type: float
+    Limit: [0,1]
+    Definition: Maximal fraction of available soil nitrogen
