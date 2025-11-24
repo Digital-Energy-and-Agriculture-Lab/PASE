@@ -34,6 +34,15 @@ _CIE_STANDARD_SKIES = None
 
 def subpatch_polygon(az_start_deg, az_stop_deg, el_start, el_end,
                      nsteps=10):
+    """
+    Create a polygon that represents a sky patch.
+    Inputs:
+    - az_start_deg: lower azimuth angle in degrees --> float
+    - az_stop_deg: upper azimuth angle in degrees --> float
+    - el_start: lower elevation angle in degrees --> float
+    - el_end: upper elevation angle in degrees --> float
+    - nsteps: number of point for the discretization in azimuth (default: 10) --> int
+    """
     th1 = np.deg2rad(np.linspace(az_start_deg, az_stop_deg, nsteps))
     th2 = np.deg2rad(np.linspace(az_stop_deg, az_start_deg, nsteps))
     rho_inner = (90 - el_start) / 90
@@ -424,7 +433,18 @@ class ReinhartSky:
 
         plt.show()
 
-    def patch_plot_value(self, values, cmap='viridis', clabel='', direction=True, show_colorbar=True):#value should be a flattened array of size N, N = number of patches
+    def patch_plot_value(self, values, cmap='viridis', clabel='', direction=True, show_colorbar=True):
+        """
+        Display a 2D colored plot off the values on the discretized sky. It is advised to only
+        call this method for reasonable MF values
+        Inputs:
+        - values: flattened array of values to plot. The size should be equal to the number of sky patches --> np.array of size N
+        - cmap: Colormap (default: viridis) --> str
+        - clabel: Label of the colorbar (default: '') --> str
+        - direction: Add the direction labels  (default: True) --> Boolean
+        - show_colorbar: Show colorbar (default: True) --> Boolean
+        """
+        #value should be a flattened array of size N, N = number of patches
         az = np.asarray(-self.reinhart_patches['az']) +270
         el = np.asarray(self.reinhart_patches['el'])
         daz = np.asarray(self.reinhart_patches['d_az'])
@@ -474,7 +494,7 @@ class ReinhartSky:
             ax.text(0, 1.05, '0°', ha='center', fontsize=12)
             ax.text(0, -1.05, '180°', ha='center', fontsize=12)
             ax.text(1.05, 0, '90°', ha='center', fontsize=12)
-            ax.text(-1.05, 0, '270it °', ha='center', fontsize=12)
+            ax.text(-1.05, 0, '270°', ha='center', fontsize=12)
 
         if show_colorbar:
             m = plt.cm.ScalarMappable(norm=norm, cmap=cmap_obj)
