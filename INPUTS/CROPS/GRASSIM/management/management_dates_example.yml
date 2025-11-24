@@ -56,3 +56,13 @@ fert_org:
     Unit: KgN/ha
     Description: Amount of organic fertilizer applied
     Limit: [0, 999]
+percentageofNmin:
+    Value: 0.02
+    Type: float
+    Limit: [0,1]
+    Definition: Proportion of Nmin in organic fertilizer
+NH3volatfactor:
+    Value: 0.045
+    Type: float
+    Limit: [0,1]
+    Definition: Factor for NH3 volatilization depending on fertiliser quality (0.45 for bad, 0.27 if medium, 0.045 if good)

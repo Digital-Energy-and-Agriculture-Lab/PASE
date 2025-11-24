@@ -111,8 +111,8 @@ def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
     soil.compute_N_leached(method='Ruelle2018')
     soil.compute_N2O_emissions()
     soil.compute_N_from_rain(crop.PP)
-    soil.compute_Norg(percentageofNmin=crop.percentageofNmin, N_plant_litter=crop.N_plant_litter, fert_org=management.fert_org)
-    soil.compute_Nmin(percentageofNmin=crop.percentageofNmin, NH3volatfactor=crop.NH3volatfactor, N_uptake=crop.N_uptake, fert_org=management.fert_org, fert_min=management.fert_min)
+    soil.compute_Norg(percentageofNmin=management.percentageofNmin, N_plant_litter=crop.N_plant_litter, fert_org=management.fert_org)
+    soil.compute_Nmin(percentageofNmin=management.percentageofNmin, NH3volatfactor=management.NH3volatfactor, N_uptake=crop.N_uptake, fert_org=management.fert_org, fert_min=management.fert_min)
 
     crop.save_variables()
     soil.save_variables()
