@@ -65,7 +65,7 @@ class Weather_data:
     def get_n_years_WD_from_csvfile(self, file):
         
         WD = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', file + '.csv'),
-                         delimiter=',|;')
+                         delimiter=',|;', engine='python')
 
         # Get the sampling period as str to use below in pd.date_range
         sampling_period = get_sampling_period(WD['date'])
@@ -159,7 +159,7 @@ class Weather_data:
         daily_csv = pd.read_csv(os.path.join('INPUTS',
                                              'WEATHER_FILES',
                                              fname + '.csv'),
-                                sep=',|;')
+                                sep=',|;', engine='python')
 
         try:
             # Filter the df to find the closest weather station
