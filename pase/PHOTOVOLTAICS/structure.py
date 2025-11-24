@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import pyvista as pyv
 import math
+import numpy as np
 
 from pase.pase_math import compute_block_centers, compute_panel_grid_positions
 
@@ -292,7 +293,7 @@ class PVTable (PVStructure):
             PR is for Pole and rafter
         """
         pole = Pole(self.pole_shape,
-                    length=(self.base_height + (self.pole_spacing/2) * math.tan(self.tilt)),
+                    length=(self.base_height + (self.pole_spacing/2) * math.tan(np.deg2rad(self.tilt))),
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
@@ -304,7 +305,7 @@ class PVTable (PVStructure):
                                 inplace=True)
 
         pole_2 = Pole(self.pole_shape,
-                    length=(self.base_height - (self.pole_spacing/2) * math.tan(self.tilt)),
+                    length=(self.base_height - (self.pole_spacing/2) * math.tan(np.deg2rad(self.tilt))),
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
@@ -318,7 +319,8 @@ class PVTable (PVStructure):
         rafter = Rafter(self.rafter_shape,
                         length=self.rafter_length,
                         radius=self.rafter_radius,
-                        panel_tilt_Y=self.tilt)
+                        panel_tilt_Y=self.tilt,
+                        positioning=self.pole_ground_positioning)
         rafter.polydata.translate((0,
                                    -self.purlin_length/2,
                                    self.base_height),

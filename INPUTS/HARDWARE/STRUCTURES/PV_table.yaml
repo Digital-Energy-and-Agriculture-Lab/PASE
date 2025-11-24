@@ -52,7 +52,7 @@ PoleLength:
   Unit: meters [m]
   Definition: Pole size along z
 PoleGroundPositioning:
-  Value: -0.5
+  Value: 0.0
   Type: float
   Limit: [-10, 0]
   Unit: meters [m]
