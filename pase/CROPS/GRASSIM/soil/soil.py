@@ -113,6 +113,11 @@ class Soil():
         Create a numpy array attribute for each init variable.
         Compute the N2/N2O repartition [-], the water capacity [mm], the wilting point [mm], the water saturation [mm], the water content [mm], the water content relative to the water capacity [-].
         """
+
+        # Fixed soil parameters (for a simulation)
+        for key, value in self.soil_parameters.items():
+            setattr(self, key, np.full(self.grid, value))
+        # Initialized soil variables
         for key, value in self.inits.items():
             setattr(self, key, np.full(self.grid, value))
 
@@ -127,11 +132,6 @@ class Soil():
         self.water = self.water_capacity
         self.W = (self.water - self.wilting_point) / (self.water_capacity - self.wilting_point)
 
-        #Nitrogen parameters
-        self.K = np.full(self.grid, self.soil_parameters['K'])
-        self.Tref = np.full(self.grid, self.soil_parameters['Tref'])
-        self.NSc = np.full(self.grid, self.soil_parameters['NSc'])
-        self.FNAmax = np.full(self.grid, self.soil_parameters['FNAmax'])
 
     def init_daily_loop(self, day):
         """
