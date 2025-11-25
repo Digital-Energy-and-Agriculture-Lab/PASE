@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 
-def save_csv(filename, nyears_data, variables):
+def save_mean_to_csv(filename, nyears_data, variables):
     """
     Save the mean values of the variables in the nyears_data dictionary to a CSV file.
     
