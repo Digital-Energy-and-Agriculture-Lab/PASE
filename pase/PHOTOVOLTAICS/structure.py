@@ -298,7 +298,10 @@ class PVTable (PVStructure):
         PRS = self.make_PRStructure()
         PG = self.make_purlin_group()
 
-        
+        combined = PRS + PG
+
+        return combined
+
         
     def make_PRStructure(self) -> pyv.PolyData: #TODO: change function name
         """
@@ -364,15 +367,22 @@ class PVTable (PVStructure):
                         length=self.purlin_length,
                         panel_tilt_Y=0,
                         side=self.purlin_side,
-                        radius=self.purlin_radius
+                        radius=self.purlin_radius,
+                        positioning=self.pole_ground_positioning
                         )
-            p.polydata.translate((offx, 0, 0),
-                                 inplace=True)
+            p.polydata.translate((offx, 
+                                  0, 
+                                  self.base_height),
+                                  inplace=True)
             purlin_group.append(p.polydata)
 
         combined = purlin_group[0].copy()
         for mesh in purlin_group[1:]:
             combined = combined + mesh
+
+        combined.rotate_y(self.tilt,
+                          point=(0, 0, self.base_height),
+                          inplace=True)
         
         return combined
 
@@ -461,7 +471,7 @@ if __name__ == "__main__":
                                         PV_module_1,
                                         Structure]).aggregated_inputs
 
-    blocks = PVTable(PV_params_dict).make_table_part()
+    blocks = PVTable(PV_params_dict).make_PVtable_part()
 
     pl = pyv.Plotter()
     pl.add_mesh(blocks, show_edges=True)
