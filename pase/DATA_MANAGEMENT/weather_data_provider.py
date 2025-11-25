@@ -14,14 +14,18 @@ import time
 import math
 import numpy as np
 import os
+from pathlib import Path
 
 from pase.user_support_tools import PASE_Logger
 from pase.ENVIRONMENT.aerodynamics import get_wind_speed_specific_height
 from pase.DATA_MANAGEMENT.helpers import (aggregate_lat_lon, unpack_latlon,
                                           parse_date_range, get_sampling_period)
 
+CACHE_DIR = Path(__file__).parents[2] / 'OUTPUTS' / '_cache'
+
+
 class Weather_data:
-    
+
     def __init__(self, latitude, longitude, sim_starting_year, sim_ending_year, 
                  WD_option, file=None, daily_file=None):
 
@@ -37,9 +41,68 @@ class Weather_data:
             self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]))
             
         else:  # Download weather data from PVGIS
-            self.get_n_years_hourly_WD_PVGis()
+            # Look for cached data and load it
+            cached = self.load_cached_weather_data()
+
+            # If there is no cached data : fetch it from PVGIS API.
+            if cached is None:
+                self.get_n_years_hourly_WD_PVGis()
+
             self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]),
                                       daily_file)
+
+            # If data was not cached: save to cache folder
+            if cached is None:
+                self.cache_weather_data()
+
+    def load_cached_weather_data(self):
+        # for year in range(self.sim_starting_year, self.sim_ending_year + 1):
+        path = self.get_cache_file_name()
+
+        if path.exists():
+            print('Load weather data from cache')
+            with open(path, 'r') as fp:
+                data = json.load(fp)
+
+                for key in data.keys():
+                    df = pd.DataFrame.from_records(data[key])
+                    df['DateTime'] = pd.to_datetime(df['DateTime'])
+                    new_index = pd.date_range(
+                        "01-01-" + str(key) + " 00:10:00",
+                        "31-12-" + str(key) + " 23:10:00",
+                        freq='1H')
+                    df = df.set_index(new_index)
+                    self.nyears_data[key] = df
+            return 1
+        else:
+            return None
+
+    def cache_weather_data(self):
+        path = self.get_cache_file_name()
+
+        # convert dataframes into dictionaries
+        for key in self.nyears_data.keys():
+            df = self.nyears_data[key]
+            df['DateTime'] = df['DateTime'].astype(str) # 2020-12-31 21:10:00
+            data_dict = {key: self.nyears_data[key].to_dict(orient='records')}
+
+        # write to disk
+        with open(path, 'w') as fp:
+            json.dump(
+                data_dict,
+                fp,
+                indent=4,
+                sort_keys=True
+            )
+
+        return
+
+    def get_cache_file_name(self):
+        filename_base = ('wd_' + str(self.latitude) + '_' + str(self.longitude)
+                         + '_' + str(self.sim_starting_year)
+                         + '-' + str(self.sim_ending_year) + '.json')
+
+        return CACHE_DIR/filename_base
 
     def get_n_years_hourly_WD_PVGis(self):
 
