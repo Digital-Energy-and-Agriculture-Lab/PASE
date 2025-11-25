@@ -93,6 +93,11 @@ PurlinRadius:
   Limit: [0.01, 50.0]
   Unit: meters [m]
   Definition: Purlin radius (used in case of cylindrical purlin)
+NumberOfPurlins:
+  Value: 5
+  Typer: integer
+  Limit: [1, 10]
+  Definition: Number of Purlin for one group
 
 RafterShape:
   Value: Cylinder

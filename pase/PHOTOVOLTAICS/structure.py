@@ -145,6 +145,7 @@ class PVStructure(ABC):
         self.purlin_side = PV_i['PurlinSide']
         self.purlin_length = self.structure_spacing_y
         self.purlin_radius = PV_i['PurlinRadius']
+        self.numbers_of_purlin = PV_i['NumberOfPurlins']
 
         self.rafter_shape = PV_i['RafterShape']
         self.rafter_width = PV_i['RafterWidth']
@@ -283,22 +284,27 @@ class PVTable (PVStructure):
 
         self.tilt = float(PV_i["TiltY"])
 
+        
+        self.tilt_rad = math.radians(self.tilt)
+        self.half_span = self.pole_spacing
+        
+        #set rafter lenght condition to avoid rafter to be smaller that distance between two poles
+        self.required_length = 2 * self.half_span / math.cos(self.tilt_rad) 
+        self.rafter_length = max(self.rafter_length, 
+                                 self.required_length)
+        self.height_offset = self.half_span * math.tan(self.tilt_rad)
+
     def make_table_part(self) -> pyv.PolyData:
         PRS = self.make_PRStructure()
         
-    
     def make_PRStructure(self) -> pyv.PolyData: #TODO: change function name
         """
             PR is for Pole and rafter
         """
-        tilt_rad = math.radians(self.tilt)
-        half_span = self.pole_spacing
-        required_length = 2 * half_span / math.cos(tilt_rad)
-        rafter_length = max(self.rafter_length, required_length)
-        height_offset = half_span * math.tan(tilt_rad)
+        
 
         pole = Pole(self.pole_shape,
-                    length=(self.base_height + height_offset),
+                    length=(self.base_height + self.height_offset),
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
@@ -310,7 +316,7 @@ class PVTable (PVStructure):
                                 inplace=True)
 
         pole_2 = Pole(self.pole_shape,
-                    length=(self.base_height - height_offset),
+                    length=(self.base_height - self.height_offset),
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
@@ -322,7 +328,7 @@ class PVTable (PVStructure):
                                 inplace=True)
         
         rafter = Rafter(self.rafter_shape,
-                        length=rafter_length,
+                        length=self.rafter_length,
                         radius=self.rafter_radius,
                         panel_tilt_Y=self.tilt,
                         positioning=self.pole_ground_positioning)
@@ -334,6 +340,12 @@ class PVTable (PVStructure):
         combine = pole.polydata + pole_2.polydata + rafter.polydata
 
         return combine
+
+    def make_purlin_group(self) -> pyv.PolyData:
+        nb_purlin = self.numbers_of_purlin
+        span_purlin = self.rafter_length
+
+
 
 
 class HSATS(PVStructure):
