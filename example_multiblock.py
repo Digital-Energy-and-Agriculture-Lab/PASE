@@ -10,9 +10,11 @@ import numpy as np
 import os
 import pickle
 import pyvista as pyv
+
 from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
+from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
 from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
 from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D, PVConfiguration3D
@@ -48,6 +50,12 @@ crop_config = YAML_Inputs_provider(file='simple_example.yml',
 input_checker = InputsEvaluator(Loc_1, AV_1)
 
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1, Structure]).aggregated_inputs
+
+om = OutputsManager(Loc_1['LocationName'],
+                    Loc_1['SimulationStartingYear'],
+                    Loc_1['SimulationEndingYear'])
+all_params_dict = {**Loc_1, **PV_params_dict, **crop_config}
+variant = om.setup_variant(all_params_dict)
 
 ##################
 # Pre-processing #
