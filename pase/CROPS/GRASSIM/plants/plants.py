@@ -65,13 +65,14 @@ class Plants():
         self.OMDGR = self.maxOMDGR-(self.ageGR*(self.maxOMDGR-self.minOMDGR)/(self.ST2-self.ST1)) #organic mater digestibility of green reproductive biomass
         
         #we assume that at the beginning of the season the plant has at least the minimum amount of N needed for maximum growth
-        self.Nconc = self.a_Ncrit*0.01 #*(BMGV+BMGR/1000)^-b_Ncrit
+        self.NconcGV = self.a_Ncrit*0.01 #*(BMGV+BMGR/1000)^-b_Ncrit
+        self.NconcGR = self.a_Ncrit*0.01
 
         #We assume that at the beginning of the season the N concentration is the same for the both green compartments. Same for the dead ones.
-        self.QNGV = self.Nconc*self.BMGV
-        self.QNGR = self.Nconc*self.BMGR
-        self.QNDV = 0.008*self.BMDV # TODO: Ad the 0.008 factor as a parameter (dead biomass nitrogen content)
-        self.QNDR = 0.008*self.BMDR
+        self.QNGV = self.NconcGV*self.BMGV
+        self.QNGR = self.NconcGR*self.BMGR
+        self.QNDV = self.NconcDV*self.BMDV
+        self.QNDR = self.NconcDR*self.BMDR
 
         self.NGV = np.divide(self.QNGV, self.BMGV, where=self.BMGV > 0, out=np.zeros_like(self.BMGV)) # GV grass N concentration (kg N/kgDM)
         self.NGR = np.divide(self.QNGR, self.BMGR, where=self.BMGR > 0, out=np.zeros_like(self.BMGR)) # GR grass N concentration (kg N/kgDM)
@@ -257,10 +258,10 @@ class Plants():
     def compute_N_plant_litter(self):
         """Compute nitrogen content [kgN ha-1] of vegetation undergoing abscission.
 
-        Assume that N concentration of dead material is 0.008 kgN kgDM-1.
+        Assume that N concentration of dead material is 0.008 kgN kgDM-1 (cf. PFT parameters value)
         From Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
         """
-        self.N_plant_litter = (self.ABSDV + self.ABSDR) * 0.008
+        self.N_plant_litter = (self.ABSDV*self.NDV) + (self.ABSDR * self.NDR)
 
 
     def compute_fT(self):
@@ -600,21 +601,21 @@ class Plants():
 
     def update_nitrogen_content(self):
         """Update nitrogen content (QN) [kgN ha^-1] based on senescence and abscission."""
-        self.QNDV += ((1 - self.sigmaGV) * self.SENGV - self.ABSDV) * 0.008
-        self.QNDR += ((1 - self.sigmaGR) * self.SENGR - self.ABSDR) * 0.008
+        self.QNDV += ((1 - self.sigmaGV) * self.SENGV - self.ABSDV) * self.NDV
+        self.QNDR += ((1 - self.sigmaGR) * self.SENGR - self.ABSDR) * self.NDR
 
         mask = self.GRO > 0.0001
         self.QNGV[mask] += (
             self.N_uptake[mask] * self.FNH * self.GROGV[mask] / self.GRO[mask]
-            - self.SENGV[mask] * 0.008
+            - self.SENGV[mask] * self.NDV[mask]
         )
-        self.QNGV[~mask] -= self.SENGV[~mask] * 0.008
+        self.QNGV[~mask] -= self.SENGV[~mask] * self.NDV[~mask]
 
         self.QNGR[mask] += (
             self.N_uptake[mask] * self.FNH * self.GROGR[mask] / self.GRO[mask]
-            - self.SENGR[mask] * 0.008
+            - self.SENGR[mask] * self.NDR[mask]
         )
-        self.QNGR[~mask] -= self.SENGR[~mask] * 0.008
+        self.QNGR[~mask] -= self.SENGR[~mask] * self.NDR[~mask]
 
         self.QNGV = self.QNGV.clip(min=0)
         self.QNGR = self.QNGR.clip(min=0)

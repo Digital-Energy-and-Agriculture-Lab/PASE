@@ -5,8 +5,9 @@ from pase.CROPS.GRASSIM.soil.soil import Soil
 
 def test_compute_N_immobilization():
     grid=(1,1)
-    init=dict(not_runoff=0,Nmin=50,Norg=50,sand=25,clay=25,coarse=15,org=3,soil_depth=1000,max_soil_depth=1000,albedo=0.2)
+    init=dict(Nmin=50,Norg=50)
     variables_to_save=[]
+    soil_parameters=dict(not_runoff=0,sand=25,clay=25,coarse=15,org=3,soil_depth=1000,max_soil_depth=1000,albedo=0.2,K=0.115,Tref=15,FNAmax=0.4,NSc=200)
     soil_properties=pd.DataFrame({
         "Texture": [
             "Sand", "Loamy_Sand", "Sandy_Loam", "Loam", "Silty_Loam",
@@ -19,8 +20,8 @@ def test_compute_N_immobilization():
         "InfRate": [696, 600, 696, 360, 288, 240,
                     168, 168, 120, 96, 24]
     })
-    soil=Soil(grid,init,soil_properties,variables_to_save)
+    soil=Soil(grid,init,soil_parameters, soil_properties,variables_to_save)
     soil.compute_water_balance(2, 0.2,method='Ruelle2018')
-    soil.compute_N_mineralization(0.115, 15, 13,method='Ruelle2018') #K=0.115, Tref= 15, Temp=13
-    soil.compute_N_immobilization(0.115, 15, 13, method='Ruelle2018')
+    soil.compute_N_mineralization(13,method='Ruelle2018') #K=0.115, Tref= 15, Temp=13
+    soil.compute_N_immobilization(13, method='Ruelle2018')
     assert np.isclose(soil.immobilization[0,0],0.158906720500667,rtol=1e-8)
