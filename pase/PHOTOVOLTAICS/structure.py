@@ -7,7 +7,7 @@ from pase.pase_math import compute_block_centers, compute_panel_grid_positions
 
 def build_structure(config_dict):
     if config_dict['StructureType'].lower() == 'agrivoltaic fence':
-        return AgrivoltaicFence(config_dict).multi_fence_group()
+        return AgrivoltaicFence(config_dict).build_structure()
 
 
 class PVStructurePart(ABC):
@@ -156,11 +156,6 @@ class PVStructure(ABC):
 
         self.material = PV_i['Material']
 
-
-class AgrivoltaicFence(PVStructure):
-    def __init__(self, PV_i, **kwargs):
-        super().__init__(PV_i, **kwargs)
-
         self.panel_width = float(PV_i["PanelDimensionX"])  # X
         self.panel_height = float(PV_i["PanelDimensionY"])  # Y
 
@@ -179,8 +174,17 @@ class AgrivoltaicFence(PVStructure):
         self.num_blocks_y = int(PV_i["NumberOfPVBlocksY"])  # blocks
 
         self.base_height = float(PV_i["Height"])  # elevation
+        self.pole_spacing = float(PV_i["PoleSpacingX"])
+        self.tilt = float(PV_i["TiltY"])
 
-    def make_fence_group(self) -> pyv.PolyData:
+
+class AgrivoltaicFence(PVStructure):
+    def __init__(self, PV_i, **kwargs):
+        super().__init__(PV_i, **kwargs)
+
+
+
+    def make_elementary_group(self) -> pyv.PolyData:
         '''
         creates a structure by combining vertical and horizontal bars 
         '''
@@ -218,7 +222,7 @@ class AgrivoltaicFence(PVStructure):
 
         return combined
 
-    def multi_fence_group(self) -> pyv.MultiBlock:
+    def build_structure(self) -> pyv.MultiBlock:
 
         # Compute position of groups
         positions, block_centers, grid_indices = compute_panel_grid_positions(
@@ -232,7 +236,7 @@ class AgrivoltaicFence(PVStructure):
         blocks = pyv.MultiBlock()
 
         for idx in range(self.n_groups_in_block):
-            g = self.make_fence_group()
+            g = self.make_elementary_group()
             offx, offy, offz = map(float, positions[idx])
 
             g.translate((0, offy, 0),
@@ -261,29 +265,6 @@ class PVTable (PVStructure):
     def __init__(self, PV_i, **kwargs):
         super().__init__(PV_i, **kwargs)
 
-        self.panel_width = float(PV_i["PanelDimensionX"])  # X
-        self.panel_height = float(PV_i["PanelDimensionY"])  # Y
-
-        self.panel_spacing_x = float(
-            PV_i["RepetitionDistanceOfPanelsX"])  # pitch X
-        self.panel_spacing_y = float(
-            PV_i["RepetitionDistanceOfPanelsY"])  # pitch Y
-        self.panels_per_block_x = int(PV_i["NumberOfPanelsX"])  # per block
-        self.panels_per_block_y = int(PV_i["NumberOfPanelsY"])  # per block
-
-        self.block_spacing_x = float(
-            PV_i["RepetitionDistanceOfPVBlocksX"])  # block pitch X
-        self.block_spacing_y = float(
-            PV_i["RepetitionDistanceOfPVBlocksY"])  # block pitch Y
-        self.num_blocks_x = int(PV_i["NumberOfPVBlocksX"])  # blocks
-        self.num_blocks_y = int(PV_i["NumberOfPVBlocksY"])  # blocks
-
-        self.base_height = float(PV_i["Height"])  # elevation
-
-        self.pole_spacing = float(PV_i["PoleSpacingX"])
-
-        self.tilt = float(PV_i["TiltY"])
-
         
         self.tilt_rad = math.radians(self.tilt)
         self.half_span = self.pole_spacing
@@ -294,8 +275,8 @@ class PVTable (PVStructure):
                                  self.required_length)
         self.height_offset = self.half_span * math.tan(self.tilt_rad)
 
-    def make_PVtable_part(self) -> pyv.PolyData:
-        PRS = self.make_PRStructure()
+    def make_elementary_group(self) -> pyv.PolyData:
+        PRS = self.make_start_and_end_block()
         PG = self.make_purlin_group()
 
         combined = PRS + PG
@@ -303,7 +284,7 @@ class PVTable (PVStructure):
         return combined
 
         
-    def make_PRStructure(self) -> pyv.PolyData: #TODO: change function name
+    def make_start_and_end_block(self) -> pyv.PolyData:
         """
             PR is for Pole and rafter
         """
@@ -386,7 +367,7 @@ class PVTable (PVStructure):
         
         return combined
 
-    def make_multi_PVTable_group(self) -> pyv.MultiBlock :
+    def build_structure(self) -> pyv.MultiBlock :
 
         positions, block_centers, grid_indices = compute_panel_grid_positions(
             self.num_blocks_x, self.num_blocks_y,
@@ -399,14 +380,14 @@ class PVTable (PVStructure):
         blocks = pyv.MultiBlock()
 
         for idx in range(self.n_groups_in_block):
-            g = self.make_PVtable_part()
+            g = self.make_elementary_group()
             offx, offy, offz = map(float, positions[idx])
 
             g.translate((0, offy, 0),
                         inplace=True)
             blocks.append(g)
 
-        end_pole = self.make_PRStructure()
+        end_pole = self.make_start_and_end_block()
         end_pole.translate((0,
                             offy+self.panel_spacing_y,
                             0.0),
@@ -425,25 +406,6 @@ class HSATS(PVStructure):
     """
     def __init__(self, PV_i, **kwargs):
         super().__init__(PV_i, **kwargs)
-
-        self.panel_width = float(PV_i["PanelDimensionX"])  # X
-        self.panel_height = float(PV_i["PanelDimensionY"])  # Y
-
-        self.panel_spacing_x = float(
-            PV_i["RepetitionDistanceOfPanelsX"])  # pitch X
-        self.panel_spacing_y = float(
-            PV_i["RepetitionDistanceOfPanelsY"])  # pitch Y
-        self.panels_per_block_x = int(PV_i["NumberOfPanelsX"])  # per block
-        self.panels_per_block_y = int(PV_i["NumberOfPanelsY"])  # per block
-
-        self.block_spacing_x = float(
-            PV_i["RepetitionDistanceOfPVBlocksX"])  # block pitch X
-        self.block_spacing_y = float(
-            PV_i["RepetitionDistanceOfPVBlocksY"])  # block pitch Y
-        self.num_blocks_x = int(PV_i["NumberOfPVBlocksX"])  # blocks
-        self.num_blocks_y = int(PV_i["NumberOfPVBlocksY"])  # blocks
-
-        self.base_height = float(PV_i["Height"])  # elevation
 
     def make_tracking_part(self) -> pyv.PolyData:
 
@@ -501,7 +463,7 @@ if __name__ == "__main__":
                                         PV_module_1,
                                         Structure]).aggregated_inputs
 
-    blocks = PVTable(PV_params_dict).make_multi_PVTable_group()
+    blocks = PVTable(PV_params_dict).build_structure()
 
     pl = pyv.Plotter()
     pl.add_mesh(blocks, show_edges=True)
