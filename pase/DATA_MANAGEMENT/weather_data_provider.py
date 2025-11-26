@@ -97,11 +97,14 @@ class Weather_data:
         return
 
     def get_cache_file_name(self):
-        filename_base = ('wd_' + str(self.latitude) + '_' + str(self.longitude)
-                         + '_' + str(self.sim_starting_year)
-                         + '-' + str(self.sim_ending_year) + '.json')
+        cache_key = self.get_cache_key()
+        filename_base = f'wd_{cache_key}.json'
 
         return CACHE_DIR/filename_base
+
+    def get_cache_key(self):
+        return (f'{self.latitude}_{self.longitude}_'
+                f'{self.sim_starting_year}-{self.sim_ending_year}')
 
     def get_n_years_hourly_WD_PVGis(self):
 
