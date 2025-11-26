@@ -47,13 +47,11 @@ class Weather_data:
             # If there is no cached data : fetch it from PVGIS API.
             if cached is None:
                 self.get_n_years_hourly_WD_PVGis()
+                # If data was not cached: save to cache folder
+                self.cache_weather_data()
 
             self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]),
                                       daily_file)
-
-            # If data was not cached: save to cache folder
-            if cached is None:
-                self.cache_weather_data()
 
     def load_cached_weather_data(self):
         # for year in range(self.sim_starting_year, self.sim_ending_year + 1):
@@ -81,10 +79,11 @@ class Weather_data:
         path = self.get_cache_file_name()
 
         # convert dataframes into dictionaries
+        data_dict = {}
         for key in self.nyears_data.keys():
             df = self.nyears_data[key]
-            df['DateTime'] = df['DateTime'].astype(str) # 2020-12-31 21:10:00
-            data_dict = {key: self.nyears_data[key].to_dict(orient='records')}
+            df['DateTime'] = df['DateTime'].astype(str)
+            data_dict[key] = self.nyears_data[key].to_dict(orient='records')
 
         # write to disk
         with open(path, 'w') as fp:
