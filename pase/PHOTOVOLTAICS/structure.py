@@ -386,7 +386,37 @@ class PVTable (PVStructure):
         
         return combined
 
+    def make_multi_PVTable_group(self) -> pyv.MultiBlock :
 
+        positions, block_centers, grid_indices = compute_panel_grid_positions(
+            self.num_blocks_x, self.num_blocks_y,
+            self.panels_per_block_x, self.panels_per_block_y,
+            self.block_spacing_x, self.block_spacing_y,
+            self.panel_spacing_x, self.panel_spacing_y,
+            self.base_height,
+        )
+
+        blocks = pyv.MultiBlock()
+
+        for idx in range(self.n_groups_in_block):
+            g = self.make_PVtable_part()
+            offx, offy, offz = map(float, positions[idx])
+
+            g.translate((0, offy, 0),
+                        inplace=True)
+            blocks.append(g)
+
+        end_pole = self.make_PRStructure()
+        end_pole.translate((0,
+                            offy+self.panel_spacing_y,
+                            0.0),
+                            inplace=True)
+        
+        blocks.append(end_pole)
+        combined_blocks = blocks.combine()
+        combined_blocks.user_dict = {'Material': self.material}
+
+        return combined_blocks
 
 
 class HSATS(PVStructure):
@@ -471,7 +501,7 @@ if __name__ == "__main__":
                                         PV_module_1,
                                         Structure]).aggregated_inputs
 
-    blocks = PVTable(PV_params_dict).make_PVtable_part()
+    blocks = PVTable(PV_params_dict).make_multi_PVTable_group()
 
     pl = pyv.Plotter()
     pl.add_mesh(blocks, show_edges=True)
