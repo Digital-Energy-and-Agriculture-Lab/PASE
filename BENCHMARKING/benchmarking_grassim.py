@@ -27,8 +27,11 @@ os.chdir(PROJECT_ROOT)
 
 from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
-from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
+from pase.DATA_MANAGEMENT.weather_data_provider import (fetch_weather_from_pvgis,
+                                                        get_cache_key,
+                                                        Weather_data)
 from pase.DATA_MANAGEMENT.OUTPUT.save_csv import save_mean_to_csv
+from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
 from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
 from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from pase.ENVIRONMENT.light import Ray_casting_scene
@@ -57,17 +60,40 @@ input_checker = InputsEvaluator(Loc_1, AV_1)
 
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
+om = OutputsManager(Loc_1['LocationName'],
+                    Loc_1['SimulationStartingYear'],
+                    Loc_1['SimulationEndingYear'])
+all_params_dict = {**Loc_1, **PV_params_dict, **crop_config}
+variant_dir = om.setup_variant(all_params_dict)
+
+cache_key = get_cache_key(Loc_1['Latitude'],
+                          Loc_1['Longitude'],
+                          Loc_1['SimulationStartingYear'],
+                          Loc_1['SimulationEndingYear'])
+
 ##################
 # Pre-processing #
 ##################
 # Import of weather data and computation of daily weather data
+lat = Loc_1['Latitude']
+lon = Loc_1['Longitude']
+start_year = Loc_1['SimulationStartingYear']
+end_year = Loc_1['SimulationEndingYear']
+
+raw_weather = om.load_or_fetch_weather(
+    key=cache_key,
+    fetch_fn=lambda: fetch_weather_from_pvgis(lat, lon, start_year, end_year)
+)
+
 WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['Longitude'],
                   Loc_1['SimulationStartingYear'],
                   Loc_1['SimulationEndingYear'],
                   Loc_1['WeatherDataOption'],
+                  raw_weather,
                   Loc_1['WeatherFileName'],
-                  Loc_1['DailyWeatherFileName'])
+                  Loc_1['DailyWeatherFileName']
+                  )
 
 # Import sun positions, complete for the HDKR model and sampled for the direct light model
 Sun_positions_samp = Sun_positions_sampled(Loc_1['Latitude'],
