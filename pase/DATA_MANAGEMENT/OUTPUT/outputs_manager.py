@@ -193,7 +193,12 @@ class OutputsManager:
         if cached is not None:
             logger.info('Found cached weather data ; '
                         'loading from cached json file.')
-            return cached
+
+            # Save to <project>/<variant> for traceability
+            self.save_json("data", fname, cached)
+
+            return cached  # cached is a dict
+
         logger.info('No cached data, fetching from PVGIS API ...')
 
         data = fetch_fn()  # fetch data with the passthrough function fetch_fn

@@ -88,8 +88,7 @@ WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['WeatherFileName'],
                   Loc_1['DailyWeatherFileName']
                   )
-# WD_new = Weather_data.hourly_from_raw(lat, lon, start_year, end_year, raw_weather)
-# WD_pewpewpew = WD.hourly_from_raw(lat, lon, start_year, end_year, raw_weather)
+
 # Import sun positions
 
 # sampled for the direct light model
