@@ -1,8 +1,11 @@
 import datetime
-import json
 import hashlib
+import json
+import logging
 from pathlib import Path
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class OutputsManager:
@@ -13,6 +16,7 @@ class OutputsManager:
         "results": "4-results",
     }
 
+    CACHE_DIR = Path(__file__).parents[3] / 'OUTPUTS' / '_cache'
     REGISTRY_FILE = "variants.json"
     LATEST_LINK = "latest"
 
@@ -95,31 +99,6 @@ class OutputsManager:
         self.registry_path.write_text(json.dumps(self.registry, indent=2))
 
     # ---------------------------------------------------------------------
-    # Latest symlink update
-    # ---------------------------------------------------------------------
-    def _update_symlink(self, variant_name: str):
-        target = self.project_root / variant_name
-        link_path = self.project_root / self.LATEST_LINK
-
-        # Remove existing link or folder
-        if link_path.exists() or link_path.is_symlink():
-            if link_path.is_dir() and not link_path.is_symlink():
-                # Windows fallback: ordinary directory → remove
-                for p in link_path.iterdir():
-                    p.unlink()  # safe: registry never writes here
-                link_path.rmdir()
-            else:
-                link_path.unlink()
-
-        try:
-            # Try creating a symlink
-            link_path.symlink_to(target, target_is_directory=True)
-        except OSError:
-            # Windows fallback: create folder containing a text pointer
-            link_path.mkdir()
-            (link_path / "TARGET.txt").write_text(str(target))
-
-    # ---------------------------------------------------------------------
     # Variant setup (hash must be computed before creating dirs)
     # ---------------------------------------------------------------------
     def setup_variant(self, inputs: dict, variant: Optional[str] = None):
@@ -151,9 +130,6 @@ class OutputsManager:
         # update registry
         self._update_registry(chosen_variant, input_hash)
 
-        # update latest symlink
-        self._update_symlink(chosen_variant)
-
         return self.variant_root
 
     # ---------------------------------------------------------------------
@@ -161,6 +137,9 @@ class OutputsManager:
     # ---------------------------------------------------------------------
     def _path(self, sub: str, filename: str) -> Path:
         return (self.variant_root / self.SUBDIRS[sub] / filename).resolve()
+
+    def _cache_path(self, filename: str) -> Path:
+        return (self.CACHE_DIR / filename).resolve()
 
     def set_pase_root(self):
         local_dir = Path(__file__)
@@ -180,8 +159,20 @@ class OutputsManager:
 
     def load_json(self, sub: str, name: str, default=None):
         path = self._path(sub, name)
-        return json.loads(path.read_text()) if path.exists() else default
+        if path.exists():
+            return json.loads(path.read_text())
+        else:
+            return default
 
+    def save_json_to_cache(self, name: str, data: Any):
+        self._cache_path(name).write_text(json.dumps(data, indent=2))
+
+    def load_json_from_cache(self, name: str, default=None):
+        path = self._cache_path(name)
+        if path.exists():
+            return json.loads(path.read_text())
+        else:
+            return default
     def save_bytes(self, sub: str, name: str, blob: bytes):
         self._path(sub, name).write_bytes(blob)
 
@@ -197,11 +188,20 @@ class OutputsManager:
         Load or cache weather data from PVGIS API.
         key = "lat_lon_year_resolution" or similar.
         """
-        fname = f"{key}.json"
-        cached = self.load_json("data", fname)
+        fname = f"wd_{key}.json"
+        cached = self.load_json_from_cache(fname)
         if cached is not None:
+            logger.info('Found cached weather data ; '
+                        'loading from cached json file.')
             return cached
+        logger.info('No cached data, fetching from PVGIS API ...')
 
-        data = fetch_fn()
+        data = fetch_fn()  # fetch data with the passthrough function fetch_fn
+
+        # Save to <project>/<variant> for traceability
         self.save_json("data", fname, data)
+
+        # Save to cache for efficiency
+        self.save_json_to_cache(fname, data)
+
         return data

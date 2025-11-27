@@ -103,45 +103,16 @@ def test_registry_updates_and_contents(monkeypatch, tmp_path):
     e1 = registry[v1.name]
     assert "hash" in e1 and "timestamp" in e1
 
-
-def test_latest_symlink_points_to_last_variant(monkeypatch, tmp_path):
-    _monkeypatch_module_file(monkeypatch, tmp_path)
-    om = OutputsManager("LinkProj", 2008, 2009)
-
-    v1 = om.setup_variant({"a": 1})
-    latest = om.project_root / "latest"
-    assert latest.exists()
-    # resolve available on symlink or directory pointer fallback
-    assert Path(latest.resolve()) == Path(v1.resolve())
-
-    v2 = om.setup_variant({"b": 2})
-    assert Path(latest.resolve()) == Path(v2.resolve())
-
-
-def test_latest_symlink_points_to_last_variant(monkeypatch, tmp_path):
-    _monkeypatch_module_file(monkeypatch, tmp_path)
-    om = OutputsManager("LinkProj", 2008, 2009)
-
-    v1 = om.setup_variant({"a": 1})
-    latest = om.project_root / "latest"
-    assert latest.exists()
-    # resolve available on symlink or directory pointer fallback
-    assert Path(latest.resolve()) == Path(v1.resolve())
-
-    v2 = om.setup_variant({"b": 2})
-    assert Path(latest.resolve()) == Path(v2.resolve())
-
-
 def test_save_load_helpers_and_cache_weather(monkeypatch, tmp_path):
     _monkeypatch_module_file(monkeypatch, tmp_path)
     om = OutputsManager("IOProj", 2017, 2018)
 
     # prepare variant
-    om.setup_variant({"z": 9})
+    variant_dir = om.setup_variant({"z": 9})
 
     # JSON save/load
-    om.save_json("results", "r1.json", {"val": 123})
-    assert om.load_json("results", "r1.json") == {"val": 123}
+    om.save_json_to_cache("r1.json", {"val": 123})
+    assert om.load_json_from_cache("r1.json") == {"val": 123}
 
     # bytes save/load
     om.save_bytes("data", "bin.dat", b"spam")
@@ -160,4 +131,8 @@ def test_save_load_helpers_and_cache_weather(monkeypatch, tmp_path):
     assert calls["n"] == 1
 
     # cached file exists on disk under variant's 2-data
-    assert (om.variant_root / "2-data" / "loc_1_2020.json").exists()
+    assert (om.CACHE_DIR/"wd_loc_1_2020.json").exists()
+
+    # Cleanup under CACHE_DIR
+    Path.unlink(om.CACHE_DIR/"wd_loc_1_2020.json")
+    Path.unlink(om.CACHE_DIR/"r1.json")
