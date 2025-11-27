@@ -9,7 +9,9 @@ Created on Tue Sep 23 11:20:22 2025
 import numpy as np
 from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
-from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data, get_cache_key, fetch_weather_from_pvgis
+from pase.DATA_MANAGEMENT.weather_data_provider import (Weather_data,
+                                                        get_cache_key,
+                                                        fetch_weather_from_pvgis)
 from pase.ENVIRONMENT.light import Sun_positions, Light
 
 
@@ -18,8 +20,8 @@ Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inpu
 om = OutputsManager(Loc_1['LocationName'],
                     Loc_1['SimulationStartingYear'],
                     Loc_1['SimulationEndingYear'])
-# all_params_dict = {**Loc_1, **PV_params_dict, **crop_config}
-# variant_dir = om.setup_variant(all_params_dict)
+
+variant_dir = om.setup_variant(Loc_1)
 
 cache_key = get_cache_key(Loc_1['Latitude'],
                           Loc_1['Longitude'],
@@ -51,7 +53,6 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
                                        Loc_1['TimeZone'])
 
 light_test = Light(WD.nyears_data, Sun_positions_complete)
-
 
 def test_get_anisotropy_index():
     
