@@ -3,9 +3,10 @@ from datetime import datetime
 import os
 import pandas as pd
 import subprocess
+import yaml
 
-from MODULES.user_support_tools import PASE_Logger
-
+from pase.user_support_tools import PASE_Logger
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 
 def export_benchmark(df, fname_prefix='diffuse_benchmark_', mode='x', fpath=None):
     if mode == 'x':
@@ -78,3 +79,54 @@ def sign_commit_hash(fpath):
         writer = csv.writer(outfile)
         writer.writerow('')
         writer.writerow([signature])
+
+def save_simulation_metadata(config, Loc_1, crop_config,
+                             output_path=os.path.join("OUTPUTS",
+                                                      "simulation_metadata.yaml")):
+    # Creating dictionary
+    metadata = {}
+
+    # Adding date and hour of simulation
+    metadata['date'] = datetime.now().isoformat()
+
+    # Finding Git commit hash
+    try:
+        commit_hash = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
+    except Exception as e:
+        commit_hash = f"Could not retrieve commit: {e}"
+    metadata['git_commit'] = commit_hash
+
+    # Adding parameters from YAML and csv files contents
+    try:
+        metadata['soil_init'] = YAML_Inputs_provider(
+            file=os.path.join("CROPS", "GRASSIM", "soil",
+                              config['SoilInit'])).inputs
+        metadata['crop_init'] = YAML_Inputs_provider(
+            file=os.path.join("CROPS", "GRASSIM", "crop",
+                              config['CropInit'])).inputs
+        metadata['kc_values'] = YAML_Inputs_provider(
+            file=os.path.join("CROPS", "GRASSIM", "crop",
+                              config['Kc_values'])).inputs
+        metadata['pft_composition'] = YAML_Inputs_provider(
+            file=os.path.join("CROPS", "GRASSIM",
+                              config['PFT_composition'])).inputs
+        metadata['pft_values'] = pd.read_csv(
+            os.path.join("INPUTS", "CROPS", "GRASSIM",
+                         config['PFT_values']), sep=";",
+            decimal='.').to_dict(orient='list')
+        metadata['management'] = YAML_Inputs_provider(
+            file=os.path.join("CROPS", "GRASSIM", "management",
+                              config['Management'])).inputs
+    except Exception as e:
+        metadata['error_loading_yaml_inputs'] = str(e)
+
+    # Adding others useful parameters
+    metadata['general_location_config'] = Loc_1
+    metadata['crop_config'] = crop_config
+
+    # Saving metadata dictionary into YAML file
+    with open(output_path, 'w', encoding='utf-8') as f:
+        yaml.dump(metadata, f, allow_unicode=True)
+
+    print(f"Simulation metadata saved to {output_path}")
