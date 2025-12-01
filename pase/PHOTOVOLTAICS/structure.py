@@ -116,6 +116,10 @@ class HorizontalBar(PVStructurePart):
         self.polydata.rotate_x(90, inplace=True)
 
 
+
+
+# --- Structures --- 
+
 class PVStructure(ABC):
     """Abstract interface for PV structures (panels, poles, trackers, etc.)."""
     def __init__(self, PV_i):
@@ -425,11 +429,21 @@ class HSATS(PVStructure):
                     side=self.pole_side,
                     radius=self.pole_radius,
                     positioning=self.pole_ground_positioning)
-        support.polydata.translate((0, -self.purlin_length/2, self.pole_length), inplace=True)
+        support.polydata.translate((0, 
+                                    -self.purlin_length/2, 
+                                    self.pole_length - self.pole_side/2), 
+                                    inplace=True)
         cx, cy, cz = support.polydata.center
-        support.polydata.translate((-cx, -cy, -cz), inplace=True)
-        support.polydata.rotate_x(90, inplace=True)
-        support.polydata.translate((cx, cy, cz), inplace=True)
+        support.polydata.translate((-cx, 
+                                    -cy, 
+                                    -cz), 
+                                    inplace=True)
+        support.polydata.rotate_x(self.tilt, 
+                                  inplace=True)
+        support.polydata.translate((cx, 
+                                    cy, 
+                                    cz), 
+                                    inplace=True)
 
         combine = (pole.polydata + support.polydata)
 
@@ -445,7 +459,7 @@ if __name__ == "__main__":
     import os
 
     AV_1 = YAML_Inputs_provider(
-        file="Example3_AV_agrivoltaic_fence.yaml",
+        file="Example4_HSATS.yaml",
         subpath="AV_CENTRAL",
         parentdir=2
     ).inputs
@@ -457,7 +471,7 @@ if __name__ == "__main__":
     ).inputs
 
     Structure = YAML_Inputs_provider(
-        file="PV_table.yaml",
+        file="HSATS.yaml",
         subpath=os.path.join("HARDWARE", "STRUCTURES"),
         parentdir=2
     ).inputs
