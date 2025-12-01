@@ -407,7 +407,7 @@ class HSATS(PVStructure):
     def __init__(self, PV_i, **kwargs):
         super().__init__(PV_i, **kwargs)
 
-    def make_tracking_part(self) -> pyv.PolyData:
+    def make_elementary_group(self) -> pyv.PolyData:
 
         pole = Pole(self.pole_shape,
                     length=self.pole_length,
@@ -434,6 +434,9 @@ class HSATS(PVStructure):
         combine = (pole.polydata + support.polydata)
 
         return combine
+    
+    def build_structure(self):
+        return self.make_elementary_group()
 
 
 if __name__ == "__main__":
@@ -463,7 +466,7 @@ if __name__ == "__main__":
                                         PV_module_1,
                                         Structure]).aggregated_inputs
 
-    blocks = PVTable(PV_params_dict).build_structure()
+    blocks = HSATS(PV_params_dict).build_structure()
 
     pl = pyv.Plotter()
     pl.add_mesh(blocks, show_edges=True)
