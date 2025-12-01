@@ -116,7 +116,7 @@ class HorizontalBar(PVStructurePart):
         self.polydata.rotate_x(90, inplace=True)
 
 class rotary_support(PVStructurePart):
-    def __init__(self, shape_type, length, panel_tilt_Y, **kwargs):
+    def __init__(self, shape_type, length, **kwargs):
         super().__init__(shape_type, length, **kwargs)
 
         self.orientation = 'horizontal_y'
@@ -430,7 +430,6 @@ class HSATS(PVStructure):
                                  length=1.5,
                                  width=1.0,
                                  height=0.1,
-                                 panel_tilt_Y=self.tilt,
                                  side=self.pole_side,
                                  radius=self.pole_radius,
                                  positioning=self.pole_ground_positioning)
