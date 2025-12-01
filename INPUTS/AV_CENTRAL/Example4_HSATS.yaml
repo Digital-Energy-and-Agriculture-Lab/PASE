@@ -29,9 +29,9 @@ RotationAxisNumber:
    Unit: dimensionless [-]
    Definition: Number of rotation axis that drive the block of panels
 TiltY:
-   Value: 90
+   Value: -45
    Type: float
-   Limit: [-90, 90]
+   Limit: [-80, 80]
    Unit: degree [°]
    Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation
 Hinge:
