@@ -78,7 +78,10 @@ class Pole(PVStructurePart):
         super().__init__(shape_type, length, **kwargs)
 
         self.orientation = 'vertical'
-        self.polydata.translate((0, 0, length/2 + self.pole_ground_positioning), inplace=True)
+        self.polydata.translate((0, 
+                                 0, 
+                                 length/2 + self.pole_ground_positioning), 
+                                 inplace=True)
 
 
 class Purlin(PVStructurePart):
@@ -186,83 +189,76 @@ class PVStructure(ABC):
         self.pole_spacing = float(PV_i["PoleSpacingX"])
         self.tilt = float(PV_i["TiltY"])
 
-    def make_purlin_group(self) -> pyv.PolyData:
-        nb_purlin = self.numbers_of_purlin
-        span_purlin = self.rafter_length
+    def make_structure_part_group(self, structure_type, nb_part, span):
 
-        if nb_purlin <= 0:
+        if nb_part <= 0:
             return pyv.PolyData()
 
-        if nb_purlin == 1:
-            offsets_x = [0.0]
-        else:
-            start = -span_purlin / 2.0
-            step = span_purlin / (nb_purlin - 1)
-            offsets_x = [start + i * step for i in range(nb_purlin)]
+        if structure_type == "purlin":
+            if nb_part == 1:
+                offsets_x = [0.0]
+            else:
+                start = -span / 2.0
+                step = span / (nb_part - 1)
+                offsets_x = [start + i * step for i in range(nb_part)]
 
-        purlin_group = []
-        for offx in offsets_x:
-            p = Purlin(self.purlin_shape,
-                        length=self.purlin_length,
-                        panel_tilt_Y=0,
-                        side=self.purlin_side,
-                        radius=self.purlin_radius,
-                        positioning=self.pole_ground_positioning
-                        )
-            p.polydata.translate((offx, 
-                                  0, 
-                                  self.base_height),
-                                  inplace=True)
-            purlin_group.append(p.polydata)
+            purlin_group = []
+            for offx in offsets_x:
+                p = Purlin(self.purlin_shape,
+                            length=self.purlin_length,
+                            panel_tilt_Y=0,
+                            side=self.purlin_side,
+                            radius=self.purlin_radius,
+                            positioning=self.pole_ground_positioning
+                            )
+                p.polydata.translate((offx, 
+                                      0, 
+                                      self.base_height),
+                                      inplace=True)
+                purlin_group.append(p.polydata)
 
-        combined = purlin_group[0].copy()
-        for mesh in purlin_group[1:]:
-            combined = combined + mesh
+            combined = purlin_group[0].copy()
+            for mesh in purlin_group[1:]:
+                combined = combined + mesh
 
-        combined.rotate_y(self.tilt,
-                          point=(0, 
-                                 0, 
-                                 self.base_height),
-                          inplace=True)
-        
-        return combined
-    
-    def make_rafter_group(self) -> pyv.PolyData:
-        nb_rafter = self.numbers_of_rafter
-        span_rafter = self.purlin_length
+            combined.rotate_y(self.tilt,
+                              point=(0, 
+                                     0, 
+                                     self.base_height),
+                              inplace=True)
+            
+        elif structure_type == "rafter":
+            if nb_part == 1:
+                offsets_y = [0.0]
+            else:
+                start = -span / 2.0
+                step = span / (nb_part - 1)
+                offsets_y = [start + i * step for i in range(nb_part)]
 
-        if nb_rafter <= 0:
-            return pyv.PolyData()
+                rafter_group = []
+            for offy in offsets_y:
+                p = Rafter(self.rafter_shape,
+                            length=self.rafter_length,
+                            panel_tilt_Y=0,
+                            side=self.rafter_side,
+                            radius=self.rafter_radius,
+                            positioning=self.pole_ground_positioning
+                            )
+                p.polydata.translate((0, 
+                                      offy, 
+                                      self.base_height),
+                                      inplace=True)
+                rafter_group.append(p.polydata)
 
-        if nb_rafter == 1:
-            offsets_y = [0.0]
-        else:
-            start = -span_rafter / 2.0
-            step = span_rafter / (nb_rafter - 1)
-            offsets_y = [start + i * step for i in range(nb_rafter)]
+            combined = rafter_group[0].copy()
+            for mesh in rafter_group[1:]:
+                combined = combined + mesh
 
-        rafter_group = []
-        for offy in offsets_y:
-            p = Rafter(self.rafter_shape,
-                        length=self.rafter_length,
-                        panel_tilt_Y=0,
-                        side=self.rafter_side,
-                        radius=self.rafter_radius,
-                        positioning=self.pole_ground_positioning
-                        )
-            p.polydata.translate((0, 
-                                  offy, 
-                                  self.base_height),
-                                  inplace=True)
-            rafter_group.append(p.polydata)
-
-        combined = rafter_group[0].copy()
-        for mesh in rafter_group[1:]:
-            combined = combined + mesh
-
-        combined.rotate_y(self.tilt,
-                          point=(0, 0, self.base_height),
-                          inplace=True)
+            combined.rotate_y(self.tilt,
+                              point=(0, 
+                                     0, 
+                                     self.base_height),
+                              inplace=True)
         
         return combined
 
@@ -365,7 +361,9 @@ class PVTable (PVStructure):
 
     def make_elementary_group(self) -> pyv.PolyData:
         PRS = self.make_start_and_end_block()
-        PG = self.make_purlin_group()
+        PG = self.make_structure_part_group("purlin",
+                                            self.numbers_of_purlin,
+                                            self.rafter_length)
 
         combined = PRS + PG
 
@@ -433,7 +431,9 @@ class PVTable (PVStructure):
             g = self.make_elementary_group()
             offx, offy, offz = map(float, positions[idx])
 
-            g.translate((0, offy, 0),
+            g.translate((0, 
+                         offy, 
+                         0),
                         inplace=True)
             blocks.append(g)
 
@@ -470,13 +470,17 @@ class HSATS(PVStructure):
                                  -self.purlin_length/2, 0), 
                                  inplace=True)
 
-        purlin_group = self.make_purlin_group()
+        purlin_group = self.make_structure_part_group("purlin", 
+                                                      self.numbers_of_purlin,
+                                                      self.rafter_length)
         purlin_group.translate((0,
                           -self.purlin_length/2,
                           self.purlin_length/2),
                           inplace=True)
         
-        rafter_group = self.make_rafter_group()
+        rafter_group = self.make_structure_part_group("rafter",
+                                              self.numbers_of_rafter,
+                                              self.purlin_length)
         rafter_group.translate((0,
                           -self.purlin_length/2,
                           self.purlin_length/2),
@@ -487,7 +491,26 @@ class HSATS(PVStructure):
         return combine
     
     def build_structure(self):
-        return self.make_elementary_group()
+        positions, block_centers, grid_indices = compute_panel_grid_positions(
+            self.num_blocks_x, self.num_blocks_y,
+            self.panels_per_block_x, self.panels_per_block_y,
+            self.block_spacing_x, self.block_spacing_y,
+            self.panel_spacing_x, self.panel_spacing_y,
+            self.base_height,
+        )
+
+        blocks = pyv.MultiBlock()
+
+        for idx in range(self.n_groups_in_block):
+            g = self.make_elementary_group()
+            offx, offy, offz = map(float, positions[idx])
+            g.translate((0, 
+                         offy, 
+                         0),
+                        inplace=True)
+            blocks.append(g)
+                
+        return blocks
 
 
 if __name__ == "__main__":
@@ -517,7 +540,7 @@ if __name__ == "__main__":
                                         PV_module_1,
                                         Structure]).aggregated_inputs
 
-    blocks = HSATS(PV_params_dict).build_structure()
+    blocks = PVTable(PV_params_dict).build_structure()
 
     pl = pyv.Plotter()
     pl.add_mesh(blocks, show_edges=True)
