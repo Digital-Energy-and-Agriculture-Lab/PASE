@@ -98,7 +98,7 @@ def save_simulation_metadata(config, Loc_1, crop_config,
     metadata['git_commit'] = commit_hash
 
     # Adding parameters from YAML and csv files contents
-    try:
+    try:  # TODO extend to other crop models
         metadata['soil_init'] = YAML_Inputs_provider(
             file=os.path.join("CROPS", "GRASSIM", "soil",
                               config['SoilInit'])).inputs

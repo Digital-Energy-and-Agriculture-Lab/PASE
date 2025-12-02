@@ -5,6 +5,8 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
+from pase.DATA_MANAGEMENT.benchmarking import save_simulation_metadata
+
 logger = logging.getLogger(__name__)
 
 
@@ -101,7 +103,11 @@ class OutputsManager:
     # ---------------------------------------------------------------------
     # Variant setup (hash must be computed before creating dirs)
     # ---------------------------------------------------------------------
-    def setup_variant(self, inputs: dict, variant: Optional[str] = None):
+    def setup_variant(self, inputs: dict, variant: Optional[str] = None,
+                      config: Optional[dict] = None,
+                      loc: Optional[dict] = None,
+                      crop_config: Optional[dict] = None,
+                      ):
         """
         Compute input-hash *before* touching disk.
         Then pick correct variant (reuse or new).
@@ -126,6 +132,14 @@ class OutputsManager:
         # 5) Write full input JSON
         inputs_file = self.variant_root / self.SUBDIRS["inputs"] / "inputs.json"
         inputs_file.write_text(json.dumps(inputs, indent=2))
+
+        # 6) Save crop_config metadata
+        metadata_file = self.variant_root / self.SUBDIRS["inputs"] / "simulation_metadata.yaml"
+        save_simulation_metadata(config=config,
+                                 Loc_1=loc,
+                                 crop_config=crop_config,
+                                 output_path=metadata_file)
+
 
         # update registry
         self._update_registry(chosen_variant, input_hash)

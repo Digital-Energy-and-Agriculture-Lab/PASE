@@ -58,7 +58,10 @@ om = OutputsManager(Loc_1['LocationName'],
                     Loc_1['SimulationStartingYear'],
                     Loc_1['SimulationEndingYear'])
 all_params_dict = {**Loc_1, **PV_params_dict, **crop_config}
-variant_dir = om.setup_variant(all_params_dict)
+variant_dir = om.setup_variant(inputs=all_params_dict,
+                               config=crop_config,
+                               loc=Loc_1,
+                               crop_config=crop_config)
 
 cache_key = get_cache_key(Loc_1['Latitude'],
                           Loc_1['Longitude'],

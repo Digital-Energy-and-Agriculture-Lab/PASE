@@ -192,10 +192,7 @@ plot_variables([agro_results], ['ST'], '2020-01-01', '2020-12-31')
 '''Adding a function to save simulation metadata and inputs'''
 #################################################################################
 
-
-
 save_simulation_metadata(crop_config, Loc_1, crop_config)
-
 
 #################################################################################
 """Functions to compute model performance index and save them in a csv file"""
