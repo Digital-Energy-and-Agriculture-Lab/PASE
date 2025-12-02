@@ -5,7 +5,7 @@ from datetime import datetime
 from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 
 class Soil():
-    def __init__(self, grid, inits, soil_properties,variables_to_save):
+    def __init__(self, grid, inits, soil_parameters, soil_properties,variables_to_save):
         """
         Initialize the soil.
         Set the grid, the initial variables, the variables to save. 
@@ -25,6 +25,7 @@ class Soil():
         self.variables_to_save = variables_to_save
         self.nyears_data = {}
         self.soil_properties = soil_properties
+        self.soil_parameters = soil_parameters
         self.init_spatialized_soil()
         self.classify_usda_texture()
         self.get_hydraulic_properties()
@@ -112,6 +113,11 @@ class Soil():
         Create a numpy array attribute for each init variable.
         Compute the N2/N2O repartition [-], the water capacity [mm], the wilting point [mm], the water saturation [mm], the water content [mm], the water content relative to the water capacity [-].
         """
+
+        # Fixed soil parameters (for a simulation)
+        for key, value in self.soil_parameters.items():
+            setattr(self, key, np.full(self.grid, value))
+        # Initialized soil variables
         for key, value in self.inits.items():
             setattr(self, key, np.full(self.grid, value))
 
@@ -212,7 +218,7 @@ class Soil():
             self.W = (self.water - self.wilting_point) / (self.water_capacity - self.wilting_point)
             self.W = self.W.clip(0, 1)
 
-    def compute_N_mineralization(self, K, Tref, Temp,method):
+    def compute_N_mineralization(self, Temp,method):
         """Compute nitrogen mineralization based on water stress (W) air temperature (Temp) and soil organic nitrogen (Norg) [kgNorg ha^-1].
 
         Args:
@@ -220,16 +226,12 @@ class Soil():
                 - 'Ruelle2018' rom Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
                 - 'Bonnard2025' from Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
             method type : str
-            K: parameter influencing temperature influence on mineralization [-].
-            K type: float
-            Tref: reference temperature for mineralization [°C].
-            Tref type: float
             Temp: average daily temperature [°C].
             Temp type: numpy array of shape (grid)
         """
         if method=='Ruelle2018':
             self.g0 = (1 - 0.2) * self.W + 0.2
-            self.fT_nitro = np.exp(K * (Temp - Tref))
+            self.fT_nitro = np.exp(self.K * (Temp - self.Tref))
             self.Vp = (0.0929 + (0.1833-0.0929) * np.exp(-0.2173*self.Norg/1000)) * (self.Norg/1000)
             self.mineralization = self.g0 * self.fT_nitro * self.Vp
 
@@ -242,14 +244,14 @@ class Soil():
                 np.where(
                     Temp < 4,
                     (Temp / 4) * 0.28,
-                    np.exp(K * (Temp - Tref))
+                    np.exp(self.K * (Temp - self.Tref))
                 )
             )
             self.fT_nitro=self.fT_nitro.clip(0,1)
             self.Vp = (0.0929 + (0.1833-0.0929) * np.exp(-0.2173*self.Norg/1000)) * (self.Norg/1000)
             self.mineralization = self.g0 * self.fT_nitro * self.Vp
 
-    def compute_N_immobilization(self,K,Tref,Temp,method):
+    def compute_N_immobilization(self,Temp,method):
         """Compute nitrogen immobilization based on water stress (W), air temperature (Temp) and soil mineral nitrogen (Nmin) [kgN ha^-1].
 
         Args :
@@ -257,10 +259,6 @@ class Soil():
                 - 'Ruelle2018' from Ruelle et al. (2018), http://dx.doi.org/10.1016/j.eja.2018.06.010.
                 - 'Bonnard2025' from Bonnard et al. (2025), https://doi.org/10.1016/j.eja.2025.127520.
             method type : str
-            K: parameter influencing temperature influence on mineralization [-].
-            K type: float
-            Tref: reference temperature for mineralization [°C].
-            Tref type: float
             Temp: average daily temperature [°C].
             Temp type: numpy array of shape (grid)
         """
@@ -278,7 +276,7 @@ class Soil():
                 np.where(
                     Temp < 4,
                     (Temp / 4) * 2,
-                    np.exp(-K * (Temp - Tref))
+                    np.exp(-self.K * (Temp - self.Tref))
                 )
             )
             self.immobilization = self.g0 * self.fT_immo * self.Ip

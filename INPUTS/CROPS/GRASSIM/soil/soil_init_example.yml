@@ -16,38 +16,3 @@ Norg:
     Limit: [0,20000]
     Unit: kilograms per hectare
     Definition: Organic nitrogen in soil
-sand:
-    Value: 25.108574
-    Type: float
-    Limit: [0,100]
-    Definition: proportion of sand in the soil
-clay:
-    Value: 25.965515
-    Type: float
-    Limit: [0,100]
-    Definition: proportion of clay in the soil
-coarse:
-    Value: 15
-    Type: float
-    Limit: [0,100]
-    Definition: proportion of coarse fragments in the soil
-org:
-    Value: 3.0896551609039307
-    Type: float
-    Limit: [0,100]
-    Definition: proportion of organic matter in the soil
-soil_depth:
-    Value: 1000
-    Type: float
-    Limit: [0,2000]
-    Definition: soil depth in mm
-max_soil_depth:
-    Value: 1000
-    Type: float
-    Limit: [0,2000]
-    Definition: maximum relevant soil depth in mm. It should be set at 1 meter.
-albedo:
-    Value: 0.2
-    Type: float
-    Limit: [0,1]
-    Definition: soil albedo for ET0 calculation
