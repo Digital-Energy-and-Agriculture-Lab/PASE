@@ -26,8 +26,8 @@ def run_grassim(config, WD, daily_irr, lat, alt):
     """
 
     soil_init = YAML_Inputs_provider(file=f"CROPS/GRASSIM/soil/{config['SoilInit']}").inputs
-    soil_hydraulic_properties = pd.read_csv(f"INPUTS/CROPS/GRASSIM/soil/{config['Soil_hydraulic_properties']}",header=0, sep=";", decimal='.')
-    soil_parameters=YAML_Inputs_provider(file=f"CROPS/GRASSIM/soil/{config['Soil_parameters']}").inputs
+    soil_hydraulic_properties = pd.read_csv(f"INPUTS/CROPS/GRASSIM/soil/{config['SoilHydraulicProperties']}",header=0, sep=";", decimal='.')
+    soil_parameters=YAML_Inputs_provider(file=f"CROPS/GRASSIM/soil/{config['SoilParameters']}").inputs
     crop_init = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['CropInit']}").inputs
     kc_values = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['Kc_values']}").inputs
     pft_composition = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['PFT_composition']}").inputs

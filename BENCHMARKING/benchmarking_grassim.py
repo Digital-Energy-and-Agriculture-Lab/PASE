@@ -63,8 +63,12 @@ PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 om = OutputsManager(Loc_1['LocationName'],
                     Loc_1['SimulationStartingYear'],
                     Loc_1['SimulationEndingYear'])
-all_params_dict = {**Loc_1, **PV_params_dict, **crop_config}
-variant_dir = om.setup_variant(all_params_dict)
+
+variant_dir = om.setup_variant(loc=Loc_1,
+                               av=AV_1,
+                               pv_module=PV_module_1,
+                               structure=dict(),  # pass empty dictionary
+                               crop_config=crop_config)
 
 cache_key = get_cache_key(Loc_1['Latitude'],
                           Loc_1['Longitude'],
@@ -192,7 +196,7 @@ plot_variables([agro_results], ['ST'], '2020-01-01', '2020-12-31')
 '''Adding a function to save simulation metadata and inputs'''
 #################################################################################
 
-save_simulation_metadata(crop_config, Loc_1, crop_config)
+save_simulation_metadata(Loc_1, AV_1, PV_module_1, crop_config)
 
 #################################################################################
 """Functions to compute model performance index and save them in a csv file"""

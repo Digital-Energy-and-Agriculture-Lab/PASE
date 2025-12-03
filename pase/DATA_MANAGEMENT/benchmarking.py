@@ -86,10 +86,10 @@ def sign_commit_hash(fpath):
         writer.writerow([signature])
 
 def save_simulation_metadata(Loc: Optional[dict],
-                             av: Optional[dict],
-                             pv_module: Optional[dict],
-                             structure: Optional[dict],
-                             crop_config: Optional[dict],
+                             av: Optional[dict] = None,
+                             pv_module: Optional[dict] = None,
+                             structure: Optional[dict] = None,
+                             crop_config: Optional[dict] = None,
                              output_path=os.path.join("OUTPUTS",
                                                       "simulation_metadata.yaml")):
     # Creating dictionary
