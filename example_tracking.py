@@ -5,23 +5,25 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-from datetime import datetime
-import numpy as np
 import os
-import pickle
 
-from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
-from MODULES.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from MODULES.DATA_MANAGEMENT.input_checker import InputChecker
-from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
-from MODULES.PHOTOVOLTAICS.configuration import PV_Configuration_3D
-from MODULES.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
-from MODULES.ENVIRONMENT.light import Ray_casting_scene
-from MODULES.ENVIRONMENT.mesh import Mesh
-from MODULES.ENVIRONMENT.sky_model import ReinhartSky
-from MODULES.PHOTOVOLTAICS.production import PV_Production
-from MODULES.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
+from pase.user_support_tools import PASE_Logger
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import (YAML_Inputs_provider,
+                                                       Inputs_aggregator)
+from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
+from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
+from pase.DATA_MANAGEMENT.weather_data_provider import (fetch_weather_from_pvgis,
+                                                        get_cache_key,
+                                                        Weather_data)
+from pase.PHOTOVOLTAICS.configuration import (PV_Configuration_3D,
+                                              PVConfiguration3D)
+from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
+from pase.ENVIRONMENT.light import Ray_casting_scene
+from pase.ENVIRONMENT.mesh import Mesh
+from pase.ENVIRONMENT.sky_model import ReinhartSky
+from pase.PHOTOVOLTAICS.production import PV_Production
+from pase.CROPS.run_crop_simulations import (run_crop_simu,
+                                             visualize_map_of_a_variable)
 
 PASE_Logger()
 
@@ -36,21 +38,52 @@ crop_config = YAML_Inputs_provider(file='simple_example.yml', subpath=os.path.jo
 
 # Using Sky Types characterization while simulating an AV central with solar
 # tracking is very computer intensive ; InputChecker asks the user to reconsider
-input_checker = InputChecker(Loc_1, AV_1)
+input_checker = InputsEvaluator(Loc_1, AV_1)
 
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
+
+om = OutputsManager(Loc_1['LocationName'],
+                    Loc_1['SimulationStartingYear'],
+                    Loc_1['SimulationEndingYear'])
+
+variant_dir = om.setup_variant(loc=Loc_1,
+                               av=AV_1,
+                               pv_module=PV_module_1,
+                               structure=dict(),  # No structure -> empty dict.
+                               crop_config=crop_config,
+                               source=__file__)
+
+cache_key = get_cache_key(Loc_1['Latitude'],
+                          Loc_1['Longitude'],
+                          Loc_1['SimulationStartingYear'],
+                          Loc_1['SimulationEndingYear'])
 
 ##################
 # Pre-processing #
 ##################
-# Import of weather data and computation of daily weather data
+# Import weather data and compute daily weather data
+lat = Loc_1['Latitude']
+lon = Loc_1['Longitude']
+start_year = Loc_1['SimulationStartingYear']
+end_year = Loc_1['SimulationEndingYear']
+
+if Loc_1['WeatherDataOption'] == 1:
+    raw_weather = om.load_or_fetch_weather(
+        key=cache_key,
+        fetch_fn=lambda: fetch_weather_from_pvgis(lat, lon, start_year, end_year)
+    )
+else:  # Weather data from csv file
+    raw_weather=None
+
 WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['Longitude'],
                   Loc_1['SimulationStartingYear'],
                   Loc_1['SimulationEndingYear'],
                   Loc_1['WeatherDataOption'],
+                  raw_weather,
                   Loc_1['WeatherFileName'],
-                  Loc_1['DailyWeatherFileName'])
+                  Loc_1['DailyWeatherFileName']
+                  )
 
 # Import sun positions
 
@@ -102,12 +135,11 @@ L.get_light_maps(Sun_positions_samp.solar_vector,
 
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP, Light_instance.data,
-                            visualization=True,
-                            year=2005, julian_day=4)
+                            visualization=False)
 
 L.visualize_direct_light_map(1)
 L.visualize_diffuse_light_map(1)
-L.visualize_daily_irrad_map(2005, 5)
+L.visualize_daily_irrad_map(Loc_1['SimulationStartingYear'], 5)
 
 
 ##############
@@ -118,8 +150,8 @@ L.visualize_daily_irrad_map(2005, 5)
 PV_central = PV_Production(PV_params_dict)
 PV_central.get_several_years_of_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears_data)
 
-for _ in ['2005', '2006', '2007']:
-    PV_prod = PV_central.production[_]
+for _ in range(Loc_1['SimulationStartingYear'], Loc_1['SimulationEndingYear']+1):
+    PV_prod = PV_central.production[str(_)]
     print(f'PV production for year {_}: {PV_prod["P_central"].sum():.2f} MW·h')
 
 # Crop model
@@ -131,10 +163,14 @@ agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      Loc_1)
 # Display spatialized dry yield
 if crop_config['CropModel'] == ('simple' or 'stics'):
-    visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
-                                PV_1_3Dconfig.PV_central_PD, M, 2006,
+    visualize_map_of_a_variable(crop_config, agro_results,
+                                'Fresh_yield',
+                                PV_1_3Dconfig.PV_central_PD, M,
+                                Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='g/m²')
 else:
-    visualize_map_of_a_variable(crop_config, agro_results,'BM',
-                                PV_1_3Dconfig.PV_central_PD, M, 2006,
+    visualize_map_of_a_variable(crop_config, agro_results,
+                                'BM',
+                                PV_1_3Dconfig.PV_central_PD, M,
+                                Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='t/ha')

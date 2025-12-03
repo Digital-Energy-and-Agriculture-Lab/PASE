@@ -5,11 +5,7 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-from datetime import datetime
-import numpy as np
 import os
-import pickle
-import pyvista as pyv
 
 from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import (YAML_Inputs_provider,
@@ -73,7 +69,7 @@ cache_key = get_cache_key(Loc_1['Latitude'],
 ##################
 # Pre-processing #
 ##################
-# Import of weather data and computation of daily weather data
+# Import weather data and compute daily weather data
 lat = Loc_1['Latitude']
 lon = Loc_1['Longitude']
 start_year = Loc_1['SimulationStartingYear']
@@ -151,8 +147,7 @@ L.get_light_maps(Sun_positions_samp.solar_vector,
 
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP, Light_instance.data,
-                            visualization=True,
-                            year=2005, julian_day=5)
+                            visualization=False)
 
 L.visualize_direct_light_map(1)
 L.visualize_diffuse_light_map(10)
@@ -182,10 +177,14 @@ agro_results = run_crop_simu(crop_config, option_2D,
 
 # Display spatialized dry yield
 if crop_config['CropModel'] == ('simple' or 'stics'):
-    visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
-                                scene_multiblock, M, Loc_1['SimulationStartingYear'],
+    visualize_map_of_a_variable(crop_config, agro_results,
+                                'Fresh_yield',
+                                scene_multiblock, M,
+                                Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='g/m²')
 else:
-    visualize_map_of_a_variable(crop_config, agro_results,'BM',
-                                scene_multiblock, M, Loc_1['SimulationStartingYear'],
+    visualize_map_of_a_variable(crop_config, agro_results,
+                                'BM',
+                                scene_multiblock, M,
+                                Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='t/ha')
