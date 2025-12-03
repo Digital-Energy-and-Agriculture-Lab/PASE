@@ -89,6 +89,7 @@ def save_simulation_metadata(loc: Optional[dict], av: Optional[dict] = None,
                              pv_module: Optional[dict] = None,
                              structure: Optional[dict] = None,
                              crop_config: Optional[dict] = None,
+                             source: Optional[str] = None,
                              output_path=os.path.join("OUTPUTS",
                                                       "simulation_metadata.yaml")):
     # Creating dictionary
@@ -169,6 +170,8 @@ def save_simulation_metadata(loc: Optional[dict], av: Optional[dict] = None,
     metadata['pv_module_config'] = pv_module
     metadata['structure_config'] = structure
     metadata['crop_config'] = crop_config
+    if source is not None:
+        metadata['source'] = source
 
     # Saving metadata dictionary into YAML file
     with open(output_path, 'w', encoding='utf-8') as f:

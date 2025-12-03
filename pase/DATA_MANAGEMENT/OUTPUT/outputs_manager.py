@@ -109,14 +109,19 @@ class OutputsManager:
                       structure: dict,
                       crop_config: dict,
                       variant: Optional[str] = None,
+                      source: Optional[str] = None,
                       ):
         """
         Compute input-hash *before* touching disk.
         Then pick correct variant (reuse or new).
         Then create folders *only if needed*.
         """
+        # 0) Parse the source to get only the file name
+        source_file = Path(source).parts[-1]
+
         # 1) Compute hash early, before any disk modifications.
-        inputs = {**loc, **av, **pv_module, **structure, **crop_config}
+        inputs = {**loc, **av, **pv_module, **structure, **crop_config,
+                  'source': source_file}
         input_hash = self._hash_inputs(inputs)
 
         # 2) Determine variant name based on hash existence.
@@ -136,7 +141,7 @@ class OutputsManager:
         metadata_file = self.variant_root / self.SUBDIRS["inputs"] / "simulation_metadata.yaml"
         save_simulation_metadata(loc=loc, av=av, pv_module=pv_module,
                                  structure=structure, crop_config=crop_config,
-                                 output_path=metadata_file)
+                                 source=source_file, output_path=metadata_file)
 
         # update registry
         self._update_registry(chosen_variant, input_hash)
