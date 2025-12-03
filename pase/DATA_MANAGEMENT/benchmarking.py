@@ -58,7 +58,11 @@ def get_git_revision_hash() -> str:
     source: https://stackoverflow.com/a/21901260
     :return: git rev hash (str)
     """
-    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+    try:
+        return (subprocess.check_output(['git', 'rev-parse', 'HEAD'])
+                .decode('ascii').strip())
+    except Exception as e:
+        return f"Could not retrieve commit: {e}"
 
 
 def get_git_revision_short_hash() -> str:
@@ -90,12 +94,7 @@ def save_simulation_metadata(config, Loc_1, crop_config,
     metadata['date'] = datetime.now().isoformat()
 
     # Finding Git commit hash
-    try:
-        commit_hash = subprocess.check_output(
-            ['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
-    except Exception as e:
-        commit_hash = f"Could not retrieve commit: {e}"
-    metadata['git_commit'] = commit_hash
+    metadata['git_commit'] = get_git_revision_hash()
 
     # Adding parameters from YAML and csv files contents
     try:  # TODO extend to other crop models
