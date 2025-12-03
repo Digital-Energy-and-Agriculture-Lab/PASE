@@ -78,10 +78,13 @@ lon = Loc_1['Longitude']
 start_year = Loc_1['SimulationStartingYear']
 end_year = Loc_1['SimulationEndingYear']
 
-raw_weather = om.load_or_fetch_weather(
-    key=cache_key,
-    fetch_fn=lambda: fetch_weather_from_pvgis(lat, lon, start_year, end_year)
-)
+if Loc_1['WeatherDataOption'] == 1:
+    raw_weather = om.load_or_fetch_weather(
+        key=cache_key,
+        fetch_fn=lambda: fetch_weather_from_pvgis(lat, lon, start_year, end_year)
+    )
+else:  # Weather data from csv file
+    raw_weather=None
 
 WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['Longitude'],
