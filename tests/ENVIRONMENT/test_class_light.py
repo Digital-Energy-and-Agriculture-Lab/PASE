@@ -25,7 +25,8 @@ variant_dir = om.setup_variant(Loc_1,
                                av={},
                                pv_module={},
                                structure={},
-                               crop_config={'CropModel': ''})
+                               crop_config={'CropModel': ''},
+                               source=__file__)
 
 cache_key = get_cache_key(Loc_1['Latitude'],
                           Loc_1['Longitude'],

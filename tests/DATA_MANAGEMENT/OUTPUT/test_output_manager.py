@@ -41,7 +41,8 @@ def test_setup_variant_creates_structure(monkeypatch, tmp_path):
     om = OutputsManager("SiteA", 2019, 2020)
 
     vroot = om.setup_variant(loc=LOC, av=AV, pv_module=PV_MODULE,
-                             structure=STRUCTURE, crop_config=CROP_CONFIG)
+                             structure=STRUCTURE, crop_config=CROP_CONFIG,
+                             source=__file__)
     # expected subdirectories from SUBDIRS constant:
     assert (vroot / "1-inputs").is_dir()
     assert (vroot / "2-data").is_dir()
@@ -58,17 +59,20 @@ def test_variant_auto_increment_and_names(monkeypatch, tmp_path):
     om = OutputsManager("ProjInc", 2000, 2001)
 
     v1 = om.setup_variant(loc=LOC, av=AV, pv_module=PV_MODULE,
-                          structure=STRUCTURE, crop_config=CROP_CONFIG)
+                          structure=STRUCTURE, crop_config=CROP_CONFIG,
+                             source=__file__)
     assert v1.name.startswith("variant_")
     assert v1.name.endswith(v1.name.split("_")[-1])  # sanity
 
     v2 = om.setup_variant(loc=LOC2, av=AV, pv_module=PV_MODULE,
-                          structure=STRUCTURE, crop_config=CROP_CONFIG)
+                          structure=STRUCTURE, crop_config=CROP_CONFIG,
+                             source=__file__)
     # ensure different name from v1
     assert v2.name != v1.name
 
     v3 = om.setup_variant(loc=LOC3, av=AV, pv_module=PV_MODULE,
-                          structure=STRUCTURE, crop_config=CROP_CONFIG)
+                          structure=STRUCTURE, crop_config=CROP_CONFIG,
+                             source=__file__)
     assert v3.name != v2.name and v3.name != v1.name
 
 
@@ -77,11 +81,13 @@ def test_hash_based_reuse(monkeypatch, tmp_path):
 
     om1 = OutputsManager("ReuseProj", 2010, 2012)
     v1 = om1.setup_variant(loc=LOC, av=AV, pv_module=PV_MODULE,
-                           structure=STRUCTURE, crop_config=CROP_CONFIG)
+                           structure=STRUCTURE, crop_config=CROP_CONFIG,
+                             source=__file__)
     # Recreate manager to simulate clean run, same inputs
     om2 = OutputsManager("ReuseProj", 2010, 2012)
     v2 = om2.setup_variant(loc=LOC, av=AV, pv_module=PV_MODULE,
-                           structure=STRUCTURE, crop_config=CROP_CONFIG)
+                           structure=STRUCTURE, crop_config=CROP_CONFIG,
+                             source=__file__)
 
     # should reuse same variant folder
     assert v1.resolve() == v2.resolve()
@@ -93,12 +99,15 @@ def test_custom_variant_override(monkeypatch, tmp_path):
     om = OutputsManager("CustomProj", 2005, 2006)
 
     v_custom = om.setup_variant(loc=LOC, av=AV, pv_module=PV_MODULE,
-                                structure=STRUCTURE, crop_config=CROP_CONFIG, variant="my_run")
+                                structure=STRUCTURE, crop_config=CROP_CONFIG,
+                                variant="my_run",
+                                source=__file__)
     assert v_custom.name == "my_run"
 
     # subsequent different inputs without override should create an auto variant
     v_auto = om.setup_variant(loc=LOC2, av=AV, pv_module=PV_MODULE,
-                              structure=STRUCTURE, crop_config=CROP_CONFIG)
+                              structure=STRUCTURE, crop_config=CROP_CONFIG,
+                             source=__file__)
     assert v_auto.name != "my_run"
     assert v_auto.exists()
 
@@ -108,9 +117,11 @@ def test_registry_updates_and_contents(monkeypatch, tmp_path):
     om = OutputsManager("RegProj", 2015, 2016)
 
     v1 = om.setup_variant(loc=LOC, av=AV, pv_module=PV_MODULE,
-                          structure=STRUCTURE, crop_config=CROP_CONFIG)
+                          structure=STRUCTURE, crop_config=CROP_CONFIG,
+                             source=__file__)
     v2 = om.setup_variant(loc=LOC2, av=AV, pv_module=PV_MODULE,
-                          structure=STRUCTURE, crop_config=CROP_CONFIG)
+                          structure=STRUCTURE, crop_config=CROP_CONFIG,
+                             source=__file__)
 
     registry_path = om.project_root / "variants.json"
     assert registry_path.exists()
@@ -128,7 +139,8 @@ def test_save_load_helpers_and_cache_weather(monkeypatch, tmp_path):
 
     # prepare variant
     variant_dir = om.setup_variant(loc=LOC, av=AV, pv_module=PV_MODULE,
-                                   structure=STRUCTURE, crop_config=CROP_CONFIG)
+                                   structure=STRUCTURE, crop_config=CROP_CONFIG,
+                             source=__file__)
 
     # JSON save/load
     om.save_json_to_cache("r1.json", {"val": 123})
