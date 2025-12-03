@@ -214,7 +214,8 @@ class OutputsManager:
 
             return cached  # cached is a dict
 
-        logger.info('No cached data, fetching from PVGIS API ...')
+        PASE_Logger('No cached data, fetching from PVGIS API ...',
+                    level='INFO')
 
         data = fetch_fn()  # fetch data with the passthrough function fetch_fn
 

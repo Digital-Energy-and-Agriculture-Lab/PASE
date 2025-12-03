@@ -21,7 +21,11 @@ om = OutputsManager(Loc_1['LocationName'],
                     Loc_1['SimulationStartingYear'],
                     Loc_1['SimulationEndingYear'])
 
-variant_dir = om.setup_variant(Loc_1)
+variant_dir = om.setup_variant(Loc_1,
+                               av={},
+                               pv_module={},
+                               structure={},
+                               crop_config={'CropModel': ''})
 
 cache_key = get_cache_key(Loc_1['Latitude'],
                           Loc_1['Longitude'],

@@ -2,7 +2,10 @@ import json
 import pytest
 from pathlib import Path
 
+from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
+
+PASE_Logger()
 
 # Constants
 pase___file__path = "pase.DATA_MANAGEMENT.OUTPUT.outputs_manager.__file__"
