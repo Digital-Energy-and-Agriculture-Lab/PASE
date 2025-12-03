@@ -134,11 +134,8 @@ class OutputsManager:
 
         # 5) Save simulation metadata
         metadata_file = self.variant_root / self.SUBDIRS["inputs"] / "simulation_metadata.yaml"
-        save_simulation_metadata(Loc=loc,
-                                 av=av,
-                                 pv_module=pv_module,
-                                 structure=structure,
-                                 crop_config=crop_config,
+        save_simulation_metadata(loc=loc, av=av, pv_module=pv_module,
+                                 structure=structure, crop_config=crop_config,
                                  output_path=metadata_file)
 
         # update registry

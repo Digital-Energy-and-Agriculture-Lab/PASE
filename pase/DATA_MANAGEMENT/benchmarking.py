@@ -85,8 +85,7 @@ def sign_commit_hash(fpath):
         writer.writerow('')
         writer.writerow([signature])
 
-def save_simulation_metadata(Loc: Optional[dict],
-                             av: Optional[dict] = None,
+def save_simulation_metadata(loc: Optional[dict], av: Optional[dict] = None,
                              pv_module: Optional[dict] = None,
                              structure: Optional[dict] = None,
                              crop_config: Optional[dict] = None,
@@ -165,7 +164,7 @@ def save_simulation_metadata(Loc: Optional[dict],
             pass
 
     # Adding others useful parameters
-    metadata['scenario_config'] = Loc
+    metadata['scenario_config'] = loc
     metadata['av_config'] = av
     metadata['pv_module_config'] = pv_module
     metadata['structure_config'] = structure
