@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 import pandas as pd
 import subprocess
+from typing import Optional
 import yaml
 
 from pase.user_support_tools import PASE_Logger
@@ -84,7 +85,11 @@ def sign_commit_hash(fpath):
         writer.writerow('')
         writer.writerow([signature])
 
-def save_simulation_metadata(config, Loc_1, crop_config,
+def save_simulation_metadata(Loc: Optional[dict],
+                             av: Optional[dict],
+                             pv_module: Optional[dict],
+                             structure: Optional[dict],
+                             crop_config: Optional[dict],
                              output_path=os.path.join("OUTPUTS",
                                                       "simulation_metadata.yaml")):
     # Creating dictionary
@@ -97,31 +102,73 @@ def save_simulation_metadata(config, Loc_1, crop_config,
     metadata['git_commit'] = get_git_revision_hash()
 
     # Adding parameters from YAML and csv files contents
-    try:  # TODO extend to other crop models
-        metadata['soil_init'] = YAML_Inputs_provider(
-            file=os.path.join("CROPS", "GRASSIM", "soil",
-                              config['SoilInit'])).inputs
-        metadata['crop_init'] = YAML_Inputs_provider(
-            file=os.path.join("CROPS", "GRASSIM", "crop",
-                              config['CropInit'])).inputs
-        metadata['kc_values'] = YAML_Inputs_provider(
-            file=os.path.join("CROPS", "GRASSIM", "crop",
-                              config['Kc_values'])).inputs
-        metadata['pft_composition'] = YAML_Inputs_provider(
-            file=os.path.join("CROPS", "GRASSIM",
-                              config['PFT_composition'])).inputs
-        metadata['pft_values'] = pd.read_csv(
-            os.path.join("INPUTS", "CROPS", "GRASSIM",
-                         config['PFT_values']), sep=";",
-            decimal='.').to_dict(orient='list')
-        metadata['management'] = YAML_Inputs_provider(
-            file=os.path.join("CROPS", "GRASSIM", "management",
-                              config['Management'])).inputs
-    except Exception as e:
-        metadata['error_loading_yaml_inputs'] = str(e)
+    if crop_config is not None:
+        if crop_config['CropModel'].lower() == 'grassim':
+            # Parse GRASSIM inputs
+            try:
+                metadata['crop_init'] = YAML_Inputs_provider(
+                    file=os.path.join("CROPS", "GRASSIM", "crop",
+                                      crop_config['CropInit'])).inputs
+
+                metadata['soil_init'] = YAML_Inputs_provider(
+                    file=os.path.join("CROPS", "GRASSIM", "soil",
+                                      crop_config['SoilInit'])).inputs
+
+                metadata['pft_composition'] = YAML_Inputs_provider(
+                    file=os.path.join("CROPS", "GRASSIM", "crop",
+                                      crop_config['PFT_composition'])).inputs
+
+                metadata['pft_values'] = pd.read_csv(
+                    os.path.join("INPUTS", "CROPS", "GRASSIM", "crop",
+                                 crop_config['PFT_values']), sep=";",
+                    decimal='.').to_dict(orient='list')
+
+                metadata['kc_values'] = YAML_Inputs_provider(
+                    file=os.path.join("CROPS", "GRASSIM", "crop",
+                                      crop_config['Kc_values'])).inputs
+
+                metadata['management'] = YAML_Inputs_provider(
+                    file=os.path.join("CROPS", "GRASSIM", "management",
+                                      crop_config['Management'])).inputs
+
+                # Variables to save is a yaml file not in the "PASE format",
+                # hence it's loaded differently.
+                with open(os.path.join('INPUTS', 'CROPS', 'GRASSIM',
+                                       'variables_to_save.yml'), 'r') as f:
+                    metadata['variables_to_save'] = yaml.safe_load(f)
+
+                metadata['soil_hydraulic_properties'] = pd.read_csv(
+                    os.path.join("INPUTS", "CROPS", "GRASSIM", "soil",
+                                 crop_config['SoilHydraulicProperties']),
+                    sep=';',
+                    decimal='.').to_dict(orient='list')
+
+                metadata['soil_parameters'] = YAML_Inputs_provider(
+                    file=os.path.join("CROPS", "GRASSIM", "soil",
+                                      crop_config['SoilParameters'])).inputs
+            except Exception as e:
+                metadata['error_loading_yaml_inputs'] = str(e)
+        elif crop_config['CropModel'].lower() == 'simple':
+            # Parse SIMPLE inputs
+            try:
+                metadata['crop_init'] = YAML_Inputs_provider(
+                    file=os.path.join("CROPS", "SIMPLE",
+                                      crop_config['CropInit'])).inputs
+
+                metadata['soil_init'] = YAML_Inputs_provider(
+                    file=os.path.join("CROPS", "SIMPLE",
+                                      crop_config['SoilInit'])).inputs
+
+            except Exception as e:
+                metadata['error_loading_yaml_inputs'] = str(e)
+        elif crop_config['CropModel'].lower() == 'stics':  # TODO : stics
+            pass
 
     # Adding others useful parameters
-    metadata['general_location_config'] = Loc_1
+    metadata['scenario_config'] = Loc
+    metadata['av_config'] = av
+    metadata['pv_module_config'] = pv_module
+    metadata['structure_config'] = structure
     metadata['crop_config'] = crop_config
 
     # Saving metadata dictionary into YAML file

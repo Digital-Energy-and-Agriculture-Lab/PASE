@@ -31,11 +31,11 @@ VariablesToSave:
   Value: variables_to_save.yml
   Type: string
   Definition: Name of the file containing a list of the variables (crop, soil and management) to save.
-Soil_hydraulic_properties:
+SoilHydraulicProperties:
   Value: Soil_hydraulic_properties.csv
   Type: string
   Definition: Name of the file containing the soil hydraulic properties.
-Soil_parameters:
+SoilParameters:
   Value: Parameters_value_SOIL.yml
   Type: string
   Definition: Name of the file containing the soil parameters.

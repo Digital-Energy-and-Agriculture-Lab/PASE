@@ -6,8 +6,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from pase.DATA_MANAGEMENT.benchmarking import save_simulation_metadata
-
-logger = logging.getLogger(__name__)
+from pase.user_support_tools import PASE_Logger
 
 
 class OutputsManager:
@@ -103,10 +102,13 @@ class OutputsManager:
     # ---------------------------------------------------------------------
     # Variant setup (hash must be computed before creating dirs)
     # ---------------------------------------------------------------------
-    def setup_variant(self, inputs: dict, variant: Optional[str] = None,
-                      config: Optional[dict] = None,
-                      loc: Optional[dict] = None,
-                      crop_config: Optional[dict] = None,
+    def setup_variant(self,
+                      loc: dict,
+                      av: dict,
+                      pv_module: dict,
+                      structure: dict,
+                      crop_config: dict,
+                      variant: Optional[str] = None,
                       ):
         """
         Compute input-hash *before* touching disk.
@@ -114,6 +116,7 @@ class OutputsManager:
         Then create folders *only if needed*.
         """
         # 1) Compute hash early, before any disk modifications.
+        inputs = {**loc, **av, **pv_module, **structure, **crop_config}
         input_hash = self._hash_inputs(inputs)
 
         # 2) Determine variant name based on hash existence.
@@ -129,17 +132,14 @@ class OutputsManager:
         hash_file = self.variant_root / self.SUBDIRS["inputs"] / "input_hash.txt"
         hash_file.write_text(input_hash)
 
-        # 5) Write full input JSON
-        inputs_file = self.variant_root / self.SUBDIRS["inputs"] / "inputs.json"
-        inputs_file.write_text(json.dumps(inputs, indent=2))
-
-        # 6) Save crop_config metadata
+        # 5) Save simulation metadata
         metadata_file = self.variant_root / self.SUBDIRS["inputs"] / "simulation_metadata.yaml"
-        save_simulation_metadata(config=config,
-                                 Loc_1=loc,
+        save_simulation_metadata(Loc=loc,
+                                 av=av,
+                                 pv_module=pv_module,
+                                 structure=structure,
                                  crop_config=crop_config,
                                  output_path=metadata_file)
-
 
         # update registry
         self._update_registry(chosen_variant, input_hash)
@@ -205,8 +205,9 @@ class OutputsManager:
         fname = f"wd_{key}.json"
         cached = self.load_json_from_cache(fname)
         if cached is not None:
-            logger.info('Found cached weather data ; '
-                        'loading from cached json file.')
+            PASE_Logger('Found cached weather data ; '
+                        'loading from cached json file.',
+                        level='INFO')
 
             # Save to <project>/<variant> for traceability
             self.save_json("data", fname, cached)

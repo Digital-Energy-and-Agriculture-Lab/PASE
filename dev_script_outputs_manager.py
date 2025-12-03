@@ -57,10 +57,11 @@ PV_params_dict = Inputs_aggregator([AV_1, PV_module_1, Structure]).aggregated_in
 om = OutputsManager(Loc_1['LocationName'],
                     Loc_1['SimulationStartingYear'],
                     Loc_1['SimulationEndingYear'])
-all_params_dict = {**Loc_1, **PV_params_dict, **crop_config}
-variant_dir = om.setup_variant(inputs=all_params_dict,
-                               config=crop_config,
-                               loc=Loc_1,
+
+variant_dir = om.setup_variant(loc=Loc_1,
+                               av=AV_1,
+                               pv_module=PV_module_1,
+                               structure=Structure,
                                crop_config=crop_config)
 
 cache_key = get_cache_key(Loc_1['Latitude'],
