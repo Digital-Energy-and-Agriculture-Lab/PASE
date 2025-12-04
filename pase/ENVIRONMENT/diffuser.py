@@ -80,7 +80,6 @@ class Diffuser:
         self.elevation_diff = np.radians(elevation)
         self.kernel = kernel
 
-
     def generate_direction_diffuser_referential(self, vect_sun, angle_discr):
         """
         Call the transfer function to compute the direction of the transferred light with a giver resolution.
@@ -111,6 +110,7 @@ class Diffuser:
         self.get_direction_sky_referential()
         W = self.get_discretized_BSDF(discr, sigma, self.kernel)
         return W
+
     def get_BTDF_plot(self, azimuth, zenith):
         """
         Create the BTDF plot for the given azimuth and zenith data.
@@ -137,6 +137,7 @@ class Diffuser:
     def get_transmission_reflexion_weight(self):
         N = self.W.shape[1]
         return self.W[:N//2], self.W[N//2:]
+
     def transfer_function(self, vect_sun, method, angle_discr):
         return NotImplementedError
 
@@ -149,7 +150,6 @@ class Diffuser:
         else:
             raise("Kernel not implemented. Valid values are 'gaussian' or 'von_mises'")
         return g
-
 
 
 class LenticularDiffuser(Diffuser):
