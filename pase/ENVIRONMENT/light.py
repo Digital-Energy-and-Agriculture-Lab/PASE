@@ -346,12 +346,7 @@ class Sun_positions_sampled:
             SP = solar_position
         #Positions when the sun elevation is below the horizon are discarded to save computation ressources    
         self.SP = SP.loc[SP['elevation']>=0]
-        
-                
-   
-            
-               
-         
+
     def get_sun_vector(self, beta, gamma):
         #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
         #beta : sun elevation (from -90 to 90°), negative angle means it's night
@@ -436,8 +431,6 @@ class Sun_positions_sampled:
         fig.savefig(os.path.join('OUTPUTS', 'GRAPHS', 'PVSystDiagram_'+self.loc_name+'.svg'))
 
 
-
-
 class Ray_casting_scene:
     '''
     Class Light_shade_scene
@@ -510,7 +503,6 @@ class Ray_casting_scene:
         
         delta = np.linalg.norm(intercept_points - SourcePoints[id_rays_stopped,:], axis=1)
         return np.unique(id_rays_stopped[delta>tol])
-        
  
     def get_diffuse_mask(self, geometry):
         """
@@ -641,8 +633,7 @@ class Ray_casting_scene:
         
         Index = self.mesh.get_source_points_index(Flags)
         return self.diffuse_mask[Index]
-    
-    
+
     def get_irradiation_map_by_flag(self,Flags):
         """
         Public method, filter the computed Diffuse_Map based on flags
@@ -845,6 +836,7 @@ class Ray_casting_scene:
         diffuse_weights_map = self.discrete_sky['cos(z)'].values * self.discrete_sky['Normalized surf area'].values
         self.normalized_diffuse_weights_map = diffuse_weights_map/diffuse_weights_map.sum()
         # cos * surface
+
     def get_diffuse_shaded_weights_map(self):
         mask = self.diffuse_mask
         norm = np.asarray(self.normalized_diffuse_weights_map, dtype=np.float64)
@@ -1070,11 +1062,6 @@ class Ray_casting_scene:
 
         plotter.add_mesh(poly, color='red', line_width=1)
         plotter.show()
-        """open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
-                                      np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32),
-                                      self.geometry,
-                                      "Unweighted shaded diffuse fuzzy mask [-]")"""
-
 
     def visualize_daily_irrad_map(self, year, julian_day):
         """
@@ -1106,5 +1093,4 @@ class Ray_casting_scene:
                                       "Total irradiation reaching the ground on the julian day " + str(
                                           julian_day) + " of " + str(
                                           year) + " [MJ/m²]")
-
 
