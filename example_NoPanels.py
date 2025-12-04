@@ -5,23 +5,25 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-from datetime import datetime
-import numpy as np
 import os
-import pickle
-import pyvista as pyv
+
 from pase.user_support_tools import PASE_Logger
-from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import (YAML_Inputs_provider,
+                                                       Inputs_aggregator)
 from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
-from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
-from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
+from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
+from pase.DATA_MANAGEMENT.weather_data_provider import (fetch_weather_from_pvgis,
+                                                        get_cache_key,
+                                                        Weather_data)
+from pase.PHOTOVOLTAICS.configuration import (PV_Configuration_3D,
+                                              PVConfiguration3D)
 from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from pase.ENVIRONMENT.light import Ray_casting_scene
 from pase.ENVIRONMENT.mesh import Mesh
 from pase.ENVIRONMENT.sky_model import ReinhartSky
 from pase.PHOTOVOLTAICS.production import PV_Production
-from pase.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
+from pase.CROPS.run_crop_simulations import (run_crop_simu,
+                                             visualize_map_of_a_variable)
 
 PASE_Logger()
 
@@ -39,17 +41,49 @@ input_checker = InputsEvaluator(Loc_1, AV_1)
 
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
+om = OutputsManager(Loc_1['LocationName'],
+                    Loc_1['SimulationStartingYear'],
+                    Loc_1['SimulationEndingYear'])
+
+variant_dir = om.setup_variant(loc=Loc_1,
+                               av=AV_1,
+                               pv_module=PV_module_1,
+                               structure=dict(),  # Pass empty dict since there is no struct.
+                               crop_config=crop_config,
+                               source=__file__)
+
+cache_key = get_cache_key(Loc_1['Latitude'],
+                          Loc_1['Longitude'],
+                          Loc_1['SimulationStartingYear'],
+                          Loc_1['SimulationEndingYear'])
+
 ##################
 # Pre-processing #
 ##################
-# Import of weather data and computation of daily weather data
+# Import weather data and compute daily weather data
+lat = Loc_1['Latitude']
+lon = Loc_1['Longitude']
+start_year = Loc_1['SimulationStartingYear']
+end_year = Loc_1['SimulationEndingYear']
+
+if Loc_1['WeatherDataOption'] == 1:
+    raw_weather = om.load_or_fetch_weather(
+        key=cache_key,
+        fetch_fn=lambda: fetch_weather_from_pvgis(lat, lon, start_year, end_year)
+    )
+else:  # Weather data from csv file
+    raw_weather=None
+
 WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['Longitude'],
                   Loc_1['SimulationStartingYear'],
                   Loc_1['SimulationEndingYear'],
                   Loc_1['WeatherDataOption'],
+                  raw_weather,
                   Loc_1['WeatherFileName'],
-                  Loc_1['DailyWeatherFileName'])
+                  Loc_1['DailyWeatherFileName']
+                  )
+
 
 # Import sun positions
 
