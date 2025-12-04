@@ -1003,7 +1003,7 @@ class Ray_casting_scene:
 
     def visualize_diffuser_light_map(self, Sun_P_map_to_visualize, sun_P):
         """
-        Open the visualization of the diffuse light map for a specific
+        Open the visualization of the diffuser light map for a specific
         tilt of the PV modules if there is a rotation axis
         (corresponding to a sun position from the sun positions sampled vector)
 
@@ -1011,6 +1011,9 @@ class Ray_casting_scene:
         ----------
         Sun_P_map_to_visualize : integer
             id of the sun position in the sun positions sampled vector
+
+        Sun_P : array Nx3
+            sun positions sampled vector
 
         Returns
         -------

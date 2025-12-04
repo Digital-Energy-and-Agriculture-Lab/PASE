@@ -123,6 +123,15 @@ class Diffuser:
         ax.set_xticklabels(['90°','45°','0°','315°', '270°', '225°', '180°', '135°'])
 
     def get_discretized_BSDF(self, discr, sigma, kernel="gaussian"):
+        """
+        Compute the weight associate with each element of the discretization (discr).
+        Input :
+            discr (np.array of size (Nx3): Discretization of the sky, N = number of patches
+            sigma (np.array of size (N): area proxy of each patch
+            kernel (str): projection kernel.
+        Output :
+            W_trans (np.array of size (SxN): Weight associate with each patch, S = number of solar position
+        """
         sigma2 = np.concatenate([np.sqrt(sigma),np.sqrt(sigma)])[np.newaxis, np.newaxis, :]
         discr2 = np.repeat(np.array([[1, 1, -1]]), discr.shape[0], axis=0) * discr
         sphere = np.concatenate([discr, discr2], axis=0)
@@ -142,6 +151,9 @@ class Diffuser:
         return NotImplementedError
 
     def get_integration_kernel(self, pts, sphere, sigma, kernel='gaussian'):
+        """
+        Compute the integration kernel for each patch
+        """
         dist = np.einsum('ijk, lk->ijl', pts, sphere)
         if kernel == 'gaussian':
             g = np.exp(-np.arccos(dist) ** 2 / (2 * sigma** 2))
