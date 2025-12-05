@@ -218,7 +218,9 @@ class LenticularDiffuser(Diffuser):
             Anle_res : output angular resolution
         """
         plan_sunl = np.cross(vect_sun, self.len_vector)
-        beta = np.arccos(np.dot(plan_sunl, self.normal) / (np.linalg.norm(plan_sunl, axis=1) * np.linalg.norm(self.normal)))
+        norm_psl = np.linalg.norm(plan_sunl, axis=1) if np.linalg.norm(plan_sunl, axis=1) != 0 else 1
+        cos_beta = np.clip(np.dot(plan_sunl, self.normal) / (norm_psl * np.linalg.norm(self.normal)), -1, 1)
+        beta = np.arccos(cos_beta)
         beta_t = np.arange(-self.omega+angle_res/2, self.omega + angle_res/2, angle_res)
         beta = beta[:, np.newaxis] + beta_t
         return beta
@@ -232,7 +234,8 @@ class LenticularDiffuser(Diffuser):
             vect_sun : sun vectors
             Anle_res : output angular resolution
         """
-        gamma = np.arccos(np.dot(vect_sun, self.len_vector))
+        cos_gamma = np.clip(np.dot(vect_sun, self.len_vector), -1, 1)
+        gamma = np.arccos(cos_gamma)
         #ind = np.where((vect_sun[:, 0] < 0))
         #gamma[ind] = -gamma[ind] + np.pi
         gamma = gamma[:, np.newaxis]
