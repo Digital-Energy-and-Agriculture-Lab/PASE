@@ -125,6 +125,12 @@ class rotary_support(PVStructurePart):
         self.orientation = 'horizontal_y'
         self.polydata.rotate_z(90, inplace=True)
 
+class Diagonale(PVStructurePart):
+    def __init__(self, shape_type, length, **kwargs):
+        super().__init__(shape_type, length, **kwargs)
+
+        self.orientation = 'horizontal_x'
+
 # --- Structures --- 
 
 class PVStructure(ABC):
@@ -165,7 +171,13 @@ class PVStructure(ABC):
         self.rafter_length = PV_i['RafterLength']
         self.rafter_radius = PV_i['RafterRadius']
         self.numbers_of_rafter = PV_i['NumberOfRafters']
-
+        
+        self.diagonale_shape = PV_i['DiagonaleShape']
+        self.diagonale_width = PV_i['DiagonaleWidth']
+        self.diagonal_height = PV_i['DiagonaleHeight']
+        self.diagonale_side = PV_i['DiagonaleSide']
+        self.diagonale_radius = PV_i['DiagonaleRadius']
+        
         self.material = PV_i['Material']
 
         self.panel_width = float(PV_i["PanelDimensionX"])  # X
@@ -188,6 +200,7 @@ class PVStructure(ABC):
         self.base_height = float(PV_i["Height"])  # elevation
         self.pole_spacing = float(PV_i["PoleSpacingX"])
         self.tilt = float(PV_i["TiltY"])
+        self.height_offset = -0.5
 
     def make_structure_part_group(self, structure_type, nb_part, span):
 
@@ -261,6 +274,46 @@ class PVStructure(ABC):
                               inplace=True)
         
         return combined
+    
+    def make_diagonal(self):
+
+        ground_offset = self.pole_ground_positioning
+        left_pole_height = self.base_height + self.height_offset + ground_offset
+        right_pole_height = self.base_height - self.height_offset + ground_offset
+
+        if left_pole_height <= right_pole_height:
+            high_x = -self.pole_spacing
+            high_z = left_pole_height
+            low_x = self.pole_spacing
+        else:
+            high_x = self.pole_spacing
+            high_z = right_pole_height
+            low_x = -self.pole_spacing
+
+        low_z = min(self.diagonal_height + ground_offset, high_z - 1e-6)
+
+        vertical_span = high_z - low_z
+        horizontal_span = abs(high_x - low_x)
+        diagonal_length = math.hypot(horizontal_span, vertical_span)
+
+        diagonale = Diagonale(self.diagonale_shape,
+                              length=diagonal_length,
+                              radius=self.diagonale_radius,
+                              side=self.diagonale_side,
+                              positioning=self.pole_ground_positioning)
+
+        angle = math.degrees(math.atan2(horizontal_span, vertical_span))
+        if high_x < low_x:
+            angle = -angle
+
+        diagonale.polydata.rotate_y(angle, inplace=True)
+
+        center = ((high_x + low_x) / 2.0,
+                  -self.purlin_length / 2.0,
+                  (high_z + low_z) / 2.0)
+        diagonale.polydata.translate(center, inplace=True)
+
+        return diagonale.polydata
 
 class AgrivoltaicFence(PVStructure):
     def __init__(self, PV_i, **kwargs):
@@ -409,8 +462,13 @@ class PVTable (PVStructure):
                                    -self.purlin_length/2,
                                    self.base_height),
                                    inplace= True)
+        
+        diagonale = self.make_diagonal()
 
-        combine = pole.polydata + pole_2.polydata + rafter.polydata
+        combine = (pole.polydata
+                   + pole_2.polydata
+                   + rafter.polydata
+                   + diagonale)
 
         return combine
 
@@ -479,8 +537,8 @@ class HSATS(PVStructure):
                           inplace=True)
         
         rafter_group = self.make_structure_part_group("rafter",
-                                              self.numbers_of_rafter,
-                                              self.purlin_length)
+                                                      self.numbers_of_rafter,
+                                                      self.purlin_length)
         rafter_group.translate((0,
                           -self.purlin_length/2,
                           self.purlin_length/2),
@@ -519,7 +577,7 @@ if __name__ == "__main__":
     import os
 
     AV_1 = YAML_Inputs_provider(
-        file="Example4_HSATS.yaml",
+        file="Example5_PVTable.yaml",
         subpath="AV_CENTRAL",
         parentdir=2
     ).inputs
@@ -531,7 +589,7 @@ if __name__ == "__main__":
     ).inputs
 
     Structure = YAML_Inputs_provider(
-        file="HSATS.yaml",
+        file="PV_table.yaml",
         subpath=os.path.join("HARDWARE", "STRUCTURES"),
         parentdir=2
     ).inputs
