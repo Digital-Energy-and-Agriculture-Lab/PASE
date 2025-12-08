@@ -1252,6 +1252,7 @@ class PVConfiguration3D(MultiBlockPASE):
         for oid in idx:
             blk = self.get_block_by_oid(int(oid))
             if isinstance(blk, pyv.PolyData):
+                blk.cell_data['Type'] = np.full(blk.n_cells, self.df['Type'][oid])
                 dsets.append(blk)
         return merge_polydata(dsets, extract_surface=extract_surface)
 

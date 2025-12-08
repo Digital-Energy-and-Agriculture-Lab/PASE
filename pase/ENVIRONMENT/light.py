@@ -474,9 +474,9 @@ class Ray_casting_scene:
                 self.dir_mask[:, time] = dirrr_map
                 self.diffuse_mask[:, time, :] = difff_map
         else:  # no sun tracking
-            self.diffuse_mask = self.get_diffuse_mask(self.geometry)
+            self.masks = self.get_mask_from_sky_dir(self.geometry)
+            self.diffuse_mask = self.masks['Diffuse']
             self.dir_mask = self.get_direct_mask(sun_P, self.geometry)
-            self.diffuser_mask = self.get_diffuser_mask(self.geometry)
         self.compute_diffuser_map(sun_P)
         if visualization == True:
             self.visualize_direct_light_map(Sun_P_map_to_visualize)
@@ -485,7 +485,7 @@ class Ray_casting_scene:
             pass
 
 
-    def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped,tol = 0.01):
+    def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped, id_cells = None,tol = 0.01):
         """
         Private method, used to discard auto-intercept of rays. This can happend when a mesh has been
         done on a geometry (e.g. on a top of a PV). The ray can be intercept nearly at his starting position
@@ -500,10 +500,54 @@ class Ray_casting_scene:
         Returns:
            cleaned id_rays_stopped list where the auto-interception have been removed
         """
-        
+        if id_cells is None:id_cells=np.zeros(id_rays_stopped.shape)
         delta = np.linalg.norm(intercept_points - SourcePoints[id_rays_stopped,:], axis=1)
-        return np.unique(id_rays_stopped[delta>tol])
- 
+        id_rays_filt, indices = np.unique(id_rays_stopped[delta>tol], return_index=True)
+        return id_rays_filt, id_cells[delta>tol][indices]
+    def get_mask_from_sky_dir(self, geometry):
+
+        if geometry.polydata_all_centrals().n_faces_strict == 0:
+            print("Geometry is empty. Returning full diffuse illumination.")
+            return np.ones(self.n_sourcepoints, dtype=np.float16)
+
+        # Get direction of ray to reach the small suns and compute the sky view of each point
+        pTarget = np.column_stack([self.discrete_sky.x,
+                                   self.discrete_sky.y,
+                                   self.discrete_sky.z])
+        n_sky_elements = len(self.discrete_sky)
+
+        # Creation of the source points array (Nx3) with N = len(Source) * len(n_sky_elements)
+        SourcePoints = np.repeat(np.column_stack((
+            self.sourcepoints[:, 0],
+            self.sourcepoints[:, 1],
+            self.sourcepoints[:, 2]
+        )),
+            n_sky_elements,
+            axis=0)
+
+        # Creation of the target points array (Nx3) with N = len(Source) * len(n_sky_elements)
+        TargetPoints = np.tile(pTarget, [self.n_sourcepoints, 1])
+
+        # Computation of the ray interception of the N rays
+        # id_rays_stopped provided the index of the ray which has been intercepted
+        intercept_points, id_rays_stopped, id_intercept_cell = geometry.polydata_all_centrals().multi_ray_trace(SourcePoints,
+                                                                        TargetPoints,
+                                                                        first_point=False,
+                                                                        retry=False)
+        id_rays_stopped_filtred, id_intercept_cell_filtered = self.self_intercept(SourcePoints, intercept_points, id_rays_stopped, id_intercept_cell, tol=0.01)
+        hit_object = geometry.polydata_all_centrals().cell_data['Type'][id_intercept_cell_filtered]
+        ind_diffuse = np.where(hit_object != 'Diffuser')
+        masks = {}
+        masks['Diffuse'] = np.ones(self.n_sourcepoints * n_sky_elements, bool)
+        masks['Diffuse'][id_rays_stopped_filtred[ind_diffuse]] = 0
+        masks['Diffuse'] = masks['Diffuse'].reshape(self.n_sourcepoints, n_sky_elements)
+        for type in np.unique(hit_object):
+            ind = np.where(hit_object == type)
+            masks[type] = np.zeros(self.n_sourcepoints * n_sky_elements, bool)
+            masks[type][id_rays_stopped_filtred[ind]] = 1
+            masks[type] = masks[type].reshape(self.n_sourcepoints, n_sky_elements)
+        return masks
+
     def get_diffuse_mask(self, geometry):
         """
         Public method, compute the diffuse light at the point sources defined
@@ -548,7 +592,7 @@ class Ray_casting_scene:
                                                          first_point=False,
                                                          retry=False)
         
-        id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
+        id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
 
         diffuse_mask = np.ones(self.n_sourcepoints*n_sky_elements, bool)
         diffuse_mask[id_rays_stopped_filtred] = 0
@@ -588,7 +632,7 @@ class Ray_casting_scene:
                                                                         first_point=False,
                                                                         retry=False)
 
-        id_rays_stopped_filtred = self.self_intercept(SourcePoints, intercept_points, id_rays_stopped, tol=0.01)
+        id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints, intercept_points, id_rays_stopped, tol=0.01)
         diffuser_mask = np.zeros(self.n_sourcepoints * n_sky_elements, bool)
         diffuser_mask[id_rays_stopped_filtred] = 1
 
@@ -601,7 +645,7 @@ class Ray_casting_scene:
                                    self.discrete_sky.z])
         _cos_elev_patch = self.discrete_sky['cos(z)']
         weight = self.diffusers.get_light_direction(sun_P, pTarget, self.discrete_sky['Normalized surf area'], np.sqrt(np.min(self.discrete_sky['solid_angle_sr'])))
-        self.diffuser_map = np.einsum('ij, j, kj->ik', weight, _cos_elev_patch, self.diffuser_mask)
+        self.diffuser_map = np.einsum('ij, j, kj->ik', weight, _cos_elev_patch, self.masks['Diffuser'])
 
     def get_direct_map_by_flag(self,Flags):
         """
@@ -696,7 +740,7 @@ class Ray_casting_scene:
         if len(intercept_points)==0:
             pass
         else:
-            id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
+            id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
             #Computation of the shade by setting at 0 the locations where rays were intercepted
             direct_1D_map[id_rays_stopped_filtred] = 0
         
