@@ -518,30 +518,31 @@ class HSATS(PVStructure):
     def make_elementary_group(self) -> pyv.PolyData:
 
         pole = Pole(self.pole_shape,
-                    length=self.pole_length,
+                    length=self.base_height,
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
                     radius=self.pole_radius,
                     positioning=self.pole_ground_positioning)
         pole.polydata.translate((0, 
-                                 -self.purlin_length/2, 0), 
+                                 -self.purlin_length/2, 
+                                 0), 
                                  inplace=True)
 
         purlin_group = self.make_structure_part_group("purlin", 
                                                       self.numbers_of_purlin,
                                                       self.rafter_length)
         purlin_group.translate((0,
-                          -self.purlin_length/2,
-                          self.purlin_length/2),
+                                -self.purlin_length/2,
+                                0),
                           inplace=True)
         
         rafter_group = self.make_structure_part_group("rafter",
                                                       self.numbers_of_rafter,
                                                       self.purlin_length)
         rafter_group.translate((0,
-                          -self.purlin_length/2,
-                          self.purlin_length/2),
+                                -self.purlin_length/2,
+                                0),
                           inplace=True)
 
         combine = (pole.polydata + purlin_group + rafter_group)
@@ -557,16 +558,7 @@ class HSATS(PVStructure):
             self.base_height,
         )
 
-        blocks = pyv.MultiBlock()
-
-        for idx in range(self.n_groups_in_block):
-            g = self.make_elementary_group()
-            offx, offy, offz = map(float, positions[idx])
-            g.translate((0, 
-                         offy, 
-                         0),
-                        inplace=True)
-            blocks.append(g)
+        blocks = self.make_elementary_group()
                 
         return blocks
 
@@ -577,7 +569,7 @@ if __name__ == "__main__":
     import os
 
     AV_1 = YAML_Inputs_provider(
-        file="Example5_PVTable.yaml",
+        file="Example4_HSATS.yaml",
         subpath="AV_CENTRAL",
         parentdir=2
     ).inputs
@@ -589,7 +581,7 @@ if __name__ == "__main__":
     ).inputs
 
     Structure = YAML_Inputs_provider(
-        file="PV_table.yaml",
+        file="HSATS.yaml",
         subpath=os.path.join("HARDWARE", "STRUCTURES"),
         parentdir=2
     ).inputs
@@ -598,7 +590,7 @@ if __name__ == "__main__":
                                         PV_module_1,
                                         Structure]).aggregated_inputs
 
-    blocks = PVTable(PV_params_dict).build_structure()
+    blocks = HSATS(PV_params_dict).build_structure()
 
     pl = pyv.Plotter()
     pl.add_mesh(blocks, show_edges=True)
