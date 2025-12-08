@@ -1,5 +1,5 @@
 from pase.ENVIRONMENT.diffuser import LenticularDiffuser, rotation_coordinate
-
+from pase.ENVIRONMENT.sky_model import ReinhartSky
 import numpy as np
 
 az = [0, 45, 90, 135, 180, 225, 270, 315]
@@ -49,4 +49,30 @@ def test_rotation_coordinate():
         assert np.isclose(u1, up1, rtol=1e-5).all()
         assert np.isclose(angle2, a, rtol=1e-5).all()
         assert np.isclose(up3p, up3.reshape((3,)), rtol=1e-5).all()
+
+sky = ReinhartSky(MF=1).reinhart_patches
+pTarget = np.column_stack([sky.x,sky.y,sky.z])
+
+def test_discretized_BSDF():
+    res = 0.1
+    beta = np.deg2rad(np.arange(-15, 15, 1))
+    gamma = np.deg2rad([45])
+    x = -np.sin(gamma) * (np.sin(beta - res / 2) - np.sin(beta + res / 2)) / res
+    y = np.cos(gamma)*np.ones(beta.shape)
+    z = -np.sin(gamma) * (np.cos(beta + res / 2) - np.cos(beta - res / 2)) / res
+    ds = np.sin(gamma) * res * np.ones(beta.shape)
+    L = ds.sum()
+    rho = 1 / L * np.ones(beta.shape)
+    for D in Diffusers:
+        D.x_sr = x.reshape((1,len(beta)))
+        D.y_sr = y.reshape((1,len(beta)))
+        D.z_sr = z.reshape((1,len(beta)))
+        D.ds = ds.reshape((1,len(beta)))
+        D.rho = rho.reshape((1,len(beta)))
+        D.get_discretized_BSDF(pTarget, sky['Normalized surf area'])
+        W = D.W
+        assert np.isclose(W.sum(), 1, rtol=1e-5)
+
+
+
 
