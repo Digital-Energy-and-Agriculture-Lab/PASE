@@ -1220,7 +1220,7 @@ class PVConfiguration3D(MultiBlockPASE):
                 "SecondAxis": (0.0, 1.0, 0.0),
             }
             self.add_custom_polydata(diffuser, info, name)
-            self.object_id += 1
+
     # ---- Query helpers ----
     def polydata_by_central(self, central_ids: Iterable[int] | int, *, extract_surface: bool = True) -> pyv.PolyData:
         """
