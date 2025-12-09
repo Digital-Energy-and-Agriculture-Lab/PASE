@@ -5,7 +5,8 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-from pase.DATA_MANAGEMENT.benchmarking import (parse_crop_model_inputs,
+from pase.DATA_MANAGEMENT.benchmarking import (get_git_revision_hash,
+                                               parse_crop_model_inputs,
                                                save_simulation_metadata)
 from pase.user_support_tools import PASE_Logger
 
@@ -122,9 +123,10 @@ class OutputsManager:
 
         # 1) Compute hash early, before any disk modifications.
         crop_model_inputs = parse_crop_model_inputs(crop_config)
+        git_hash = get_git_revision_hash()
         inputs = {**loc, **av, **pv_module, **structure, **crop_config,
                   **crop_model_inputs,
-                  'source': source_file}
+                  'source': source_file, 'git commit': git_hash}
         input_hash = self._hash_inputs(inputs)
 
         # 2) Determine variant name based on hash existence.
