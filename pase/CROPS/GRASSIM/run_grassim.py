@@ -26,11 +26,12 @@ def run_grassim(config, WD, daily_irr, lat, alt):
     """
 
     soil_init = YAML_Inputs_provider(file=f"CROPS/GRASSIM/soil/{config['SoilInit']}").inputs
-    soil_properties = pd.read_csv(f"INPUTS/CROPS/GRASSIM/{config['Soil_properties']}",header=0, sep=";", decimal='.')
+    soil_hydraulic_properties = pd.read_csv(f"INPUTS/CROPS/GRASSIM/soil/{config['SoilHydraulicProperties']}",header=0, sep=";", decimal='.')
+    soil_parameters=YAML_Inputs_provider(file=f"CROPS/GRASSIM/soil/{config['SoilParameters']}").inputs
     crop_init = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['CropInit']}").inputs
     kc_values = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['Kc_values']}").inputs
-    pft_composition = YAML_Inputs_provider(file=f"CROPS/GRASSIM/{config['PFT_composition']}").inputs
-    pft_values = pd.read_csv(f"INPUTS/CROPS/GRASSIM/{config['PFT_values']}",header=0, sep=";", decimal='.')
+    pft_composition = YAML_Inputs_provider(file=f"CROPS/GRASSIM/crop/{config['PFT_composition']}").inputs
+    pft_values = pd.read_csv(f"INPUTS/CROPS/GRASSIM/crop/{config['PFT_values']}",header=0, sep=";", decimal='.')
     management = YAML_Inputs_provider(file=f"CROPS/GRASSIM/management/{config['Management']}").inputs
 
     with open(f"INPUTS/CROPS/GRASSIM/{config['VariablesToSave']}", "r") as file:
@@ -39,7 +40,7 @@ def run_grassim(config, WD, daily_irr, lat, alt):
     simulation_dates = get_sim_dates(WD)
 
     grid = get_grid_shape(daily_irr)
-    soil = Soil(grid=grid, inits=soil_init, soil_properties= soil_properties,variables_to_save=variables_to_save['soil_variables'])
+    soil = Soil(grid=grid, inits=soil_init, soil_parameters=soil_parameters,soil_properties= soil_hydraulic_properties,variables_to_save=variables_to_save['soil_variables'])
     crop = Plants(grid=grid, pft_composition=pft_composition, inits=crop_init, kc_values=kc_values, pft_values=pft_values, variables_to_save=variables_to_save['crop_variables'])
     management = Management(grid=grid, config=management, variables_to_save=variables_to_save['management_variables'])
 
@@ -93,7 +94,7 @@ def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
     crop.compute_fT()
     crop.compute_fPARi()
     crop.compute_fW(W=soil.W,method='Jouven2006')
-    crop.compute_N_supply(Nmin=soil.Nmin, FNAmax=0.07, NSc=270)
+    crop.compute_N_supply(Nmin=soil.Nmin, FNAmax=soil.FNAmax, NSc=soil.NSc)
     crop.compute_fN()
     crop.compute_N_demand()
     crop.compute_N_uptake()
@@ -105,13 +106,13 @@ def run_daily_loop(day, ET0, WD, day_irr, soil, crop, management):
     crop.update_balance() # update BM compartments, OMD, sward height, age, based on actual growth
 
     soil.compute_water_balance(PP=crop.PP, AET=crop.AET,method='Ruelle2018')
-    soil.compute_N_mineralization(K=crop.K, Tref=crop.Tref, Temp=crop.Temp,method='Ruelle2018') # parameters for soil activity (Ruelle et al., 2018)
-    soil.compute_N_immobilization(K=crop.K, Tref=crop.Tref, Temp=crop.Temp,method='Ruelle2018')
+    soil.compute_N_mineralization(Temp=crop.Temp,method='Ruelle2018') # parameters for soil activity (Ruelle et al., 2018)
+    soil.compute_N_immobilization(Temp=crop.Temp,method='Ruelle2018')
     soil.compute_N_leached(method='Ruelle2018')
     soil.compute_N2O_emissions()
     soil.compute_N_from_rain(crop.PP)
-    soil.compute_Norg(percentageofNmin=crop.percentageofNmin, N_plant_litter=crop.N_plant_litter, fert_org=management.fert_org)
-    soil.compute_Nmin(percentageofNmin=crop.percentageofNmin, NH3volatfactor=crop.NH3volatfactor, N_uptake=crop.N_uptake, fert_org=management.fert_org, fert_min=management.fert_min)
+    soil.compute_Norg(percentageofNmin=management.percentageofNmin, N_plant_litter=crop.N_plant_litter, fert_org=management.fert_org)
+    soil.compute_Nmin(percentageofNmin=management.percentageofNmin, NH3volatfactor=management.NH3volatfactor, N_uptake=crop.N_uptake, fert_org=management.fert_org, fert_min=management.fert_min)
 
     crop.save_variables()
     soil.save_variables()

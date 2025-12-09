@@ -40,7 +40,6 @@ Hinge:
    Choices: [Center, Top]
    Definition: Do the panels rotate about the axis going through their center or
       the top of the panels (e.g. free-hanging panels) ?
-
 Height:
    Value: 1.22
    Type: float
