@@ -5,9 +5,55 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-from pase.DATA_MANAGEMENT.benchmarking import (parse_crop_model_inputs,
+from pase.DATA_MANAGEMENT.benchmarking import (get_git_revision_hash,
+                                               parse_crop_model_inputs,
                                                save_simulation_metadata)
 from pase.user_support_tools import PASE_Logger
+
+
+def deep_diff(old: dict, new: dict):
+    """
+    Compute a structured diff between two dictionaries.
+    Returns a dict describing only the changes.
+    """
+    diff = {}
+
+    old_keys = set(old.keys())
+    new_keys = set(new.keys())
+
+    # Deletions
+    for key in old_keys - new_keys:
+        diff[key] = {
+            "Former": old[key],
+            "New": None
+        }
+
+    # Additions
+    for key in new_keys - old_keys:
+        diff[key] = {
+            "Former": None,
+            "New": new[key]
+        }
+
+    # Possible modifications
+    for key in old_keys & new_keys:
+        old_val = old[key]
+        new_val = new[key]
+
+        # Nested dict recursion
+        if isinstance(old_val, dict) and isinstance(new_val, dict):
+            nested = deep_diff(old_val, new_val)
+            if nested:        # Only record if real changes
+                diff[key] = nested
+
+        # Values changed (including type change)
+        elif old_val != new_val:
+            diff[key] = {
+                "Former": old_val,
+                "New": new_val
+            }
+
+    return diff
 
 
 class OutputsManager:
@@ -122,9 +168,10 @@ class OutputsManager:
 
         # 1) Compute hash early, before any disk modifications.
         crop_model_inputs = parse_crop_model_inputs(crop_config)
+        git_hash = get_git_revision_hash()
         inputs = {**loc, **av, **pv_module, **structure, **crop_config,
                   **crop_model_inputs,
-                  'source': source_file}
+                  'source': source_file, 'git commit': git_hash}
         input_hash = self._hash_inputs(inputs)
 
         # 2) Determine variant name based on hash existence.
@@ -145,6 +192,34 @@ class OutputsManager:
         save_simulation_metadata(loc=loc, av=av, pv_module=pv_module,
                                  structure=structure, crop_config=crop_config,
                                  source=source_file, output_path=metadata_file)
+
+        # 6) If not the first variant: compute diff vs previous
+        # Identify previous variant
+        if self.variant.startswith("variant_"):
+            try:
+                idx = int(self.variant.split("_")[1])
+            except ValueError:
+                idx = 1
+
+            if idx > 1:
+                prev_variant = f"variant_{idx-1:02d}"
+                prev_root = self.project_root / prev_variant
+                prev_meta = prev_root / self.SUBDIRS["inputs"] / "simulation_metadata.yaml"
+
+                if prev_meta.exists():
+                    import yaml
+
+                    # Load old and new metadata
+                    old_data = yaml.safe_load(prev_meta.read_text())
+                    new_data = yaml.safe_load(metadata_file.read_text())
+
+                    # Compute diff
+                    changes = deep_diff(old_data, new_data)
+
+                    # Save diff only if non-empty
+                    if changes:
+                        diff_path = self.variant_root / self.SUBDIRS["inputs"] / "diff.yaml"
+                        diff_path.write_text(yaml.dump(changes, allow_unicode=True))
 
         # update registry
         self._update_registry(chosen_variant, input_hash)
