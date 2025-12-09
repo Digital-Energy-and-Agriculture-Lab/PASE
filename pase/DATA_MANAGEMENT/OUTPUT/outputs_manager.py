@@ -5,7 +5,8 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-from pase.DATA_MANAGEMENT.benchmarking import save_simulation_metadata
+from pase.DATA_MANAGEMENT.benchmarking import (parse_crop_model_inputs,
+                                               save_simulation_metadata)
 from pase.user_support_tools import PASE_Logger
 
 
@@ -120,7 +121,9 @@ class OutputsManager:
         source_file = Path(source).parts[-1]
 
         # 1) Compute hash early, before any disk modifications.
+        crop_model_inputs = parse_crop_model_inputs(crop_config)
         inputs = {**loc, **av, **pv_module, **structure, **crop_config,
+                  **crop_model_inputs,
                   'source': source_file}
         input_hash = self._hash_inputs(inputs)
 
