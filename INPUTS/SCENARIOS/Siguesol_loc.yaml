@@ -39,13 +39,13 @@ DailyWeatherFileName:
    Type: string
    Definition: Name of the daily weather data csv file with precipitation and vapour pressure (pay attention to the format it should have) if WeatherDataOption is 1 (PVGis used)
 SimulationStartingYear:
-   Value: 2008
+   Value: 2010
    Type: integer
    Limit: [1900, SimulationEndingYear]
    Unit: dimensionless [-]
    Definition: Starting year of the simulation, PvGis has data from 2005 to 2016 comprise
 SimulationEndingYear:
-   Value: 2008
+   Value: 2011
    Type: integer
    Limit: [SimulationStartingYear, 2023]
    Unit: dimensionless [-]
@@ -80,37 +80,37 @@ DiffuseSkyType:
                to derive the sky type from weather data.
                "Uniform" assumes uniform radiance distribution (faster but less accurate).
 Xmin_InterestZone:
-   Value: -3
+   Value: -0.5
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Minimal x coordinates of the zone of interest for the light and crop modelling
 Xmax_InterestZone:
-   Value: 3
+   Value: 0.5
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Maximal x coordinates of the zone of interest for the light and crop modelling
 dX_InterestZone:
-   Value: 0.1
+   Value: 0.5
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Increment in the x coordinates of the zone of interest for the light and crop modelling
 Ymin_InterestZone:
-   Value: -3
+   Value: -0.5
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Minimal y coordinates of the zone of interest for the light and crop modelling
 Ymax_InterestZone:
-   Value: 3
+   Value: 0.5
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Maximal y coordinates of the zone of interest for the light and crop modelling
 dY_InterestZone:
-   Value: 0.1
+   Value: 0.5
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]

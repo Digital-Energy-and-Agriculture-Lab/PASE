@@ -71,7 +71,7 @@ TwoFacetsRelativePosition:
    Units: meters
    Definition: If you have to construct a PV geometry with modules having 2 facets (often 1 oriented east and the other west), it is the horizontal relative position of the panels potential rotation axis and the centre of the module with 2 facets. If there is not 2 facets, set this parameter to 0.
 CentralAzimut:
-   Value: 0
+   Value: 55
    Type: float
    Limit: [0,360]
    Unit: degrees [°]

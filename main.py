@@ -16,7 +16,7 @@ from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inpu
 from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
 from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
 from pase.DATA_MANAGEMENT.output.save_csv import save_csv
-from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
+from pase.PHOTOVOLTAICS.configuration import PVConfiguration3D
 from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from pase.ENVIRONMENT.light import Ray_casting_scene
 from pase.ENVIRONMENT.mesh import Mesh
@@ -59,9 +59,9 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
                                        len(WD.nyears_data[str(Loc_1['SimulationStartingYear'])]),
                                        Loc_1['TimeZone'])
 # Creation of the 3D PV central
-PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
-                                    Sun_positions_samp.solar_vector,
-                                    visualization=True)  # !!!! Problem with rotation angle that are negative
+PV_1_3Dconfig = PVConfiguration3D()
+PV_1_3Dconfig.create_regular_central(PV_params_dict)
+PV_1_3Dconfig.visualize_simple()
 # #  Add custom polydata, for example a cube (not yet compatible with the tracking)
 # cube = pyv.Cube(center=(0, 0, 1.0), x_length=1.0, y_length=1.0, z_length=1.0)
 # info_cube = {
@@ -113,12 +113,11 @@ discrete_sky = ReinhartSky(MF=Loc_1['MF']).reinhart_patches
 
 # Computation of sun and light data
 Light_instance = Light(WD.nyears_data, Sun_positions_complete, Loc_1['DiffuseSkyType'])
-
+Diffuser = LenticularDiffuser(AV_1['CentralAzimut'], PV_params_dict['TiltY'], omega=30)
 # Configuration of the diffuser
-Diffuser = LenticularDiffuser(AV_1['CentralAzimut'], PV_params_dict['TiltY'])
 # Instantiation of light ray casting model (direct and diffuse) with points of interest and scene
 L = Ray_casting_scene(mesh=M,
-                      geometry=PV_1_3Dconfig.PV_central_PD,
+                      geometry=PV_1_3Dconfig,
                       discrete_sky=discrete_sky,
                       diffusers=Diffuser)
 
@@ -133,16 +132,23 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP,
                             visualization=True,
                             year=2005, julian_day=5)
 
-#L.visualize_direct_light_map(1)
-#L.visualize_diffuse_light_map(1)
-#L.visualize_daily_irrad_map(2008, 150)
-for i in range(len(Sun_positions_samp.solar_vector)//10): L.visualize_diffuser_light_map(48, Sun_positions_samp.solar_vector)
+
+
+# L.visualize_direct_light_map(1)
+# L.visualize_diffuse_light_map(1)
+L.visualize_daily_irrad_map(2010, 48)
+L.visualize_diffuser_light_map(50, Sun_positions_samp.solar_vector)
 open_pyvista_3D_visualization(L.sourcepoints[:, :-1],
-                                      np.array(L.diffuser_mask.mean(axis=1), dtype=np.float32),
+                                      np.array(L.masks['Diffuser'].mean(axis=1), dtype=np.float32),
                                       L.geometry,
                                       "Diffuser_mask")
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
-#DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])
+#DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])"""
+
+diffuser_map = L.diffuser_map
+W = Diffuser.W[:, :577]
+ReinhartSky(MF=Loc_1['MF']).patch_plot_value(W[49])
+ReinhartSky(MF=Loc_1['MF']).patch_plot_value(L.masks['Diffuser'][2])
 """
 # Examples of visualisation for the direct light map, diffuse light map (sky view factor)
 # and daily irradiation map. Those lines are for PV system with no rotation axis. 
