@@ -8,6 +8,10 @@ from pase.pase_math import compute_block_centers, compute_panel_grid_positions
 def build_structure(config_dict):
     if config_dict['StructureType'].lower() == 'agrivoltaic fence':
         return AgrivoltaicFence(config_dict).build_structure()
+    if config_dict['Structype'].lower() == 'PV table':
+        return PVTable(config_dict).build_structure()
+    if config_dict['Structype'].lower() == 'HSATS':
+        return HSATS(config_dict).build_structure() 
 
 
 class PVStructurePart(ABC):
