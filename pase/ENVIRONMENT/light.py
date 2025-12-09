@@ -73,8 +73,7 @@ class Sun_positions:
         
         self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_com_year,
                                                                   n)
-        
-        
+
     def get_sun_vector(self, beta, gamma):
         #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
         #beta : sun elevation (from -90 to 90°), negative angle means it's night
@@ -149,7 +148,6 @@ class Light:
             BHI = self.get_beam_horizontal_radiation(GHI, DHI)
             Ai = self.get_anisotropy_index(rad_top_atm, BHI)
             f = self.get_modulating_factor(GHI, BHI)
-
 
             if sky_type_source == 'uniform':
                 cie_sky_type = [5]*n_timesteps  # Uniform sky (type 5) * n hourly timesteps in the year
@@ -477,13 +475,12 @@ class Ray_casting_scene:
             self.masks = self.get_mask_from_sky_dir(self.geometry)
             self.diffuse_mask = self.masks['Diffuse']
             self.dir_mask = self.get_direct_mask(sun_P, self.geometry)
-        self.compute_diffuser_map(sun_P)
+            if self.diffusers is not None:self.compute_diffuser_map(sun_P)
         if visualization == True:
             self.visualize_direct_light_map(Sun_P_map_to_visualize)
             self.visualize_diffuse_light_map(Sun_P_map_to_visualize)
         else:
             pass
-
 
     def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped, id_cells = None,tol = 0.01):
         """
@@ -504,6 +501,7 @@ class Ray_casting_scene:
         delta = np.linalg.norm(intercept_points - SourcePoints[id_rays_stopped,:], axis=1)
         id_rays_filt, indices = np.unique(id_rays_stopped[delta>tol], return_index=True)
         return id_rays_filt, id_cells[delta>tol][indices]
+
     def get_mask_from_sky_dir(self, geometry):
 
         if geometry.polydata_all_centrals().n_faces_strict == 0:
@@ -601,45 +599,8 @@ class Ray_casting_scene:
 
         return diffuse_mask
 
-    def get_diffuser_mask(self, geometry):
-        geometry = geometry.polydata_by_property(property_dict={'Type':['Diffuser']})
-        # Handle empty geometry: return full diffuse light
-        if geometry.n_faces_strict == 0:
-            print("Geometry is empty. Returning full diffuse illumination.")
-            return np.zeros(self.n_sourcepoints, dtype=np.float16)
-
-        pTarget = np.column_stack([self.discrete_sky.x,
-                                   self.discrete_sky.y,
-                                   self.discrete_sky.z])
-        n_sky_elements = len(self.discrete_sky)
-
-        # Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
-        SourcePoints = np.repeat(np.column_stack((
-            self.sourcepoints[:, 0],
-            self.sourcepoints[:, 1],
-            self.sourcepoints[:, 2]
-        )),
-            n_sky_elements,
-            axis=0)
-        #W = diffusers.get_light_direction(sun_P, pTarget)
-        # Creation of the target points array (Nx3) with N = len(Source) * len(n_small_suns)
-        TargetPoints = np.tile(pTarget, [self.n_sourcepoints, 1])
-        # target_ID = np.tile(np.arange(0, pTarget.shape[0], 1),self.n_sourcepoints)
-        # Computation of the ray interception of the N rays
-        # id_rays_stopped provided the index of the ray which has been intercepted
-        intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
-                                                                        TargetPoints,
-                                                                        first_point=False,
-                                                                        retry=False)
-
-        id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints, intercept_points, id_rays_stopped, tol=0.01)
-        diffuser_mask = np.zeros(self.n_sourcepoints * n_sky_elements, bool)
-        diffuser_mask[id_rays_stopped_filtred] = 1
-
-        diffuser_mask = diffuser_mask.reshape(self.n_sourcepoints, n_sky_elements)
-        return diffuser_mask
-
     def compute_diffuser_map(self, sun_P):
+
         pTarget = np.column_stack([self.discrete_sky.x,
                                    self.discrete_sky.y,
                                    self.discrete_sky.z])
@@ -743,9 +704,6 @@ class Ray_casting_scene:
             id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
             #Computation of the shade by setting at 0 the locations where rays were intercepted
             direct_1D_map[id_rays_stopped_filtred] = 0
-        
-        
-    
         
         if type(self.geometry) != list:
         #Reshape of direct map to get a ID,t map
@@ -967,7 +925,6 @@ class Ray_casting_scene:
             stacked = np.stack(outs, axis=0)
             weighted = stacked * dhi[:, None, None]
             diff_irradiance_map = weighted.sum(axis=-1)
-
 
         diff_irradiance_map_MJ_m2 = diff_irradiance_map * 3600.0 * 1e-6 / n_freq
         return diff_irradiance_map_MJ_m2  # shape (nSourcePoints,)
