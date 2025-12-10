@@ -6,6 +6,7 @@ from pase.pase_math import compute_block_centers, compute_panel_grid_positions
 
 
 def build_structure(config_dict):
+    """Factory that selects the appropriate PV structure from the configuration."""
     if config_dict['StructureType'].lower() == 'agrivoltaic fence':
         return AgrivoltaicFence(config_dict).build_structure()
     if config_dict['Structype'].lower() == 'PV table':
@@ -18,6 +19,7 @@ class PVStructurePart(ABC):
     """Abstract interface for PV structures (panels, poles, trackers, etc.)."""
 
     def __init__(self, shape_type, length, **kwargs):
+        """Store profile geometry then build the associated polydata mesh."""
         self.shape_type = shape_type  # {circle, square, rectangle}
 
         self.length = length
@@ -27,6 +29,7 @@ class PVStructurePart(ABC):
         self.make_polydata()
 
     def parse_kwargs(self, kwargs):
+        """Extract optional geometric dimensions and ground positioning."""
         keys = kwargs.keys()
 
         if 'radius' in keys:
@@ -45,10 +48,7 @@ class PVStructurePart(ABC):
             self.pole_ground_positioning = 0
 
     def make_polydata(self):
-        """
-        Create a polydata attribute of shape self.shape_type, that is vertical.
-        It will be rotated in the extension classes.
-        """
+        """Create a vertical polydata of the requested shape; subclasses rotate it."""
         if self.shape_type.lower() in ['circle', 'cylinder']:
             self.polydata = pyv.Cylinder(center=(0, 0, 0),
                                          direction=(0, 0, 1),
@@ -68,6 +68,8 @@ class PVStructurePart(ABC):
 
 
 class Pole(PVStructurePart):
+    """Vertical post used as the main support for the PV structure."""
+
     def __init__(self, shape_type, length, **kwargs):
         """
         Create a vertical pole of shape shape_type and given length in meters.
@@ -89,6 +91,8 @@ class Pole(PVStructurePart):
 
 
 class Purlin(PVStructurePart):
+    """Horizontal purlins linking posts and supporting the panels."""
+
     def __init__(self, shape_type, length, panel_tilt_Y, **kwargs):
         super().__init__(shape_type, length, **kwargs)
 
@@ -102,6 +106,8 @@ class Purlin(PVStructurePart):
 
 
 class Rafter(PVStructurePart):
+    """Rafters oriented along the X-axis to carry purlins or panels."""
+
     def __init__(self, shape_type, length, panel_tilt_Y, **kwargs):
         super().__init__(shape_type, length, **kwargs)
 
@@ -115,6 +121,8 @@ class Rafter(PVStructurePart):
 
 
 class HorizontalBar(PVStructurePart):
+    """Simple horizontal bar, used for fence-like structures."""
+
     def __init__(self, shape_type, length, **kwargs):
         super().__init__(shape_type, length, **kwargs)
 
@@ -123,6 +131,8 @@ class HorizontalBar(PVStructurePart):
         self.polydata.rotate_x(90, inplace=True)
 
 class rotary_support(PVStructurePart):
+    """Horizontal support that can pivot around the Z-axis."""
+
     def __init__(self, shape_type, length, **kwargs):
         super().__init__(shape_type, length, **kwargs)
 
@@ -130,6 +140,8 @@ class rotary_support(PVStructurePart):
         self.polydata.rotate_z(90, inplace=True)
 
 class Diagonale(PVStructurePart):
+    """Diagonal bracing connecting two posts to stiffen the bay."""
+
     def __init__(self, shape_type, length, **kwargs):
         super().__init__(shape_type, length, **kwargs)
 
@@ -138,8 +150,9 @@ class Diagonale(PVStructurePart):
 # --- Structures --- 
 
 class PVStructure(ABC):
-    """Abstract interface for PV structures (panels, poles, trackers, etc.)."""
+    """Abstract interface describing the common parameters of PV structures."""
     def __init__(self, PV_i):
+        """Load common geometric, spacing, and material parameters for the PV layout."""
         
         self.panels_per_group = PV_i['PanelsPerGroup']
         self.n_groups_in_block  = int(PV_i['NumberOfPanelsY']
@@ -207,6 +220,7 @@ class PVStructure(ABC):
         self.height_offset = -0.5
 
     def make_structure_part_group(self, structure_type, nb_part, span):
+        """Create and position a group of purlins or rafters across a span."""
 
         if nb_part <= 0:
             return pyv.PolyData()
@@ -280,6 +294,7 @@ class PVStructure(ABC):
         return combined
     
     def make_diagonal(self):
+        """Build a diagonal brace connecting the two poles with the correct slope."""
 
         ground_offset = self.pole_ground_positioning
         left_pole_height = self.base_height + self.height_offset + ground_offset
@@ -320,15 +335,14 @@ class PVStructure(ABC):
         return diagonale.polydata
 
 class AgrivoltaicFence(PVStructure):
+    """Agrivoltaic fence structure composed of posts and horizontal bars."""
+
     def __init__(self, PV_i, **kwargs):
+        """Initialize agrivoltaic fence parameters from aggregated PV inputs."""
         super().__init__(PV_i, **kwargs)
 
-
-
     def make_elementary_group(self) -> pyv.PolyData:
-        '''
-        creates a structure by combining vertical and horizontal bars 
-        '''
+        """Create a fence bay by combining one post and two horizontal bars."""
 
         pole = Pole(self.pole_shape,
                     length=self.pole_length,
@@ -364,6 +378,7 @@ class AgrivoltaicFence(PVStructure):
         return combined
 
     def build_structure(self) -> pyv.MultiBlock:
+        """Assemble all fence bays along Y and add a terminal post."""
 
         # Compute position of groups
         positions, block_centers, grid_indices = compute_panel_grid_positions(
@@ -403,20 +418,23 @@ class AgrivoltaicFence(PVStructure):
         return combined_blocks
 
 class PVTable (PVStructure):
+    """Fixed tilted table with posts, rafters, and diagonal bracing."""
+
     def __init__(self, PV_i, **kwargs):
+        """Derive span, tilt, and minimum rafter length for the table geometry."""
         super().__init__(PV_i, **kwargs)
 
         
         self.tilt_rad = math.radians(self.tilt)
         self.half_span = self.pole_spacing
-        
-        #set rafter lenght condition to avoid rafter to be smaller that distance between two poles
+
         self.required_length = 2 * self.half_span / math.cos(self.tilt_rad) 
         self.rafter_length = max(self.rafter_length, 
                                  self.required_length)
         self.height_offset = self.half_span * math.tan(self.tilt_rad)
 
     def make_elementary_group(self) -> pyv.PolyData:
+        """Build one table bay with poles, rafters, diagonals, and purlins."""
         PRS = self.make_start_and_end_block()
         PG = self.make_structure_part_group("purlin",
                                             self.numbers_of_purlin,
@@ -478,6 +496,7 @@ class PVTable (PVStructure):
 
 
     def build_structure(self) -> pyv.MultiBlock :
+        """Replicate bays across the Y grid and cap with an end bay."""
 
         positions, block_centers, grid_indices = compute_panel_grid_positions(
             self.num_blocks_x, self.num_blocks_y,
@@ -513,13 +532,14 @@ class PVTable (PVStructure):
 
 
 class HSATS(PVStructure):
-    """
-        HSATS = Horizontal Single Axis Tracking Structure
-    """
+    """HSATS: horizontal single-axis tracker managing purlins and tilted rafters."""
+
     def __init__(self, PV_i, **kwargs):
+        """Initialize HSATS with common PV inputs."""
         super().__init__(PV_i, **kwargs)
 
     def make_elementary_group(self) -> pyv.PolyData:
+        """Create the tracker bay with central post plus purlin and rafter groups."""
 
         pole = Pole(self.pole_shape,
                     length=self.base_height,
@@ -554,6 +574,7 @@ class HSATS(PVStructure):
         return combine
     
     def build_structure(self):
+        """Return the assembled HSATS bay (single-axis tracker)."""
         positions, block_centers, grid_indices = compute_panel_grid_positions(
             self.num_blocks_x, self.num_blocks_y,
             self.panels_per_block_x, self.panels_per_block_y,
