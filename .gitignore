@@ -1,6 +1,7 @@
 # Python clutter
 *__pycache__*
 *.egg-info
+.coverage
 
 # pytest
 .coverage
@@ -15,6 +16,8 @@ htmlcov/*
 *.log
 *.prof
 *.out
+*.svg
+OUTPUTS/
 
 # STICS clutter
 *.sti
@@ -22,3 +25,15 @@ htmlcov/*
 *default/*
 *logs/*
 *STICS/*
+
+# Profiling and tests outputs
+*.prof
+*.out
+htmlcov
+.coverage
+
+# Temporary files directory
+TEMPORARY_FILES/
+
+# IPython Notebook clutter
+*.ipynb_checkpoints

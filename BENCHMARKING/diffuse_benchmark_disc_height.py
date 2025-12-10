@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
-#Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
+#Author : Bouvry Arnaud (abouvry@uliege.be)
 #This file is part of the PASE software, and is distributed under the MIT license.
 """"
 Benchmark the diffuse irradiance map
@@ -25,11 +25,12 @@ from pase.DATA_MANAGEMENT.benchmarking import (export_benchmark,
                                                get_git_revision_short_hash)
 from pase.ENVIRONMENT.light import Ray_casting_scene
 from pase.ENVIRONMENT.mesh import Mesh
+from pase.ENVIRONMENT.sky_model import ReinhartSky
 
-DEBUG = False
-PLOT = False
+DEBUG = False  # Fewer heights for faster debug diagnosis
+PLOT = True
 PLOT_3D = False
-SAVE = True
+SAVE = False
 
 if SAVE:
     GIT_REV = get_git_revision_short_hash()
@@ -124,27 +125,30 @@ for MF in MFs:
         for y, x in product(y_sensors, x_sensors):
             M.add_sensor(x, y,0)
 
+        discrete_sky = ReinhartSky(MF=MF).reinhart_patches
+
         # Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
-        L = Ray_casting_scene(mesh=M, geometry=disc)
+        L = Ray_casting_scene(mesh=M, geometry=disc, discrete_sky=discrete_sky)
 
-        diffuse_map = L.diffuse_map(L.geometry,
-                                    scheme='Reinhart',
-                                    MF=MF,
-                                    n_small_suns=0)
+        L.diffuse_mask = L.get_diffuse_mask(L.geometry)
 
-        L.diff_map = diffuse_map
+        L.get_diffuse_weights_map()
+
+        L.get_diffuse_shaded_weights_map()
 
         if PLOT_3D:
             L.visualize_diffuse_light_map()
 
+        L.diffuse_shaded_weights_map = L.diffuse_shaded_weights_map.sum(axis=0)
+
         logging.info(f'{MF=}, height = {disc_height} m')
-        logging.debug(L.diff_map[0:3])
-        logging.debug(L.diff_map[3:6])
-        logging.debug(L.diff_map[6:9])
+        logging.debug(L.diffuse_shaded_weights_map[0:3])
+        logging.debug(L.diffuse_shaded_weights_map[3:6])
+        logging.debug(L.diffuse_shaded_weights_map[6:9])
 
         # Check value at center
         center_id = 4
-        center_computed_value = L.diff_map[center_id]
+        center_computed_value = L.diffuse_shaded_weights_map[center_id]
         logging.debug(f'Center point computed value = {center_computed_value}')
         logging.debug(f'Center point expected value = {analytical_f}')
         rel_error_center_value = (1 - center_computed_value/analytical_f) * 100  # [%]
@@ -157,16 +161,16 @@ for MF in MFs:
         corners_ids = [0, 2, 6, 8]
         logging.debug(10 * '-')
         logging.debug("Corners' values:")
-        logging.debug(L.diff_map[corners_ids])
-        cov_corners = L.diff_map[corners_ids].std()/L.diff_map[corners_ids].mean()
+        logging.debug(L.diffuse_shaded_weights_map[corners_ids])
+        cov_corners = L.diffuse_shaded_weights_map[corners_ids].std() / L.diffuse_shaded_weights_map[corners_ids].mean()
         logging.debug(f'coef of var = {cov_corners}')
 
         # Analyze midpoints
         midpoints_ids = [1, 3, 5, 7]
         logging.debug(10 * '-')
         logging.debug("Midpoints' values:")
-        logging.debug(L.diff_map[midpoints_ids])
-        cov_midpoints = L.diff_map[midpoints_ids].std()/L.diff_map[midpoints_ids].mean()
+        logging.debug(L.diffuse_shaded_weights_map[midpoints_ids])
+        cov_midpoints = L.diffuse_shaded_weights_map[midpoints_ids].std() / L.diffuse_shaded_weights_map[midpoints_ids].mean()
         logging.debug(f'coef of var = {cov_midpoints}')
 
         logging.debug(20*'=')
@@ -219,7 +223,7 @@ if DEBUG:
 
     plotter.add_axes(**labels)
 
-    spatialized_variable = np.array(L.diff_map, dtype=np.float32)
+    spatialized_variable = np.array(L.diffuse_shaded_weights_map, dtype=np.float32)
     lgd_title = 'Diffuse map'
     plotter.add_mesh(L.sourcepoints[:,:-1],
                      scalars=spatialized_variable,

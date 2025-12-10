@@ -13,9 +13,9 @@ from matplotlib.font_manager import FontProperties
 from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from pase.PHOTOVOLTAICS.configurations import PV_Configuration_3D
+from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
 from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
-from pase.ENVIRONMENT.environment_config import Plane_Ground_regular_meshes
+from pase.ENVIRONMENT.mesh import Plane_Ground_regular_meshes
 from pase.ENVIRONMENT.light import show_light_map, Light_shade_scene
 from pase.PHOTOVOLTAICS.photovoltaic_systems import PV_system
 from pase.CROP.evapotranspiration import ET0_FAO56_PM, get_ETo_0D

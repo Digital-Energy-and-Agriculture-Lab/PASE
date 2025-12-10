@@ -10,14 +10,22 @@ import yaml
 
 from pase.user_support_tools import PASE_Logger
 
+VALID_TYPES = ['float', 'integer', 'string', 'boolean', 'list']
 
 class YAML_Inputs_provider:
     
-    def __init__(self, file=None, path='INPUTS', subpath=None):
+    def __init__(self, file=None, path='INPUTS', subpath=None, parentdir=None):
         if subpath is not None:
-            fname = os.path.join(path, subpath, file)
+            if parentdir is not None:
+                fname = os.path.join('..', '..', path, subpath, file)
+            else:
+                fname = os.path.join(path, subpath, file)
         else:
-            fname = os.path.join(path, file)
+            if parentdir is not None:
+                fname = os.path.join('..', '..', path, file)
+            else:
+                fname = os.path.join(path, file)
+
 
         with open (fname, 'r') as inputs_file:
 
@@ -25,7 +33,14 @@ class YAML_Inputs_provider:
             
         self.inputs = {}
    
-        for key, data in inputs.items():   
+        for key, data in inputs.items():
+
+            if data['Type'] not in VALID_TYPES:
+                msg = (f'Type not correctly defined for parameter {key} in file '
+                       f'{inputs_file.name}. \nType was: {data["Type"]}'
+                       f'\nType should be one of the '
+                       f'following: {VALID_TYPES}.')
+                raise ValueError(msg)
 
             if data['Value'] is not list:
                 if data['Type'] == 'float':
@@ -180,7 +195,7 @@ class YAML_Inputs_provider:
 
 class Inputs_aggregator:
 
-    def __init__(self, inputs):
+    def __init__(self, inputs: list):
         self.aggregated_inputs = dict()
 
         self.aggregate_inputs(inputs)
