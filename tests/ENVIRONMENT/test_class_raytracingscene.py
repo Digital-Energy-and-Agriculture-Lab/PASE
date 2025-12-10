@@ -53,7 +53,7 @@ def test_self_intercept():
     Delta[5:, 0] = 0.005
     Delta[10:20, 1] = 0.01
     Delta[20:, 2] = 0.005
-    Rays = np.arange(0, 25, 1)
+    Rays = np.arange(0, sourcepoints.shape[0], 1)
     Cells = np.zeros_like(Rays)
     R_filt, C_filt = L.self_intercept(sourcepoints, sourcepoints+Delta, Rays, Cells)
     ind  = np.where(np.linalg.norm(Delta, axis=1)>0.01)
