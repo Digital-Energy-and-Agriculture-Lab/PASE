@@ -1,5 +1,4 @@
 image: mambaorg/micromamba:1.5.6
-image: mambaorg/micromamba:1.5.6
 
 stages:
   - test
