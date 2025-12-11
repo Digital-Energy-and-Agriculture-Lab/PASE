@@ -39,13 +39,13 @@ DailyWeatherFileName:
    Type: string
    Definition: Name of the daily weather data csv file with precipitation and vapour pressure (pay attention to the format it should have) if WeatherDataOption is 1 (PVGis used)
 SimulationStartingYear:
-   Value: 2008
+   Value: 2015
    Type: integer
    Limit: [1900, SimulationEndingYear]
    Unit: dimensionless [-]
    Definition: Starting year of the simulation, PvGis has data from 2005 to 2016 comprise
 SimulationEndingYear:
-   Value: 2010
+   Value: 2015
    Type: integer
    Limit: [SimulationStartingYear, 2023]
    Unit: dimensionless [-]
@@ -115,3 +115,18 @@ dY_InterestZone:
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Increment in the y coordinates of the zone of interest for the light and crop modelling
+InterestZoneOrientationMode:
+  Value: default
+  Type: string
+  Possibilities: [default, auto, custom]
+  Definition: Orientation mode for the interest zone.
+    - default  aligned to North (0°)
+    - auto aligned with PV azimuth
+    - custom use InterestZoneCustomAngle
+InterestZoneCustomAngle:
+  Value: 60
+  Type: float
+  Limit: [0, 360]
+  Unit: degrees [°]
+  Definition: Custom orientation angle for the interest zone. Starting from the north in a clockwise direction
+    (used only if InterestZoneOrientationMode = "custom")
