@@ -396,6 +396,7 @@ def _base_params(**over):
         TwoFacetsRelativePosition=0.0,
         RotationAxisNumber=0,      # static
         MeshConfig=False,
+        Hinge='center',
     )
     params.update(over)
     return params
@@ -421,6 +422,7 @@ def _base_params_tracking(**over):
         TwoFacetsRelativePosition=0.0,
         RotationAxisNumber=1,      # static
         MeshConfig=False,
+        Hinge = 'center',
     )
     params.update(over)
     return params

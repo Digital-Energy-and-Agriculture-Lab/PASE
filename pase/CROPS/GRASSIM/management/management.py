@@ -60,7 +60,7 @@ class Management():
                 "days_after_cut": ["cut_to_fert_days"],
             },
         }
-        
+
         self.validate_management_options()
         self.days_since_cut = -1
         self.days_since_rotation = 0
@@ -125,6 +125,8 @@ class Management():
         self.day = day
         self.year = str(day.year)
         self.fert_org = 0
+        self.NH3volatfactor=0
+        self.percentageofNmin=0
         self.fert_min = 0
         self.exported_BM = np.zeros(self.grid)
         self.exported_digestibleOM = np.zeros(self.grid)
@@ -145,6 +147,13 @@ class Management():
         self.cut_today_ = self.cut_today(day, crop)
         self.fert_today_ = self.fert_today(day)
         self.rotate_today_ = self.rotate_today(day, crop)
+
+        if self.cut_today_:
+            crop.update_apex_grazed(
+                cut_height=self.config.get('cut_height', np.nan),
+                day=day,
+                cut_dates=self.cut_dates
+            )
 
         if self.rotate_today_:
             self.update_paddock()
@@ -482,6 +491,9 @@ class Management():
         """
         if "fert_org" in self.config:
             self.fert_org += self.config['fert_org']
+            self.NH3volatfactor +=self.config['NH3volatfactor']
+            self.percentageofNmin +=self.config['percentageofNmin']
+
         if "fert_min" in self.config:
             self.fert_min += self.config['fert_min']
         

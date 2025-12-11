@@ -6,7 +6,6 @@
 #This file is part of the PASE software, and is distributed under the MIT license.
 
 import os
-from pathlib import Path
 
 from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import (YAML_Inputs_provider,
@@ -16,7 +15,8 @@ from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
 from pase.DATA_MANAGEMENT.weather_data_provider import (fetch_weather_from_pvgis,
                                                         get_cache_key,
                                                         Weather_data)
-from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
+from pase.PHOTOVOLTAICS.configuration import (PV_Configuration_3D,
+                                              PVConfiguration3D)
 from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from pase.ENVIRONMENT.light import Ray_casting_scene
 from pase.ENVIRONMENT.mesh import Mesh
@@ -25,22 +25,31 @@ from pase.PHOTOVOLTAICS.production import PV_Production
 from pase.CROPS.run_crop_simulations import (run_crop_simu,
                                              visualize_map_of_a_variable)
 
+
 PASE_Logger()
 
 ###############
 # Load inputs #
 ###############
-Loc_1 = YAML_Inputs_provider(file='Example1_loc.yaml', subpath='SCENARIOS').inputs
+Loc_1 = YAML_Inputs_provider(file='Example1_loc.yaml',
+                             subpath='SCENARIOS').inputs
 # Import PV system and PV modules parameters
-AV_1 = YAML_Inputs_provider(file='Example1_AV.yaml', subpath='AV_CENTRAL').inputs
-PV_module_1 = YAML_Inputs_provider(file='Example1_PV_Module.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
-Structure = YAML_Inputs_provider(file='Example1_PV_structure.yaml', subpath=os.path.join('HARDWARE', 'STRUCTURES')).inputs
-crop_config = YAML_Inputs_provider(file='simple_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
+AV_1 = YAML_Inputs_provider(file='Example3_AV_agrivoltaic_fence.yaml',
+                            subpath='AV_CENTRAL').inputs
+PV_module_1 = YAML_Inputs_provider(file='Example1_PV_Module_landscape.yaml',
+                                   subpath=os.path.join('HARDWARE',
+                                                        'PV_MODULES')).inputs
+Structure = YAML_Inputs_provider(file='agrivoltaic_fence.yaml',
+                                 subpath=os.path.join('HARDWARE',
+                                                      'STRUCTURES')).inputs
+crop_config = YAML_Inputs_provider(file='simple_example.yml',
+                                   subpath=os.path.join('CROPS',
+                                                        'config')).inputs
 
 # InputsEvaluator is there to safeguard computing time and memory usage by checking some parameters values
 input_checker = InputsEvaluator(Loc_1, AV_1)
 
-PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
+PV_params_dict = Inputs_aggregator([AV_1, PV_module_1, Structure]).aggregated_inputs
 
 om = OutputsManager(Loc_1['LocationName'],
                     Loc_1['SimulationStartingYear'],
@@ -85,6 +94,7 @@ WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['DailyWeatherFileName']
                   )
 
+
 # Import sun positions
 
 # sampled for the direct light model
@@ -101,29 +111,25 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
                                        Loc_1['TimeZone'])
 
 # Instantiation of the 3D PV central
-PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
-                                    Sun_positions_samp.solar_vector,
-                                    visualization=True)  # !!!! Problem with rotation angle that are negative
+# PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
+#                                     Sun_positions_samp.solar_vector,
+#                                     visualization=True)  # !!!! Problem with rotation angle that are negative
 
-
-
+scene_multiblock = PVConfiguration3D()
+scene_multiblock.create_regular_central(pv_config=PV_params_dict)
+scene_multiblock.visualize_simple()
 
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
 
-# Interest Zone Orientation Mode
-M.set_interest_zone_orientation(Loc_1, AV_1)
-
 # Add of the points of interests on the ground for crop models
-M.add_oriented_plane_ground_mesh(
-    Loc_1['Xmin_InterestZone'],
-    Loc_1['Xmax_InterestZone'],
-    Loc_1['Ymin_InterestZone'],
-    Loc_1['Ymax_InterestZone'],
-    Loc_1['dX_InterestZone'],
-    Loc_1['dY_InterestZone'],
-    flag="crop"
-)
+M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
+                                  Loc_1['Xmax_InterestZone'],
+                                  Loc_1['Ymin_InterestZone'],
+                                  Loc_1['Ymax_InterestZone'],
+                                  Loc_1['dX_InterestZone'],
+                                  Loc_1['dY_InterestZone'],
+                                  flag="crop")
 
 # Discrete sky model
 discrete_sky = ReinhartSky(MF=Loc_1['MF']).reinhart_patches
@@ -133,7 +139,7 @@ Light_instance = Light(WD.nyears_data, Sun_positions_complete, Loc_1['DiffuseSky
 
 # Instantiation of light ray casting model (direct and diffuse) with points of interest and scene
 L = Ray_casting_scene(mesh=M,
-                      geometry=PV_1_3Dconfig.PV_central_PD,
+                      geometry=scene_multiblock,
                       discrete_sky=discrete_sky)
 
 # Run light ray casting model (direct and diffuse) with points of interest and scene
@@ -175,9 +181,9 @@ agro_results = run_crop_simu(crop_config, option_2D,
 # Display spatialized dry yield
 if crop_config['CropModel'] == ('simple' or 'stics'):
     visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
-                                PV_1_3Dconfig.PV_central_PD, M, Loc_1['SimulationStartingYear'],
+                                scene_multiblock, M, Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='g/m²')
 else:
     visualize_map_of_a_variable(crop_config, agro_results,'BM',
-                                PV_1_3Dconfig.PV_central_PD, M, Loc_1['SimulationStartingYear'],
+                                scene_multiblock, M, Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='t/ha')

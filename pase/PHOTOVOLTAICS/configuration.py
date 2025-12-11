@@ -13,6 +13,12 @@ import numpy as np
 import pandas as pd
 import pyvista as pyv
 
+from pase.PHOTOVOLTAICS.structure import build_structure
+from pase.pase_math import (compute_panel_grid_positions,
+                            compute_block_centers,
+                            rotate_about_z)
+
+pyv.global_theme.allow_empty_mesh = True
 
 # ----- Constants -----
 EPS = 1e-12
@@ -592,7 +598,6 @@ class PVConfiguration3D(MultiBlockPASE):
 
         return oid
 
-
     def get_position_by_oid(self, oid: int) -> Optional[int]:
         """
         Return block position for a given ``ObjectID``.
@@ -716,17 +721,25 @@ class PVConfiguration3D(MultiBlockPASE):
     def visualize_simple(self) -> None:
         """Minimal viewer for all PV centrals."""
         try:
-            geom = self.polydata_all_centrals(extract_surface=True)
+            geom_panels = self.polydata_by_property({'Type': ['PV']}, extract_surface=True)
+            geom_struct = self.polydata_by_property({'Type': ['Structure block']}, extract_surface=True)
         except Exception as _e:
             logging.getLogger(__name__).warning("Visualization skipped (geometry build failed): %s", _e)
             return
 
-        if not isinstance(geom, pyv.PolyData) or geom.n_points == 0:
+        if not isinstance(geom_panels, pyv.PolyData) or geom_panels.n_points == 0:
             logging.getLogger(__name__).info("Nothing to visualize: empty geometry.")
             return
 
         pl = pyv.Plotter()
-        pl.add_mesh(geom, color='black')
+        pl.add_mesh(geom_panels, color='black')
+
+        if geom_struct.n_cells > 0:  # Only add geom_struct if the mesh is not empty
+            if geom_struct.user_dict['Material'].lower() == 'metal':
+                struct_color = 'grey'
+            elif geom_struct.user_dict['Material'].lower() == 'wood':
+                struct_color = 'brown'
+            pl.add_mesh(geom_struct, color=struct_color)
 
         ground = np.array([[-100, 100, 0],
                            [100, 100, 0],
@@ -1028,7 +1041,7 @@ class PVConfiguration3D(MultiBlockPASE):
             "NumberOfPanelsX", "NumberOfPanelsY",
             "RepetitionDistanceOfPVBlocksX", "RepetitionDistanceOfPVBlocksY",
             "NumberOfPVBlocksX", "NumberOfPVBlocksY",
-            "Height", "CentralAzimut", "TiltY",
+            "Height", "CentralAzimut", "TiltY", 'Hinge',
         ]
         missing = [k for k in required if k not in config]
         if missing:
@@ -1052,9 +1065,12 @@ class PVConfiguration3D(MultiBlockPASE):
         base_height = float(config["Height"])  # elevation
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
+        hinge_style = config['Hinge']
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
-            raise ValueError("All count parameters must be >= 1")
+            msg = ('Some parameters on number of panels/blocks of panels are '
+                   'set to 0 ; there will be no panels in the simulation.')
+            logging.getLogger(__name__).warning(msg)
         if any(v <= 0 for v in
                [panel_width, panel_height, panel_spacing_x, panel_spacing_y, block_spacing_x, block_spacing_y]):
             raise ValueError("All dimension parameters must be > 0")
@@ -1089,12 +1105,27 @@ class PVConfiguration3D(MultiBlockPASE):
             offx, offy, offz = map(float, positions[idx])
             cx, cy, cz = map(float, block_centers[idx])
 
-            panel = (
-                base_panel.copy()
-                .translate([offx, offy, offz])
-                .rotate_y(tilt_deg, point=(cx, cy, cz))
-                .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
-            )
+            if hinge_style.lower() == 'center':
+                panel = (
+                    base_panel.copy()
+                    .translate([offx, offy, offz])
+                    .rotate_y(tilt_deg, point=(cx, cy, cz))
+                    .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
+                )
+            elif hinge_style.lower() == 'top':
+                panel = (
+                    base_panel.copy()
+                    .translate([offx, offy, offz])
+                    .rotate_y(90, point=(cx, cy, cz))
+                )
+                panel.rotate_y(90-tilt_deg,
+                               point=(panel.center[0],
+                                      panel.center[1],
+                                      panel.center[2]+panel_height/2),
+                                inplace=True)
+                panel.rotate_z(-azimuth_deg,
+                               point=(0.0, 0.0, 0.0),
+                               inplace=True)
 
             oid = self.object_id
             name = f"PV_{oid}"
@@ -1107,6 +1138,20 @@ class PVConfiguration3D(MultiBlockPASE):
                 pass
 
             pieces.append((oid, panel))
+            if hinge_style.lower() == 'top':
+                hinge_point = (float(panel.center[0]),
+                               float(panel.center[1]),
+                               float(panel.center[2]) + panel_height / 2)
+            else:
+                hinge_point = (float(panel.center[0]),
+                               float(panel.center[1]),
+                               float(panel.center[2]))
+
+            # Rotate hinge_axis and second_axis w/ azimuth about z-axis
+            # so they follow the new orientation of panels:
+            hinge_axis = tuple(rotate_about_z((1.0, 0.0, 0.0), -azimuth_deg))
+            second_axis = tuple(rotate_about_z((0.0, 1.0, 0.0), -azimuth_deg))
+
             df_rows[oid] = {
                 "Central": self.central_id,
                 "Block_X": bx,
@@ -1120,9 +1165,9 @@ class PVConfiguration3D(MultiBlockPASE):
                 "Azimuth_deg": azimuth_deg,
                 "Tilt_deg": tilt_deg,
                 # Default tracking geometry: per-panel center pivot, X then Y axes
-                "HingePoint": (float(panel.center[0]), float(panel.center[1]), float(panel.center[2])),
-                "HingeAxis": (1.0, 0.0, 0.0),
-                "SecondAxis": (0.0, 1.0, 0.0),
+                "HingePoint": hinge_point,
+                "HingeAxis": hinge_axis,
+                "SecondAxis": second_axis,
             }
 
             # Advance ObjectID and caches (temporary indices are overwritten after append)
@@ -1146,6 +1191,16 @@ class PVConfiguration3D(MultiBlockPASE):
             if (pv_config['DiffusersBetweenPanels']
                     ==True):
                 self.add_diffusers_to_central(pv_config)
+        only_block_centers = compute_block_centers(
+            num_blocks_x, num_blocks_y,
+            panels_per_block_x, panels_per_block_y,
+            block_spacing_x, block_spacing_y,
+            panel_spacing_x, panel_spacing_y,
+            base_height,
+        )
+
+        self.add_structure(config, only_block_centers)
+
         # Bump central ID
         self.central_id += 1
 
@@ -1220,6 +1275,46 @@ class PVConfiguration3D(MultiBlockPASE):
                 "SecondAxis": (0.0, 1.0, 0.0),
             }
             self.add_custom_polydata(diffuser, info, name)
+
+    def add_structure(self, config, block_centers):
+
+        # Instantiate the base block (based on structure type)
+        try:
+            base_struct = build_structure(config)
+        except KeyError as e:
+            logging.getLogger(__name__).warning('No StructureType defined;'
+                                                ' skipping structure part: %s',
+                                                e)
+            return
+
+        # How many blocks ?
+        num_blocks = len(block_centers)
+        num_blocks_x = config['NumberOfPVBlocksX']
+        num_blocks_y = config['NumberOfPVBlocksY']
+
+        # Loop over blocks
+        block_counter = 0
+        for i in range(num_blocks_x):
+            for j in range(num_blocks_y):
+                # copy and translate the base structure
+                struct = (base_struct.copy()
+                          .translate([block_centers[block_counter, 0],
+                                      block_centers[block_counter, 1] - block_centers[0, 1],
+                                      0])
+                          .rotate_z(-config['CentralAzimut'], point=(0.0, 0.0, 0.0))
+                          )
+                info_dict = {'Type': 'Structure block',
+                             'Central': self.central_id,
+                             'Block_X': i,
+                             'Block_Y': j,
+                             'Azimuth_deg': config['CentralAzimut'],
+                             }
+
+                # add to the multiblock instance
+                self.add_custom_polydata(geometry=struct,
+                                         info=info_dict)
+
+                block_counter += 1
 
     # ---- Query helpers ----
     def polydata_by_central(self, central_ids: Iterable[int] | int, *, extract_surface: bool = True) -> pyv.PolyData:
@@ -1422,6 +1517,7 @@ class PV_Configuration_3D(PVConfiguration3D):
         base_height = float(config["Height"])  # elevation
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
+        hinge_style = config['Hinge']
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             raise ValueError("All count parameters must be >= 1")
@@ -1459,12 +1555,27 @@ class PV_Configuration_3D(PVConfiguration3D):
             offx, offy, offz = map(float, positions[idx])
             cx, cy, cz = map(float, block_centers[idx])
 
-            panel = (
-                base_panel.copy()
-                .translate([offx, offy, offz])
-                .rotate_y(tilt_deg, point=(cx, cy, cz))
-                .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
-            )
+            if hinge_style.lower() == 'center':
+                panel = (
+                    base_panel.copy()
+                    .translate([offx, offy, offz])
+                    .rotate_y(tilt_deg, point=(cx, cy, cz))
+                    .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
+                )
+            elif hinge_style.lower() == 'top':
+                panel = (
+                    base_panel.copy()
+                    .translate([offx, offy, offz])
+                    .rotate_y(90, point=(cx, cy, cz))
+                )
+                panel.rotate_y(90 - tilt_deg,
+                               point=(panel.center[0],
+                                      panel.center[1],
+                                      panel.center[2] + panel_height / 2),
+                               inplace=True)
+                panel.rotate_z(-azimuth_deg,
+                               point=(0.0, 0.0, 0.0),
+                               inplace=True)
 
             oid = 0
             name = f"PV_{oid}"

@@ -60,7 +60,7 @@ def test_num_sky_patches_matches_reference(mf):
 
     sky = ReinhartSky(MF=mf)
     _, reinhart_num_total = sky.get_reinhart()
-    assert reinhart_num_total == Ivanova_num_total
+    assert len(sky.reinhart_patches) == Ivanova_num_total
 
 @pytest.mark.parametrize(
     'mf',

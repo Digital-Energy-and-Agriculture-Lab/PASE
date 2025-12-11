@@ -10,6 +10,7 @@ import yaml
 
 from pase.user_support_tools import PASE_Logger
 
+VALID_TYPES = ['float', 'integer', 'string', 'boolean', 'list']
 
 class YAML_Inputs_provider:
     
@@ -32,7 +33,14 @@ class YAML_Inputs_provider:
             
         self.inputs = {}
    
-        for key, data in inputs.items():   
+        for key, data in inputs.items():
+
+            if data['Type'] not in VALID_TYPES:
+                msg = (f'Type not correctly defined for parameter {key} in file '
+                       f'{inputs_file.name}. \nType was: {data["Type"]}'
+                       f'\nType should be one of the '
+                       f'following: {VALID_TYPES}.')
+                raise ValueError(msg)
 
             if data['Value'] is not list:
                 if data['Type'] == 'float':

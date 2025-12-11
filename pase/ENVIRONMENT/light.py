@@ -73,7 +73,8 @@ class Sun_positions:
         
         self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_com_year,
                                                                   n)
-
+        
+        
     def get_sun_vector(self, beta, gamma):
         #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
         #beta : sun elevation (from -90 to 90°), negative angle means it's night
@@ -344,7 +345,12 @@ class Sun_positions_sampled:
             SP = solar_position
         #Positions when the sun elevation is below the horizon are discarded to save computation ressources    
         self.SP = SP.loc[SP['elevation']>=0]
-
+        
+                
+   
+            
+               
+         
     def get_sun_vector(self, beta, gamma):
         #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
         #beta : sun elevation (from -90 to 90°), negative angle means it's night
@@ -429,6 +435,8 @@ class Sun_positions_sampled:
         fig.savefig(os.path.join('OUTPUTS', 'GRAPHS', 'PVSystDiagram_'+self.loc_name+'.svg'))
 
 
+
+
 class Ray_casting_scene:
     '''
     Class Light_shade_scene
@@ -455,7 +463,7 @@ class Ray_casting_scene:
         self.get_diffuse_weights_map()
 
     def get_light_maps(self, sun_P, visualization=False, Sun_P_map_to_visualize=None):
-    
+
         if type(self.geometry) == list:
             sv = np.zeros((1,3))
             self.dir_mask = np.zeros((len(self.sourcepoints), len(sun_P[:, 0])))
@@ -555,9 +563,6 @@ class Ray_casting_scene:
         :param geometry: geometry set at the initialization of the instance
         :return: diffuse_mask: diffuse map binary mask for each source point and discrete_sky element. Shape: (n_sky_patches, n_source_points)
 
-        Returns:
-           Diffu (np.array 1 x n):  Providing a vector with the fraction ([0-1]) of diffuse light 
-                                   for each of the "n" source points defined in the mesh
         """
         geometry =  geometry.polydata_by_property(property_dict={'Type':['PV']})
         # Handle empty geometry: return full diffuse light
@@ -585,10 +590,22 @@ class Ray_casting_scene:
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
-                                                         TargetPoints,
-                                                         first_point=False,
-                                                         retry=False)
+        try:
+            intercept_points, id_rays_stopped, _ = (geometry
+                                                    .polydata_all_centrals()
+                                                    .multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False))
+
+        except AttributeError as e:
+            intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False)
+
         
         id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
 
@@ -690,11 +707,18 @@ class Ray_casting_scene:
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        intercept_points, id_rays_stopped, _ = geometry.polydata_all_centrals().multi_ray_trace(SourcePoints,
+        try:
+            intercept_points, id_rays_stopped, _ = geometry.polydata_all_centrals().multi_ray_trace(SourcePoints,
                                                          TargetPoints,
                                                          first_point=False,
                                                          retry=False)
-        
+        except AttributeError as e:
+            intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False)
+
         #Creation of the initial direct map based on the shape of sun_Positions
         direct_1D_map = np.ones(len(TargetPoints[:,0]), dtype=np.uint16)
         
@@ -704,7 +728,7 @@ class Ray_casting_scene:
             id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
             #Computation of the shade by setting at 0 the locations where rays were intercepted
             direct_1D_map[id_rays_stopped_filtred] = 0
-        
+
         if type(self.geometry) != list:
         #Reshape of direct map to get a ID,t map
             direct_ID_t_map =  direct_1D_map.reshape(self.n_sourcepoints,
@@ -837,7 +861,6 @@ class Ray_casting_scene:
         """
         diffuse_weights_map = self.discrete_sky['cos(z)'].values * self.discrete_sky['Normalized surf area'].values
         self.normalized_diffuse_weights_map = diffuse_weights_map/diffuse_weights_map.sum()
-        # cos * surface
 
     def get_diffuse_shaded_weights_map(self):
         mask = self.diffuse_mask
@@ -906,9 +929,7 @@ class Ray_casting_scene:
         T = dhi.shape[0]
 
         outs = [self.get_shaded_radiance_contrib(az[i], el[i], sky_type[i]) for i in range(T)]
-        # Determine if outputs are 2D or 3D per-time and stack appropriately
-        #if len(outs) == 0:
-        #    return np.zeros((self.n_sourcepoints,))
+
         if outs[0].ndim == 2:  # No tracking
             stacked = np.stack(outs, axis=0)   # (T, M, P) if each out is (M,P)
             weighted = stacked * dhi[:, None, None]
@@ -1000,7 +1021,7 @@ class Ray_casting_scene:
         open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
                                       np.array(map_to_display, dtype=np.float32),
                                       geo,
-                                      "Unweighted shaded diffuse fuzzy mask [-]")
+                                      "Unweighted shaded diffuse map [-]")
 
     def visualize_diffuser_light_map(self, Sun_P_map_to_visualize, sun_P):
         """

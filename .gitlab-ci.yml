@@ -11,6 +11,9 @@ variables:
   MAMBA_CACHE_DIR: "$CI_PROJECT_DIR/.mamba_cache"
   # avoid interactive backends in CI
   MPLBACKEND: Agg
+  MAMBA_CACHE_DIR: "$CI_PROJECT_DIR/.mamba_cache"
+  # avoid interactive backends in CI
+  MPLBACKEND: Agg
 
 cache:
   key:

@@ -29,7 +29,7 @@ def _create_three_centrals_prefixed():
         NumberOfPanelsX=2, NumberOfPanelsY=2,
         RepetitionDistanceOfPVBlocksX=3.6, RepetitionDistanceOfPVBlocksY=2.4,
         NumberOfPVBlocksX=1, NumberOfPVBlocksY=1,
-        CentralAzimut=0.0, TiltY=10.0,
+        CentralAzimut=0.0, TiltY=10.0, Hinge='center',
     )
     variants = [
         ("PV_A", dict(CentralAzimut=0.0,   TiltY=10.0, PanelDimensionX=1.6, PanelDimensionY=1.0, Height=1.0)),
@@ -161,7 +161,7 @@ def test_whole_scene_equivalence_various_paths():
         NumberOfPanelsX=2, NumberOfPanelsY=1,
         RepetitionDistanceOfPVBlocksX=3.4, RepetitionDistanceOfPVBlocksY=2.2,
         NumberOfPVBlocksX=1, NumberOfPVBlocksY=1,
-        Height=1.0, CentralAzimut=30.0, TiltY=15.0,
+        Height=1.0, CentralAzimut=30.0, TiltY=15.0, Hinge='center',
     )
     cfg_legacy = PV_Configuration_3D(params, visualization=False)
     poly_alias = _merge_multiblock_to_poly(cfg_legacy.PV_central_MB)

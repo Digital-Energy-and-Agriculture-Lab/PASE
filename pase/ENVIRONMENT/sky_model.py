@@ -174,7 +174,7 @@ class ReinhartSky:
         :return: num_rows (type: int)
         """
 
-        return int(2**self.F * 7)
+        return round(2**self.F * 7)
 
     def get_original_tregenza(self) -> pd.DataFrame:
         """
@@ -220,7 +220,7 @@ class ReinhartSky:
         """
         Build a reinhart_sky dataframe that holds the discretization blueprint.
 
-        :param _verbose: Print debug messages to console output.
+        :param _verbose: Print debug messages to console OUTPUT.
         :type _verbose: bool
         :return:
             - reinhart_sky: dataframe (cols: 'row', 'altitude_deg',

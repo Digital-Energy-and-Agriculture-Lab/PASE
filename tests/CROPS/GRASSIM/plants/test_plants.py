@@ -1,26 +1,43 @@
 import pytest
-import pandas as pd
+import numpy as np
 from pase.CROPS.GRASSIM.plants.plants import Plants
-import os
-if os.environ.get("CI")=="true":
-    fname="tests/CROPS/GRASSIM/plants/Parameters_values_PFT.csv"
-    pft_values = pd.read_csv(fname, header=0, sep=";", decimal='.')
-else:
-    try:
-        fname="Parameters_values_PFT.csv"
-        pft_values = pd.read_csv(fname, header=0, sep=";", decimal='.')
-    except FileNotFoundError:
-        fname="tests/CROPS/GRASSIM/plants/Parameters_values_PFT.csv"
-        pft_values = pd.read_csv(fname, header=0, sep=";", decimal='.')
-
 
 def test_interval_fT ():
-    grid=(2,2)
-    pft_comp={'A': 1,'B': 0,'C': 0,'D': 0}
-    inits={'BMDR': 0.0, 'BMDV': 250.0, 'BMGR': 0.0, 'BMGV': 1000.0, 'BM_init_type': 'InitialBM', 'InitialHeight': 0.05, 'Tmax': 18, 'Tmin': 0, 'ageDR': 0, 'ageDV': 0, 'ageGR': 0, 'ageGV': 0, 'apex_grazed': 0}
-    kc_values={'April': 0.4, 'August': 0.47, 'December': 0.15, 'February': 0.15, 'January': 0.11, 'July': 0.6, 'June': 0.6, 'March': 0.24, 'May': 0.49, 'November': 0.23, 'October': 0.36, 'September': 0.37}
-    variables_to_save=[]
-    crop = Plants(grid=grid, pft_composition=pft_comp, inits=inits, kc_values=kc_values, pft_values=pft_values, variables_to_save=variables_to_save)
-    crop.Temp=15
+    crop = object.__new__(Plants)
+    crop.Temp = 15
+    crop.T0=0
+    crop.T1=4
+    crop.T2=20
+    crop.Tlimit=25
     crop.compute_fT()
     assert 0 <= float(crop.fT) <= 1
+
+def test_update_age():
+    plant = object.__new__(Plants)
+    plant.Temp = np.array([5.0, 15.0, 25.0])
+    plant.Tmin = 10.0
+    plant.BMGV = np.array([10.0, 20.0, 30.0])
+    plant.SENGV = np.array([1.0, 2.0, 3.0])
+    plant.GROGV = np.array([2.0, 3.0, 4.0])
+    plant.BMGR = np.array([10.0, 20.0, 30.0])
+    plant.SENGR = np.array([1.0, 2.0, 3.0])
+    plant.GROGR = np.array([2.0, 3.0, 4.0])
+    plant.BMDV = np.array([10.0, 20.0, 30.0])
+    plant.ABSDV = np.array([1.0, 2.0, 3.0])
+    plant.BMDR = np.array([10.0, 20.0, 30.0])
+    plant.ABSDR = np.array([1.0, 2.0, 3.0])
+    plant.ageGV = np.zeros(3)
+    plant.ageGR = np.zeros(3)
+    plant.ageDV = np.zeros(3)
+    plant.ageDR = np.zeros(3)
+    plant.sigmaGV=0.4
+    plant.sigmaGR=0.2
+    plant.update_age()
+    assert np.all(plant.ageGV >= 0)
+    assert np.all(plant.ageGR >= 0)
+    assert np.all(plant.ageDV >= 0)
+    assert np.all(plant.ageDR >= 0)
+    assert plant.ageGV.shape == plant.Temp.shape
+    assert plant.ageGR.shape == plant.Temp.shape
+    assert plant.ageDV.shape == plant.Temp.shape
+    assert plant.ageDR.shape == plant.Temp.shape
