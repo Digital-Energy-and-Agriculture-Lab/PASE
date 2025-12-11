@@ -171,7 +171,7 @@ class LenticularDiffuser(Diffuser):
     Omega = Lens aperture angle in degrees
     """
 
-    def __init__(self, azimuth_diff, elevation_diff, omega=30, res=None, **kwargs):
+    def __init__(self, azimuth_diff, elevation_diff, omega=30, res=0.1, **kwargs):
         super().__init__(azimuth_diff, elevation_diff)
         self.omega = np.deg2rad(omega)  # aperture angle
         l = np.array([[[0,1,0],[0,0,1]]]).T
