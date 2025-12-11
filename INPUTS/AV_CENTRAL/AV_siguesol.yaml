@@ -40,6 +40,12 @@ Height:
    Limit: [0.1, 20]
    Unit: meters [m]
    Definition: Height from the ground to the main axis of the block of panels
+Hinge:
+   Value: Center
+   Type: string
+   Choices: [Center, Top]
+   Definition: Do the panels rotate about the axis going through their center or
+      the top of the panels (e.g. free-hanging panels) ?
 NumberOfPVBlocksX:
    Value: 1
    Type: integer

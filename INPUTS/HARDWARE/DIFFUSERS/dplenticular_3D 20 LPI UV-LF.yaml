@@ -1,6 +1,6 @@
 name:
    Value: "3D 20 LPI UV-LF"
-   Type: str
+   Type: string
    Definition: product name
 viewing_angle:
    Value: 37.0

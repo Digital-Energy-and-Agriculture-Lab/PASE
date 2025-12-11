@@ -15,7 +15,7 @@ from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
 from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
 from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from pase.DATA_MANAGEMENT.output.save_csv import save_csv
+from pase.DATA_MANAGEMENT.OUTPUT.save_csv import save_mean_to_csv
 from pase.PHOTOVOLTAICS.configuration import PVConfiguration3D
 from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from pase.ENVIRONMENT.light import Ray_casting_scene
