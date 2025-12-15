@@ -35,7 +35,7 @@ TiltY:
    Unit: degree [°]
    Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation
 Hinge:
-   Value: Top
+   Value: center
    Type: string
    Choices: [Center, Top]
    Definition: Do the panels rotate about the axis going through their center or

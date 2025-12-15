@@ -7,12 +7,21 @@ from pase.pase_math import compute_block_centers, compute_panel_grid_positions
 
 def build_structure(config_dict):
     """Factory that selects the appropriate PV structure from the configuration."""
-    if config_dict['StructureType'].lower() == 'agrivoltaic fence':
+    struct_type = (config_dict.get('StructureType')
+                   or config_dict.get('Structype'))
+    if struct_type is None:
+        raise KeyError('StructureType')
+
+    struct_type = struct_type.lower()
+
+    if struct_type == 'agrivoltaic fence':
         return AgrivoltaicFence(config_dict).build_structure()
-    if config_dict['Structype'].lower() == 'PV table':
+    if struct_type == 'pv table':
         return PVTable(config_dict).build_structure()
-    if config_dict['Structype'].lower() == 'HSATS':
-        return HSATS(config_dict).build_structure() 
+    if struct_type == 'hsats':
+        return HSATS(config_dict).build_structure()
+
+    raise ValueError(f"Unsupported StructureType '{struct_type}'")
 
 
 class PVStructurePart(ABC):
@@ -584,7 +593,8 @@ class HSATS(PVStructure):
         )
 
         blocks = self.make_elementary_group()
-                
+        blocks.user_dict = {'Material': self.material}
+
         return blocks
 
 

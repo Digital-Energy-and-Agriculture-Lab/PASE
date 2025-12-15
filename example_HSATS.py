@@ -33,12 +33,12 @@ PASE_Logger()
 Loc_1 = YAML_Inputs_provider(file='Example1_loc.yaml',
                              subpath='SCENARIOS').inputs
 # Import PV system and PV modules parameters
-AV_1 = YAML_Inputs_provider(file='Example5_PVTable.yaml',
+AV_1 = YAML_Inputs_provider(file='Example4_HSATS.yaml',
                             subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='Example1_PV_Module_landscape.yaml',
                                    subpath=os.path.join('HARDWARE',
                                                         'PV_MODULES')).inputs
-Structure = YAML_Inputs_provider(file='PV_table.yaml',
+Structure = YAML_Inputs_provider(file='HSATS.yaml',
                                  subpath=os.path.join('HARDWARE',
                                                       'STRUCTURES')).inputs
 crop_config = YAML_Inputs_provider(file='simple_example.yml',

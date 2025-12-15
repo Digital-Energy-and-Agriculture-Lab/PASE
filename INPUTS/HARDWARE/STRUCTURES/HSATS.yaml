@@ -1,10 +1,10 @@
 StructureType:
-  Value: PV Table
+  Value: HSATS
   Type: string
-  Choices: [Agrivoltaic Fence, PV Table]
+  Choices: [Agrivoltaic Fence, PV Table, HSATS]
   Definition: which type of structure for the PV modules
 Material:
-  Value: Wood
+  Value: Metal
   Type: string
   Choices: [Metal, Wood]
   Definition: used to apply texture to the structure ;
