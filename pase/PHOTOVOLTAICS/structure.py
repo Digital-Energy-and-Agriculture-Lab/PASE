@@ -228,13 +228,13 @@ class PVStructure(ABC):
         self.tilt = float(PV_i["TiltY"])
         self.height_offset = -0.5
 
-    def make_structure_part_group(self, structure_type, nb_part, span):
+    def make_structure_part_group(self, part_group, nb_part, span):
         """Create and position a group of purlins or rafters across a span."""
 
         if nb_part <= 0:
             return pyv.PolyData()
 
-        if structure_type == "purlin":
+        if part_group == "purlin":
             if nb_part == 1:
                 offsets_x = [0.0]
             else:
@@ -246,9 +246,11 @@ class PVStructure(ABC):
             for offx in offsets_x:
                 p = Purlin(self.purlin_shape,
                             length=self.purlin_length,
-                            panel_tilt_Y=0,
                             side=self.purlin_side,
                             radius=self.purlin_radius,
+                            width=self.purlin_width,
+                            height=self.purlin_width,
+                            panel_tilt_Y=0,
                             positioning=self.pole_ground_positioning
                             )
                 p.polydata.translate((offx, 
@@ -267,7 +269,7 @@ class PVStructure(ABC):
                                      self.base_height),
                               inplace=True)
             
-        elif structure_type == "rafter":
+        elif part_group == "rafter":
             if nb_part == 1:
                 offsets_y = [0.0]
             else:
@@ -279,9 +281,11 @@ class PVStructure(ABC):
             for offy in offsets_y:
                 p = Rafter(self.rafter_shape,
                             length=self.rafter_length,
-                            panel_tilt_Y=0,
                             side=self.rafter_side,
                             radius=self.rafter_radius,
+                            width=self.rafter_width,
+                            height=self.rafter_height,
+                            panel_tilt_Y=0,
                             positioning=self.pole_ground_positioning
                             )
                 p.polydata.translate((0, 
