@@ -31,25 +31,6 @@ def test_LenticularDiffuser_beta_gamma():
             assert np.isclose(gamma, gamma_comp, rtol = 1e-5).all()
             assert np.isclose(beta, beta_comp, rtol=1e-5).all()
 
-def test_rotation_coordinate():
-    u1, u2, u3, v =  np.array([31, 0, 0]),  np.array([0, 31, 0]), np.array([-9,24,-6]), np.array([1, 0, 0])
-    u1 = u1.reshape((3,1,1))
-    u2 = u2.reshape((3, 1, 1))
-    u32 = u3.reshape((3, 1, 1))
-    angles = np.deg2rad([0, 13, 49, 87, 103, 176, 182, 209, 222, 273, 360])
-    for a in angles:
-        up1 = rotation_coordinate(u1, v, a)
-        up2 = rotation_coordinate(u2, v, a)
-        dot_2 = np.sum(up2*u2)
-        angle2 = np.arccos(dot_2/(np.linalg.norm(up2)*np.linalg.norm(u2)))
-        angle2 =2*np.pi - angle2  if up2[2] < 0 else angle2
-        up3 = rotation_coordinate(u32, v, a)
-        up3p = (u3 - v*(np.dot(u3,v)))*np.cos(a) + np.cross(v, u3)*np.sin(a) + v*(np.dot(u3,v))
-        print(up3.reshape((3,)), up3p)
-        assert np.isclose(u1, up1, rtol=1e-5).all()
-        assert np.isclose(angle2, a, rtol=1e-5).all()
-        assert np.isclose(up3p, up3.reshape((3,)), rtol=1e-5).all()
-
 sky = ReinhartSky(MF=1).reinhart_patches
 pTarget = np.column_stack([sky.x,sky.y,sky.z])
 

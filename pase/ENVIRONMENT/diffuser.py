@@ -2,64 +2,9 @@
 diffusers class
 """
 import numpy as np
-from scipy.spatial.transform import Rotation as R
-from scipy.special import erf, i0
+from scipy.special import i0
 import matplotlib.pyplot as plt
-from pyvista import Cube
-
-def cartesian_to_spherical(x, y, z):
-    """
-    Converts Cartesian coordinates to spherical coordinates.
-
-    x, y, z : float : Cartesian coordinates
-
-    Returns:
-    azimuth : float : azimuth angle in degrees
-    zenith : float : zenith angle in degrees
-    """
-    h = np.sqrt(x ** 2 + y ** 2)
-    azimuth = np.degrees(np.arctan2(y, x))
-    zenith = np.degrees(np.arctan2(h, z))
-    return azimuth, zenith
-
-
-def spherical_to_cartesian(azimuth, zenith):
-    """
-    Converts spherical coordinates to Cartesian coordinates.
-
-    azimuth : float : azimuth angle in degrees
-    zenith : float : zenith angle in degrees
-
-    Returns:
-    x, y, z : float : Cartesian coordinates
-    """
-    azimuth = np.radians(azimuth)
-    zenith = np.radians(zenith)
-    x = np.sin(zenith) * np.cos(azimuth)
-    y = np.sin(zenith) * np.sin(azimuth)
-    z = np.cos(zenith)
-    return x, y, z
-
-
-def rotation_coordinate(vector_to_rotate, unit_vector, angle):
-    """
-    Function to rotate the directions of transmitted light
-    from the diffuser frame of reference to the global frame of reference.
-
-    Input :
-        Vector_to_rotate : matrix of 3xNxP
-        unit_vector : vector of rotation (rotation axis)
-        angle : angle of rotation in radians
-    Output :
-        rotated vector with the same shape as the entry
-    """
-    x, y, z = unit_vector
-    rot_mat = R.from_quat([np.sin(angle / 2) * x, np.sin(angle / 2) * y, np.sin(angle / 2) * z, np.cos(angle / 2)])
-    vect_to_reshape_T = vector_to_rotate.T
-    vtr = vect_to_reshape_T.reshape(vect_to_reshape_T.shape[0] * vect_to_reshape_T.shape[1], 3)
-    vect_rot = rot_mat.apply(vtr)
-    vect_rot = vect_rot.reshape(vect_to_reshape_T.shape)
-    return vect_rot.T
+from pase.conversion_functions import rotation_coordinate
 
 
 class Diffuser:

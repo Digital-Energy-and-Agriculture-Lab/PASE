@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 def cart_to_sph(x, y, z):
     """
@@ -12,7 +13,7 @@ def cart_to_sph(x, y, z):
     r = np.sqrt(x**2 + y**2 + z**2)
 
     if z > 0:
-        zenith = np.arctan((x**2+y**2)/z)
+        zenith = np.arctan(np.sqrt(x**2+y**2)/z)
     elif z < 0:
         raise NotImplementedError('Not done yet')
     elif (z == 0) and (np.sqrt(x**2+y**2) != 0):
@@ -31,9 +32,24 @@ def cart_to_sph(x, y, z):
     elif (x==0) and (y < 0):
         az = -np.pi/2
     elif (x==0) and (y==0):
-        az = np.nan
+        az = 0  # should be nan but to be able to inverse this operation 0 is better
 
     return az, zenith
+
+def cartesian_to_spherical(x, y, z):
+    """
+    Converts Cartesian coordinates to spherical coordinates.
+
+    x, y, z : float : Cartesian coordinates
+
+    Returns:
+    azimuth : float : azimuth angle in degrees
+    zenith : float : zenith angle in degrees
+    """
+    h = np.sqrt(x ** 2 + y ** 2)
+    azimuth = np.arctan2(y, x)
+    zenith = np.arctan2(h, z)
+    return azimuth, zenith
 
 def get_zenith_angle_from_cart(cart_coords):
     """
@@ -101,3 +117,23 @@ def sph_to_cart(units, azimut, elev=None, zenith_angle=None, dist=1):
     z = dist * np.cos(zenith_angle)
 
     return x, y, z
+
+def rotation_coordinate(vector_to_rotate, unit_vector, angle):
+    """
+    Function to rotate the directions of transmitted light
+    from the diffuser frame of reference to the global frame of reference.
+
+    Input :
+        Vector_to_rotate : matrix of 3xNxP
+        unit_vector : vector of rotation (rotation axis)
+        angle : angle of rotation in radians
+    Output :
+        rotated vector with the same shape as the entry
+    """
+    x, y, z = unit_vector
+    rot_mat = R.from_quat([np.sin(angle / 2) * x, np.sin(angle / 2) * y, np.sin(angle / 2) * z, np.cos(angle / 2)])
+    vect_to_reshape_T = vector_to_rotate.T
+    vtr = vect_to_reshape_T.reshape(vect_to_reshape_T.shape[0] * vect_to_reshape_T.shape[1], 3)
+    vect_rot = rot_mat.apply(vtr)
+    vect_rot = vect_rot.reshape(vect_to_reshape_T.shape)
+    return vect_rot.T
