@@ -9,8 +9,8 @@ def build_structure(config_dict):
     """Factory that selects the appropriate PV structure from the configuration."""
     struct_type = (config_dict.get('StructureType')
                    or config_dict.get('Structype'))
-    if struct_type is None:
-        raise KeyError('StructureType')
+    if not struct_type:
+        return None
 
     struct_type = struct_type.lower()
 

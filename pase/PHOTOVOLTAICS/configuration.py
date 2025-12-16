@@ -1133,15 +1133,11 @@ class PVConfiguration3D(MultiBlockPASE):
     def add_structure(self, config, block_centers):
 
         # Instantiate the base block (based on structure type)
-        try:
-            base_struct = build_structure(config)
-        except KeyError as e:
-            logging.getLogger(__name__).error('No StructureType defined;'
-                                                ' skipping structure part: %s',
-                                                e)
-            msg = (f'There is an error in the configuration of the structure : '
-                   f'{e}')
-            raise KeyError(msg)
+        base_struct = build_structure(config)
+        if base_struct is None:
+            logger.info('No StructureType defined; skipping structure geometry for central %s',
+                        self.central_id)
+            return
 
         # How many blocks ?
         num_blocks = len(block_centers)
