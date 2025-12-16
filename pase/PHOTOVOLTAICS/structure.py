@@ -487,6 +487,9 @@ class PVTable (PVStructure):
         rafter = Rafter(self.rafter_shape,
                         length=self.rafter_length,
                         radius=self.rafter_radius,
+                        side=self.rafter_side,
+                        width=self.rafter_width,
+                        height=self.rafter_height,
                         panel_tilt_Y=self.tilt,
                         positioning=self.pole_ground_positioning)
         rafter.polydata.translate((0,
