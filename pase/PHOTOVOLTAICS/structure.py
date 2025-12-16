@@ -558,7 +558,7 @@ class HSATS(PVStructure):
                     radius=self.pole_radius,
                     positioning=self.pole_ground_positioning)
         pole.polydata.translate((0, 
-                                 -self.purlin_length/2, 
+                                 0, 
                                  0), 
                                  inplace=True)
 
@@ -566,7 +566,7 @@ class HSATS(PVStructure):
                                                       self.numbers_of_purlin,
                                                       self.rafter_length)
         purlin_group.translate((0,
-                                -self.purlin_length/2,
+                                0,
                                 0),
                           inplace=True)
         
@@ -574,7 +574,7 @@ class HSATS(PVStructure):
                                                       self.numbers_of_rafter,
                                                       self.purlin_length)
         rafter_group.translate((0,
-                                -self.purlin_length/2,
+                                0,
                                 0),
                           inplace=True)
 
@@ -592,10 +592,18 @@ class HSATS(PVStructure):
             self.base_height,
         )
 
-        blocks = self.make_elementary_group()
-        blocks.user_dict = {'Material': self.material}
+        blocks = pyv.MultiBlock()
 
-        return blocks
+        for idx in range(self.n_groups_in_block):
+            group = self.make_elementary_group()
+            _, offy, _ = map(float, positions[idx])
+            group.translate((0.0, offy, 0.0), inplace=True)
+            blocks.append(group)
+
+        combined = blocks.combine()
+        combined.user_dict = {'Material': self.material}
+
+        return combined
 
 
 if __name__ == "__main__":
