@@ -93,7 +93,7 @@ StructureSpacingY:
   Type: float
   Limit: [0.0, 50.0]
   Unit: meters [m]
-  Definition: Spacing along Y (interpreted by spacing_mode)
+  Definition: Spacing along Y
 StructureHeight:
   Value: 3.3
   Type: float
