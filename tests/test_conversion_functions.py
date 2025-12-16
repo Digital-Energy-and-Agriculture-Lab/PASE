@@ -2,7 +2,6 @@ import numpy as np
 from fontTools.ttLib import xmlToTag
 
 from pase.conversion_functions import (cart_to_sph,
-                                       get_zenith_angle_from_cart,
                                        sph_to_cart,
                                        rotation_coordinate)
 x = np.array([1,1,1,1, 1, 1,0,0,0, 0, 0,-1,-1,-1,-1,-1,-1])
@@ -24,7 +23,7 @@ def test_cart_to_sph():
 cart_coord = np.array([x,y,z]).T
 
 def test_cart_to_sph_vector():
-    az, zenith = get_zenith_angle_from_cart(cart_coord)
+    az, zenith = cart_to_sph(x,y,z)
     assert np.allclose(az, true_az)
     assert np.allclose(zenith, true_zen)
 
@@ -60,3 +59,4 @@ def test_rotation_coordinate():
         assert np.isclose(u1, up1, rtol=1e-5).all()
         assert np.isclose(angle2, a, rtol=1e-5).all()
         assert np.isclose(up3p, up3.reshape((3,)), rtol=1e-5).all()
+
