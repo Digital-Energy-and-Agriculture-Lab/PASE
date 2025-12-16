@@ -148,7 +148,7 @@ class rotary_support(PVStructurePart):
         self.orientation = 'horizontal_y'
         self.polydata.rotate_z(90, inplace=True)
 
-class Diagonale(PVStructurePart):
+class Diagonal(PVStructurePart):
     """Diagonal bracing connecting two posts to stiffen the bay."""
 
     def __init__(self, shape_type, length, **kwargs):
@@ -198,11 +198,11 @@ class PVStructure(ABC):
         self.rafter_radius = PV_i['RafterRadius']
         self.numbers_of_rafter = PV_i['NumberOfRafters']
         
-        self.diagonale_shape = PV_i['DiagonaleShape']
-        self.diagonale_width = PV_i['DiagonaleWidth']
-        self.diagonal_height = PV_i['DiagonaleHeight']
-        self.diagonale_side = PV_i['DiagonaleSide']
-        self.diagonale_radius = PV_i['DiagonaleRadius']
+        self.diagonal_shape = PV_i['DiagonalShape']
+        self.diagonal_width = PV_i['DiagonalWidth']
+        self.diagonal_height = PV_i['DiagonalHeight']
+        self.diagonal_side = PV_i['DiagonalSide']
+        self.diagonal_radius = PV_i['DiagonalRadius']
         
         self.material = PV_i['Material']
 
@@ -324,24 +324,26 @@ class PVStructure(ABC):
         horizontal_span = abs(high_x - low_x)
         diagonal_length = math.hypot(horizontal_span, vertical_span)
 
-        diagonale = Diagonale(self.diagonale_shape,
+        diagonal = Diagonal(self.diagonal_shape,
                               length=diagonal_length,
-                              radius=self.diagonale_radius,
-                              side=self.diagonale_side,
+                              width=self.diagonal_width,
+                              height=self.diagonal_height,
+                              radius=self.diagonal_radius,
+                              side=self.diagonal_side,
                               positioning=self.pole_ground_positioning)
 
         angle = math.degrees(math.atan2(horizontal_span, vertical_span))
         if high_x < low_x:
             angle = -angle
 
-        diagonale.polydata.rotate_y(angle, inplace=True)
+        diagonal.polydata.rotate_y(angle, inplace=True)
 
         center = ((high_x + low_x) / 2.0,
                   -self.purlin_length / 2.0,
                   (high_z + low_z) / 2.0)
-        diagonale.polydata.translate(center, inplace=True)
+        diagonal.polydata.translate(center, inplace=True)
 
-        return diagonale.polydata
+        return diagonal.polydata
 
 class AgrivoltaicFence(PVStructure):
     """Agrivoltaic fence structure composed of posts and horizontal bars."""
@@ -497,12 +499,12 @@ class PVTable (PVStructure):
                                    self.base_height),
                                    inplace= True)
         
-        diagonale = self.make_diagonal()
+        diagonal = self.make_diagonal()
 
         combine = (pole.polydata
                    + pole_2.polydata
                    + rafter.polydata
-                   + diagonale)
+                   + diagonal)
 
         return combine
 
