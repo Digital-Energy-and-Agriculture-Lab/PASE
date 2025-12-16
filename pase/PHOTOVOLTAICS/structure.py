@@ -432,7 +432,7 @@ class AgrivoltaicFence(PVStructure):
 
         return combined_blocks
 
-class PVTable (PVStructure):
+class PVTable(PVStructure):
     """Fixed tilted table with posts, rafters, and diagonal bracing."""
 
     def __init__(self, PV_i, **kwargs):
@@ -450,12 +450,12 @@ class PVTable (PVStructure):
 
     def make_elementary_group(self) -> pyv.PolyData:
         """Build one table bay with poles, rafters, diagonals, and purlins."""
-        PRS = self.make_start_and_end_block()
-        PG = self.make_structure_part_group("purlin",
+        pole_and_rafter_group = self.make_start_and_end_block()
+        purlin_group = self.make_structure_part_group("purlin",
                                             self.numbers_of_purlin,
                                             self.rafter_length)
 
-        combined = PRS + PG
+        combined = pole_and_rafter_group + purlin_group
 
         return combined
 
