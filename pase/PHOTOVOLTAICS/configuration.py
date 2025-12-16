@@ -739,6 +739,11 @@ class PVConfiguration3D(MultiBlockPASE):
                 struct_color = 'grey'
             elif geom_struct.user_dict['Material'].lower() == 'wood':
                 struct_color = 'brown'
+            else:
+                msg = (f'Unrecognized Material value in structure configuration '
+                       f'input file : {geom_struct.user_dict["Material"]}')
+                raise ValueError(msg)
+
             pl.add_mesh(geom_struct, color=struct_color)
 
         ground = np.array([[-100, 100, 0],
@@ -1131,10 +1136,12 @@ class PVConfiguration3D(MultiBlockPASE):
         try:
             base_struct = build_structure(config)
         except KeyError as e:
-            logging.getLogger(__name__).warning('No StructureType defined;'
+            logging.getLogger(__name__).error('No StructureType defined;'
                                                 ' skipping structure part: %s',
                                                 e)
-            return
+            msg = (f'There is an error in the configuration of the structure : '
+                   f'{e}')
+            raise KeyError(msg)
 
         # How many blocks ?
         num_blocks = len(block_centers)
