@@ -16,6 +16,11 @@ PanelsPerGroup:
   Limit: [1, 100]
   Unit: dimensionless [-]
   Definition: Number of panels per pole in the structure
+PoleSpacingX:
+  Value: 1.0
+  Type: float
+  Limit: [0.2,4.0]
+  Definition: Spacing between two poles on the x axis 
 PoleShape:
   Value: Cylinder
   Type: string
@@ -88,6 +93,83 @@ PurlinRadius:
   Limit: [0.01, 50.0]
   Unit: meters [m]
   Definition: Purlin radius (used in case of cylindrical purlin)
+NumberOfPurlins:
+  Value: 5
+  Type: integer
+  Limit: [1, 10]
+  Definition: Number of Purlin for one group
+
+RafterShape:
+  Value: Cylinder
+  Type: string
+  Choices: [Square, Rectangle, Cylinder]
+  Definition: shape of the rafter profile
+RafterWidth:
+  Value: 0.2
+  Type: float
+  Limit: [0.01, 10.0]
+  Unit: meters [m]
+  Definition: rafter size along x (used in case of square or rectangular rafter)
+RafterHeight:
+  Value: 0.2
+  Type: float
+  Limit: [0.05, 10.0]
+  Unit: meters [m]
+  Definition: rafter size along y (used in case of square or rectangular rafter)
+RafterSide:
+  Value: 0.1
+  Type: float
+  Limit: [0.01, 50.0]
+  Unit: meters [m]
+  Definition: Pole side length (used in case of square rafter)
+RafterLength:
+  Value: 1.8
+  Type: float
+  Limit: [0.01, 50.0]
+  Unit: meters [m]
+  Definition: Pole size along z
+RafterRadius:
+  Value: 0.05
+  Type: float
+  Limit: [0.01, 50.0]
+  Unit: meters [m]
+  Definition: rafter radius (used in case of cylindrical rafter)
+NumberOfRafters:
+  Value: 3
+  Type: integer
+  Limit: [1, 10]
+  Definition: Number of Rafter for one group
+
+DiagonalShape:
+  Value: Cylinder
+  Type: string
+  Choices: [Square, Rectangle, Cylinder]
+  Definition: shape of the diagonale profile
+DiagonalWidth:
+  Value: 0.2
+  Type: float
+  Limit: [0.01, 10.0]
+  Unit: meters [m]
+  Definition: diagonale size along x (used in case of square or rectangular diagonale)
+DiagonalHeight:
+  Value: 0.2
+  Type: float
+  Limit: [0.05, 10.0]
+  Unit: meters [m]
+  Definition: diagonale size along y (used in case of square or rectangular diagonale)
+DiagonalSide:
+  Value: 0.1
+  Type: float
+  Limit: [0.01, 50.0]
+  Unit: meters [m]
+  Definition: Pole side length (used in case of square diagonale)
+DiagonalRadius:
+  Value: 0.05
+  Type: float
+  Limit: [0.01, 50.0]
+  Unit: meters [m]
+  Definition: diagonale radius (used in case of cylindrical diagonale)
+
 StructureSpacingY:
   Value: 5.0
   Type: float

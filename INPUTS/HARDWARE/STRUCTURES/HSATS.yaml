@@ -140,30 +140,30 @@ NumberOfRafters:
   Limit: [1, 10]
   Definition: Number of Rafter for one group
 
-DiagonaleShape:
+DiagonalShape:
   Value: Cylinder
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the diagonale profile
-DiagonaleWidth:
+DiagonalWidth:
   Value: 0.2
   Type: float
   Limit: [0.01, 10.0]
   Unit: meters [m]
   Definition: diagonale size along x (used in case of square or rectangular diagonale)
-DiagonaleHeight:
+DiagonalHeight:
   Value: 0.2
   Type: float
   Limit: [0.05, 10.0]
   Unit: meters [m]
   Definition: diagonale size along y (used in case of square or rectangular diagonale)
-DiagonaleSide:
+DiagonalSide:
   Value: 0.1
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
   Definition: Pole side length (used in case of square diagonale)
-DiagonaleRadius:
+DiagonalRadius:
   Value: 0.05
   Type: float
   Limit: [0.01, 50.0]
