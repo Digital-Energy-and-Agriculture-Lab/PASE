@@ -878,11 +878,9 @@ class PVConfiguration3D(MultiBlockPASE):
         Parameters
         ----------
         height : float
-            Panel height (Y dimension).
-
+            Panel height (X dimension)
         width : float
-            Panel width (X dimension).
-
+            Panel width (Y dimension).
         z_position : float, default=0.0
             Z coordinate of the rectangle plane.
 
@@ -908,9 +906,9 @@ class PVConfiguration3D(MultiBlockPASE):
         Parameters
         ----------
         height : float
-            Panel height (Y dimension).
+            Panel height (X dimension).
         width : float
-            Panel width (X dimension).
+            Panel width (Y dimension).
         thickness : float
             Panel thickness (Z dimension).
 
