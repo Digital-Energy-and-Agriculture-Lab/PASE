@@ -14,7 +14,7 @@ def _create_example_centrale():
         RepetitionDistanceOfPanelsX=1.8, RepetitionDistanceOfPanelsY=2.1,
         RepetitionDistanceOfPVBlocksX=3.6, RepetitionDistanceOfPVBlocksY=2.4,
         NumberOfPVBlocksX=1, NumberOfPVBlocksY=1,RotationAxisNumber=0,
-        CentralAzimut=0.0, TiltY=10.0, Height=2.0,NumberOfPanelsX=2, NumberOfPanelsY=2
+        CentralAzimut=0.0, TiltY=10.0, Height=2.0,NumberOfPanelsX=2, NumberOfPanelsY=2, Hinge='Center'
     )
     variants ={"PV_A":dict(),
                "PV_B":dict(DiffuserDimensionZ=0.003,DiffuserDimensionX=1.6,
@@ -23,18 +23,20 @@ def _create_example_centrale():
                "PV_C":dict(DiffuserDimensionZ=0.003,DiffuserDimensionX=1.6,
                            DiffuserDimensionY=1, DiffusersBetweenPanels=True,
                            DiffusersAtRowEnds=False,DiffusersFillXAxis=True, TiltY=0.0)}
+    M = Mesh()
+    loc = dict(InterestZoneOrientationMode='custom',InterestZoneCustomAngle=0)
+    M.set_interest_zone_orientation(loc, base_dict|variants["PV_C"])
+    M.add_oriented_plane_ground_mesh(-1, 1, -1, 1, 0.1, 0.1, flag="crop")
     cfg[0].create_regular_central(base_dict|variants["PV_A"])
     cfg[1].create_regular_central(base_dict|variants["PV_B"])
     cfg[2].create_regular_central(base_dict|variants["PV_C"])
-    return cfg
+    return cfg, M
 sky = ReinhartSky(MF=1).reinhart_patches
-M = Mesh()
-M.add_plane_ground_regular_meshes(-1, 1, -1, 1, 0.1, 0.1, flag="crop")
 suns  = np.array([np.array([i, j, 1]).reshape((1,3))/np.sqrt(i**2+j**2+1) for i in range(-1, 2, 1) for j in range(-1, 2, 1)]).reshape((9, 3))
 Diffusers = LenticularDiffuser(0, 10, omega = 30)
 Diffusers2 = LenticularDiffuser(0, 0, omega = 30)
 def test_check_mask_Ray_casting_scene():
-    geometry = _create_example_centrale()
+    geometry,M = _create_example_centrale()
     L = Ray_casting_scene(M, geometry[0], sky)
     L.get_light_maps(suns,visualization=False,Sun_P_map_to_visualize=3)
     assert list(L.masks.keys()) == ['Diffuse', 'PV']
@@ -46,7 +48,7 @@ def test_check_mask_Ray_casting_scene():
     assert L.masks['Diffuse'].shape == (M.sourcepoints.shape[0], len(sky))
 
 def test_self_intercept():
-    geometry = _create_example_centrale()
+    geometry, M = _create_example_centrale()
     L = Ray_casting_scene(M, geometry[0], sky)
     sourcepoints = M.sourcepoints[:, :3]
     Delta = np.zeros(sourcepoints.shape)
@@ -60,7 +62,7 @@ def test_self_intercept():
     assert (R_filt == Rays[ind]).all()
 
 def test_compute_diffuser_map():
-    geometry = _create_example_centrale()
+    geometry, M = _create_example_centrale()
     L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)
     L.get_light_maps(suns,visualization=False)
     maps = L.diffuser_map
@@ -77,7 +79,7 @@ def test_compute_diffuser_map():
     return maps
 
 def test_compute_daily_diffuser_irradiation():
-    geometry = _create_example_centrale()
+    geometry, M = _create_example_centrale()
     L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)
     L.get_light_maps(suns,visualization=False)
     ghi = np.arange(1, 25, 1)
