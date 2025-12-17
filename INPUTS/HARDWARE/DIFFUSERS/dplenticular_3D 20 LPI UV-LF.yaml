@@ -15,13 +15,13 @@ DiffuserDimensionZ:
    Unit: meters [m]
    Definition: thickness as defined by manufacturer
 DiffuserDimensionX:
-   Value: 2.384
+   Value: 1.2
    Type: float
    Limit: [0, 100]
    Unit: meters [m]
    Definition: size as defined by manufacturer
 DiffuserDimensionY:
-   Value: 1.2
+   Value: 2.384
    Type: float
    Limit: [0, 100]
    Unit: meters [m]

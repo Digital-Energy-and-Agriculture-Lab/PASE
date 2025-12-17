@@ -723,6 +723,7 @@ class PVConfiguration3D(MultiBlockPASE):
         try:
             geom_panels = self.polydata_by_property({'Type': ['PV']}, extract_surface=True)
             geom_struct = self.polydata_by_property({'Type': ['Structure block']}, extract_surface=True)
+            geom_diffus = self.polydata_by_property({'Type': ['Diffuser']}, extract_surface=True)
         except Exception as _e:
             logging.getLogger(__name__).warning("Visualization skipped (geometry build failed): %s", _e)
             return
@@ -740,6 +741,9 @@ class PVConfiguration3D(MultiBlockPASE):
             elif geom_struct.user_dict['Material'].lower() == 'wood':
                 struct_color = 'brown'
             pl.add_mesh(geom_struct, color=struct_color)
+
+        if geom_diffus.n_cells > 0:
+            pl.add_mesh(geom_diffus, color='skyblue')
 
         ground = np.array([[-100, 100, 0],
                            [100, 100, 0],
@@ -867,16 +871,18 @@ class PVConfiguration3D(MultiBlockPASE):
 
     # ---- Panel primitives ----
     @staticmethod
-    def _create_panel_2d(width: float, height: float, z_position: float = 0.0) -> pyv.PolyData:
+    def _create_panel_2d(height: float, width: float, z_position: float = 0.0) -> pyv.PolyData:
         """
         Create a triangulated 2D rectangular panel as ``PolyData``.
 
         Parameters
         ----------
-        width : float
-            Panel width (X dimension).
         height : float
             Panel height (Y dimension).
+
+        width : float
+            Panel width (X dimension).
+
         z_position : float, default=0.0
             Z coordinate of the rectangle plane.
 
@@ -895,16 +901,16 @@ class PVConfiguration3D(MultiBlockPASE):
         return rect.triangulate()
 
     @staticmethod
-    def _create_panel_3d(width: float, height: float, thickness: float) -> pyv.PolyData:
+    def _create_panel_3d(height: float, width: float, thickness: float) -> pyv.PolyData:
         """
         Create a triangulated 3D box panel as ``PolyData``.
 
         Parameters
         ----------
-        width : float
-            Panel width (X dimension).
         height : float
             Panel height (Y dimension).
+        width : float
+            Panel width (X dimension).
         thickness : float
             Panel thickness (Z dimension).
 
@@ -972,8 +978,8 @@ class PVConfiguration3D(MultiBlockPASE):
             raise ValueError(f"Missing required parameters: {', '.join(missing)}")
 
         # Extract & validate
-        panel_width = float(config["PanelDimensionX"])  # X
-        panel_height = float(config["PanelDimensionY"])  # Y
+        panel_height = float(config["PanelDimensionX"])  # X
+        panel_width = float(config["PanelDimensionY"])  # Y
         thickness = self._coerce_thickness(config["PanelThickness"])  # Z thickness (0 => 2D)
 
         panel_spacing_x = float(config["RepetitionDistanceOfPanelsX"])  # pitch X
@@ -1424,8 +1430,8 @@ class PV_Configuration_3D(PVConfiguration3D):
             raise ValueError(f"Missing required parameters: {', '.join(missing)}")
 
         # Extract & validate
-        panel_width = float(config["PanelDimensionX"])  # X
-        panel_height = float(config["PanelDimensionY"])  # Y
+        panel_height = float(config["PanelDimensionX"])  # X
+        panel_width = float(config["PanelDimensionY"])  # Y
         thickness = self._coerce_thickness(config["PanelThickness"])  # Z thickness (0 => 2D)
 
         panel_spacing_x = float(config["RepetitionDistanceOfPanelsX"])  # pitch X
