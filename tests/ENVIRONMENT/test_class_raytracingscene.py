@@ -25,11 +25,11 @@ def _create_example_centrale():
         CentralAzimut=0.0, TiltY=10.0, Height=2.0,NumberOfPanelsX=2, NumberOfPanelsY=2, Hinge='Center'
     )
     variants ={"PV_A":dict(),
-               "PV_B":dict(DiffuserDimensionZ=0.003,DiffuserDimensionX=1.6,
-                           DiffuserDimensionY=1, DiffusersBetweenPanels=True,
+               "PV_B":dict(DiffuserDimensionZ=0.003,DiffuserDimensionX=1,
+                           DiffuserDimensionY=1.6, DiffusersBetweenPanels=True,
                            DiffusersAtRowEnds=False,DiffusersFillXAxis=True),
-               "PV_C":dict(DiffuserDimensionZ=0.003,DiffuserDimensionX=1.6,
-                           DiffuserDimensionY=1, DiffusersBetweenPanels=True,
+               "PV_C":dict(DiffuserDimensionZ=0.003,DiffuserDimensionX=1,
+                           DiffuserDimensionY=1.6, DiffusersBetweenPanels=True,
                            DiffusersAtRowEnds=False,DiffusersFillXAxis=True, TiltY=0.0)}
     M = Mesh()
     loc = dict(InterestZoneOrientationMode='custom',InterestZoneCustomAngle=0)
@@ -95,6 +95,7 @@ def test_diffuser_map_theory():
     maps = maps[0, ind]
     x = np.arange(-1, 1.1, 0.1)
     F = _diffuser_trace(x, 0, 2,1, np.radians(60))
+    print(maps, F)
     assert np.allclose(maps, F, atol=1e-1)
 
 def test_compute_daily_diffuser_irradiation():
