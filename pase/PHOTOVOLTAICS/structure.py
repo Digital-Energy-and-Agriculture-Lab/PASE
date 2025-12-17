@@ -277,7 +277,7 @@ class PVStructure(ABC):
                 step = span / (nb_part - 1)
                 offsets_y = [start + i * step for i in range(nb_part)]
 
-                rafter_group = []
+            rafter_group = []
             for offy in offsets_y:
                 p = Rafter(self.rafter_shape,
                             length=self.rafter_length,
