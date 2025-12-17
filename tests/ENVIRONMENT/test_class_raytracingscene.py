@@ -6,6 +6,14 @@ from pase.ENVIRONMENT.diffuser import LenticularDiffuser
 import numpy as np
 import pandas as pd
 
+def _diffuser_trace(x, x0, a, l, DB):
+    alpha = np.maximum(x0-l*np.ones(len(x))/2, x-a*np.tan(DB/2))
+    beta = np.minimum(x0 + l * np.ones(len(x)) / 2, x + a * np.tan(DB / 2))
+    I = np.arctan(a*(beta-alpha)/(a**2+x**2-x*(beta+alpha)+alpha*beta))/DB
+    ind = np.where(I<0)
+    I[ind] = 0
+    return I
+
 def _create_example_centrale():
     cfg = [PVConfiguration3D(), PVConfiguration3D(), PVConfiguration3D()]
 
@@ -76,7 +84,18 @@ def test_compute_diffuser_map():
                 diffuser_map[i, k]+=weight[i, j]*_cos_elev_patch[j]*L.masks['Diffuser'][k, j]
     assert np.allclose(maps, diffuser_map, rtol=1e-05)
     assert (np.sum(diffuser_map, axis=1)*0.1*0.1 <= 1.6).all()
-    return maps
+
+def test_diffuser_map_theory():
+    sky = ReinhartSky(MF=8).reinhart_patches
+    geometry, M = _create_example_centrale()
+    L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)
+    L.get_light_maps(np.array([0,0,1]).reshape((1,3)), visualization=False)
+    maps = L.diffuser_map
+    ind  = np.where(np.isclose(M.sourcepoints[:,0],np.unique(M.sourcepoints[:,0])[5]))
+    maps = maps[0, ind]
+    x = np.arange(-1, 1.1, 0.1)
+    F = _diffuser_trace(x, 0, 2,1, np.radians(60))
+    assert np.allclose(maps, F, atol=1e-1)
 
 def test_compute_daily_diffuser_irradiation():
     geometry, M = _create_example_centrale()
