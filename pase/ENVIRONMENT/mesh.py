@@ -71,14 +71,19 @@ class Mesh:
             - "custom": azimuth = InterestZoneCustomAngle
 
         """
-        mode = Loc_1['InterestZoneOrientationMode']
-        custom_angle = Loc_1['InterestZoneCustomAngle']
+        try:
+            mode = Loc_1['InterestZoneOrientationMode']
+            custom_angle = Loc_1['InterestZoneCustomAngle']
+        except KeyError as e:
+            print(f'No InterestZoneOrientationMode: {e} ; '
+                  f'fall back to default')
+            mode = 'default'
 
-        if mode == "default":
+        if mode.lower() == "default":
             zone_azimut = 0
-        elif mode == "auto":
+        elif mode.lower() == "auto":
             zone_azimut = AV_1['CentralAzimut']
-        elif mode == "custom":
+        elif mode.lower() == "custom":
             zone_azimut = custom_angle
         else:
             raise ValueError(f"Unknown InterestZoneOrientationMode: {mode}")

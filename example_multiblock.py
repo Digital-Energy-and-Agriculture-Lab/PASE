@@ -122,14 +122,19 @@ scene_multiblock.visualize_simple()
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
 
+# Interest Zone Orientation Mode
+M.set_interest_zone_orientation(Loc_1, AV_1)
+
 # Add of the points of interests on the ground for crop models
-M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
-                                  Loc_1['Xmax_InterestZone'],
-                                  Loc_1['Ymin_InterestZone'],
-                                  Loc_1['Ymax_InterestZone'],
-                                  Loc_1['dX_InterestZone'],
-                                  Loc_1['dY_InterestZone'],
-                                  flag="crop")
+M.add_oriented_plane_ground_mesh(
+    Loc_1['Xmin_InterestZone'],
+    Loc_1['Xmax_InterestZone'],
+    Loc_1['Ymin_InterestZone'],
+    Loc_1['Ymax_InterestZone'],
+    Loc_1['dX_InterestZone'],
+    Loc_1['dY_InterestZone'],
+    flag="crop"
+)
 
 # Discrete sky model
 discrete_sky = ReinhartSky(MF=Loc_1['MF']).reinhart_patches
