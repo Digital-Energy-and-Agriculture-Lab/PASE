@@ -512,7 +512,7 @@ class Ray_casting_scene:
 
     def get_mask_from_sky_dir(self, geometry):
 
-        if geometry.polydata_all_centrals().n_faces_strict == 0:
+        if geometry.number_of_cells == 0:
             print("Geometry is empty. Returning full diffuse illumination.")
             return np.ones(self.n_sourcepoints, dtype=np.float16)
 
@@ -564,11 +564,11 @@ class Ray_casting_scene:
         :return: diffuse_mask: diffuse map binary mask for each source point and discrete_sky element. Shape: (n_sky_patches, n_source_points)
 
         """
-        geometry =  geometry.polydata_by_property(property_dict={'Type':['PV']})
-        # Handle empty geometry: return full diffuse light
-        if geometry.n_faces_strict == 0 :
+        if geometry.number_of_cells == 0:
             print("Geometry is empty. Returning full diffuse illumination.")
             return np.ones(self.n_sourcepoints, dtype=np.float16)
+        geometry =  geometry.polydata_by_property(property_dict={'Type':['PV']})
+        # Handle empty geometry: return full diffuse light
     
         #Get direction of ray to reach the small suns and compute the sky view of each point
         pTarget = np.column_stack([self.discrete_sky.x,
@@ -688,10 +688,9 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full direct light
-        if geometry.polydata_all_centrals().n_faces_strict == 0 :
-            n_sun_positions = sun_P.shape[0]
-            print("Geometry is empty. Returning full direct illumination.")
-            return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
+        if geometry.number_of_cells == 0:
+            print("Geometry is empty. Returning full diffuse illumination.")
+            return np.ones(self.n_sourcepoints, dtype=np.float16)
 
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
         SourcePoints = np.repeat(np.column_stack((
