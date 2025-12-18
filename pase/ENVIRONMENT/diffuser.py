@@ -183,8 +183,6 @@ class LenticularDiffuser(Diffuser):
         """
         cos_gamma = np.clip(np.dot(vect_sun, self.len_vector), -1, 1)
         gamma = np.arccos(cos_gamma)
-        #ind = np.where((vect_sun[:, 0] < 0))
-        #gamma[ind] = -gamma[ind] + np.pi
         gamma = gamma[:, np.newaxis]
         gamma = np.tile(gamma, (1, int((2 * self.omega + Angle_res) // Angle_res)))
         return gamma
