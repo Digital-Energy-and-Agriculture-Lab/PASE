@@ -511,10 +511,11 @@ class Ray_casting_scene:
         return id_rays_filt, id_cells[delta>tol][indices]
 
     def get_mask_from_sky_dir(self, geometry):
-
+        masks = {}
         if geometry.number_of_cells == 0:
             print("Geometry is empty. Returning full diffuse illumination.")
-            return np.ones(self.n_sourcepoints, dtype=np.float16)
+            masks['Diffuse'] = np.ones(self.n_sourcepoints, dtype=np.float16)
+            return masks
 
         # Get direction of ray to reach the small suns and compute the sky view of each point
         pTarget = np.column_stack([self.discrete_sky.x,
@@ -543,7 +544,6 @@ class Ray_casting_scene:
         id_rays_stopped_filtred, id_intercept_cell_filtered = self.self_intercept(SourcePoints, intercept_points, id_rays_stopped, id_intercept_cell, tol=0.01)
         hit_object = geometry.polydata_all_centrals().cell_data['Type'][id_intercept_cell_filtered]
         ind_diffuse = np.where(hit_object != 'Diffuser')
-        masks = {}
         masks['Diffuse'] = np.ones(self.n_sourcepoints * n_sky_elements, bool)
         masks['Diffuse'][id_rays_stopped_filtred[ind_diffuse]] = 0
         masks['Diffuse'] = masks['Diffuse'].reshape(self.n_sourcepoints, n_sky_elements)
