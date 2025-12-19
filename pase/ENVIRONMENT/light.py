@@ -537,21 +537,42 @@ class Ray_casting_scene:
 
         # Computation of the ray interception of the N rays
         # id_rays_stopped provided the index of the ray which has been intercepted
-        intercept_points, id_rays_stopped, id_intercept_cell = geometry.polydata_all_centrals().multi_ray_trace(SourcePoints,
-                                                                        TargetPoints,
-                                                                        first_point=False,
-                                                                        retry=False)
-        id_rays_stopped_filtred, id_intercept_cell_filtered = self.self_intercept(SourcePoints, intercept_points, id_rays_stopped, id_intercept_cell, tol=0.01)
-        hit_object = geometry.polydata_all_centrals().cell_data['Type'][id_intercept_cell_filtered]
-        ind_diffuse = np.where(hit_object != 'Diffuser')
-        masks['Diffuse'] = np.ones(self.n_sourcepoints * n_sky_elements, bool)
-        masks['Diffuse'][id_rays_stopped_filtred[ind_diffuse]] = 0
-        masks['Diffuse'] = masks['Diffuse'].reshape(self.n_sourcepoints, n_sky_elements)
-        for type in np.unique(hit_object):
-            ind = np.where(hit_object == type)
-            masks[type] = np.zeros(self.n_sourcepoints * n_sky_elements, bool)
-            masks[type][id_rays_stopped_filtred[ind]] = 1
-            masks[type] = masks[type].reshape(self.n_sourcepoints, n_sky_elements)
+        try:
+            intercept_points, id_rays_stopped, id_intercept_cell = (geometry
+                                                                    .polydata_all_centrals()
+                                                                    .multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False))
+            id_rays_stopped_filtred, id_intercept_cell_filtered = self.self_intercept(SourcePoints, intercept_points,
+                                                                                      id_rays_stopped,
+                                                                                      id_intercept_cell, tol=0.01)
+            hit_object = geometry.polydata_all_centrals().cell_data['Type'][id_intercept_cell_filtered]
+            ind_diffuse = np.where(hit_object != 'Diffuser')
+            masks['Diffuse'] = np.ones(self.n_sourcepoints * n_sky_elements, bool)
+            masks['Diffuse'][id_rays_stopped_filtred[ind_diffuse]] = 0
+            masks['Diffuse'] = masks['Diffuse'].reshape(self.n_sourcepoints, n_sky_elements)
+            for type in np.unique(hit_object):
+                ind = np.where(hit_object == type)
+                masks[type] = np.zeros(self.n_sourcepoints * n_sky_elements, bool)
+                masks[type][id_rays_stopped_filtred[ind]] = 1
+                masks[type] = masks[type].reshape(self.n_sourcepoints, n_sky_elements)
+
+        except AttributeError as e:
+            intercept_points, id_rays_stopped, id_intercept_cell = geometry.multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False)
+
+            id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints, intercept_points, id_rays_stopped, tol=0.01)
+
+            masks['Diffuse'] = np.ones(self.n_sourcepoints * n_sky_elements, bool)
+            masks['Diffuse'][id_rays_stopped_filtred] = 0
+
+            masks['Diffuse'] = masks['Diffuse'].reshape(self.n_sourcepoints, n_sky_elements)
+
         return masks
 
     def get_diffuse_mask(self, geometry):
