@@ -588,7 +588,6 @@ class Ray_casting_scene:
         if geometry.number_of_cells == 0:
             print("Geometry is empty. Returning full diffuse illumination.")
             return np.ones(self.n_sourcepoints, dtype=np.float16)
-        geometry =  geometry.polydata_by_property(property_dict={'Type':['PV']})
         # Handle empty geometry: return full diffuse light
     
         #Get direction of ray to reach the small suns and compute the sky view of each point
