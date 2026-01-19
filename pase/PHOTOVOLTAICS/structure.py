@@ -228,8 +228,23 @@ class PVStructure(ABC):
         self.tilt = float(PV_i["TiltY"])
         self.height_offset = -0.5
 
+    def make_elementary_group(self):
+        """
+        Abstract method overridden in inherited classes.
+        """
+        pass
+
+    def build_structure(self):
+        """
+        Abstract method overridden in inherited classes.
+        """
+        pass
+
     def make_structure_part_group(self, part_group, nb_part, span):
-        """Create and position a group of purlins or rafters across a span."""
+        """
+        Create and position a group of purlins or rafters across a span.
+        Used in PV table and HSAT structures.
+        """
 
         if nb_part <= 0:
             return pyv.PolyData()
