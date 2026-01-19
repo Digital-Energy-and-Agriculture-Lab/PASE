@@ -6,7 +6,9 @@ from pase.pase_math import compute_block_centers, compute_panel_grid_positions
 
 
 def build_structure(config_dict):
-    """Factory that selects the appropriate PV structure from the configuration."""
+    """
+    Factory that selects the appropriate PV structure from the configuration.
+    """
     struct_type = (config_dict.get('StructureType')
                    or config_dict.get('Structype'))
     if not struct_type:
@@ -57,7 +59,9 @@ class PVStructurePart(ABC):
             self.pole_ground_positioning = 0
 
     def make_polydata(self):
-        """Create a vertical polydata of the requested shape; subclasses rotate it."""
+        """
+        Create a vertical polydata of the requested shape; subclasses rotate it
+        """
         if self.shape_type.lower() in ['circle', 'cylinder']:
             self.polydata = pyv.Cylinder(center=(0, 0, 0),
                                          direction=(0, 0, 1),
@@ -95,14 +99,16 @@ class Pole(PVStructurePart):
         self.orientation = 'vertical'
         self.polydata.translate((0, 
                                  0, 
-                                 length/2 + self.pole_ground_positioning), 
-                                 inplace=True)
+                                 length/2 + self.pole_ground_positioning),
+                                inplace=True)
 
 
 class Purlin(PVStructurePart):
-    """Horizontal purlins linking posts and supporting the panels."""
+    """
+    Horizontal purlins linking posts and supporting the panels.
+    """
 
-    def __init__(self, shape_type, length, panel_tilt_Y, **kwargs):
+    def __init__(self, shape_type, length, panel_tilt_y, **kwargs):
         super().__init__(shape_type, length, **kwargs)
 
         # Rotate to make horizontal along y
@@ -110,14 +116,14 @@ class Purlin(PVStructurePart):
         self.polydata.rotate_x(90, inplace=True)
 
         # Tilt the purlin
-        self.tilt = panel_tilt_Y  # [°]
+        self.tilt = panel_tilt_y  # [°]
         self.polydata.rotate_y(self.tilt, inplace=True)
 
 
 class Rafter(PVStructurePart):
     """Rafters oriented along the X-axis to carry purlins or panels."""
 
-    def __init__(self, shape_type, length, panel_tilt_Y, **kwargs):
+    def __init__(self, shape_type, length, panel_tilt_y, **kwargs):
         super().__init__(shape_type, length, **kwargs)
 
         # Rotate to make horizontal along x
@@ -125,7 +131,7 @@ class Rafter(PVStructurePart):
         self.polydata.rotate_y(90, inplace=True)
 
         # Tilt the rafter
-        self.tilt = panel_tilt_Y  # [°]
+        self.tilt = panel_tilt_y  # [°]
         self.polydata.rotate_y(self.tilt, inplace=True)
 
 
@@ -139,14 +145,15 @@ class HorizontalBar(PVStructurePart):
         self.orientation = 'horizontal_y'
         self.polydata.rotate_x(90, inplace=True)
 
-class rotary_support(PVStructurePart):
-    """Horizontal support that can pivot around the Z-axis."""
 
-    def __init__(self, shape_type, length, **kwargs):
-        super().__init__(shape_type, length, **kwargs)
-
-        self.orientation = 'horizontal_y'
-        self.polydata.rotate_z(90, inplace=True)
+# class rotary_support(PVStructurePart):
+#     """Horizontal support that can pivot around the Z-axis."""
+#
+#     def __init__(self, shape_type, length, **kwargs):
+#         super().__init__(shape_type, length, **kwargs)
+#
+#         self.orientation = 'horizontal_y'
+#         self.polydata.rotate_z(90, inplace=True)
 
 class Diagonal(PVStructurePart):
     """Diagonal bracing connecting two posts to stiffen the bay."""
@@ -259,19 +266,15 @@ class PVStructure(ABC):
 
             purlin_group = []
             for offx in offsets_x:
-                p = Purlin(self.purlin_shape,
-                            length=self.purlin_length,
-                            side=self.purlin_side,
-                            radius=self.purlin_radius,
-                            width=self.purlin_width,
-                            height=self.purlin_width,
-                            panel_tilt_Y=0,
-                            positioning=self.pole_ground_positioning
-                            )
-                p.polydata.translate((offx, 
-                                      0, 
+                p = Purlin(self.purlin_shape, length=self.purlin_length,
+                           panel_tilt_y=0, side=self.purlin_side,
+                           radius=self.purlin_radius, width=self.purlin_width,
+                           height=self.purlin_width,
+                           positioning=self.pole_ground_positioning)
+                p.polydata.translate((offx,
+                                      0,
                                       self.base_height),
-                                      inplace=True)
+                                     inplace=True)
                 purlin_group.append(p.polydata)
 
             combined = purlin_group[0].copy()
@@ -294,15 +297,11 @@ class PVStructure(ABC):
 
             rafter_group = []
             for offy in offsets_y:
-                p = Rafter(self.rafter_shape,
-                            length=self.rafter_length,
-                            side=self.rafter_side,
-                            radius=self.rafter_radius,
-                            width=self.rafter_width,
-                            height=self.rafter_height,
-                            panel_tilt_Y=0,
-                            positioning=self.pole_ground_positioning
-                            )
+                p = Rafter(self.rafter_shape, length=self.rafter_length,
+                           panel_tilt_y=0, side=self.rafter_side,
+                           radius=self.rafter_radius, width=self.rafter_width,
+                           height=self.rafter_height,
+                           positioning=self.pole_ground_positioning)
                 p.polydata.translate((0, 
                                       offy, 
                                       self.base_height),
@@ -322,7 +321,9 @@ class PVStructure(ABC):
         return combined
     
     def make_diagonal(self):
-        """Build a diagonal brace connecting the two poles with the correct slope."""
+        """
+        Build a diagonal brace connecting the two poles with the correct slope.
+        """
 
         ground_offset = self.pole_ground_positioning
         left_pole_height = self.base_height + self.height_offset + ground_offset
@@ -344,12 +345,12 @@ class PVStructure(ABC):
         diagonal_length = math.hypot(horizontal_span, vertical_span)
 
         diagonal = Diagonal(self.diagonal_shape,
-                              length=diagonal_length,
-                              width=self.diagonal_width,
-                              height=self.diagonal_height,
-                              radius=self.diagonal_radius,
-                              side=self.diagonal_side,
-                              positioning=self.pole_ground_positioning)
+                            length=diagonal_length,
+                            width=self.diagonal_width,
+                            height=self.diagonal_height,
+                            radius=self.diagonal_radius,
+                            side=self.diagonal_side,
+                            positioning=self.pole_ground_positioning)
 
         angle = math.degrees(math.atan2(horizontal_span, vertical_span))
         if high_x < low_x:
@@ -363,6 +364,7 @@ class PVStructure(ABC):
         diagonal.polydata.translate(center, inplace=True)
 
         return diagonal.polydata
+
 
 class AgrivoltaicFence(PVStructure):
     """Agrivoltaic fence structure composed of posts and horizontal bars."""
@@ -384,15 +386,16 @@ class AgrivoltaicFence(PVStructure):
         pole.polydata.translate((0, -self.purlin_length/2, 0), inplace=True)
         
         horizontal_bar_top = HorizontalBar(self.purlin_shape,
-                          length=self.purlin_length,
-                          side=self.purlin_side,
-                          width=self.purlin_width,
-                          height=self.purlin_height,
-                          radius=self.purlin_radius)
+                                           length=self.purlin_length,
+                                           side=self.purlin_side,
+                                           width=self.purlin_width,
+                                           height=self.purlin_height,
+                                           radius=self.purlin_radius)
+
         horizontal_bar_top.polydata.translate((0.0,
-                                     0,
-                                     self.structure_height),
-                                    inplace=True)
+                                               0,
+                                               self.structure_height),
+                                              inplace=True)
 
         # 2nd horizontal bar is a copy of horizontal_bar_top,
         # translated downwards
@@ -408,7 +411,9 @@ class AgrivoltaicFence(PVStructure):
         return combined
 
     def build_structure(self) -> pyv.MultiBlock:
-        """Assemble all fence bays along Y and add a terminal post."""
+        """
+        Assemble all fence bays along Y and add a terminal post.
+        """
 
         # Compute position of groups
         positions, block_centers, grid_indices = compute_panel_grid_positions(
@@ -448,13 +453,16 @@ class AgrivoltaicFence(PVStructure):
         return combined_blocks
 
 class PVTable(PVStructure):
-    """Fixed tilted table with posts, rafters, and diagonal bracing."""
+    """
+    Fixed tilted table with posts, rafters, and diagonal bracing.
+    """
 
     def __init__(self, PV_i, **kwargs):
-        """Derive span, tilt, and minimum rafter length for the table geometry."""
+        """
+        Derive span, tilt, and minimum rafter length for the table geometry.
+        """
         super().__init__(PV_i, **kwargs)
 
-        
         self.tilt_rad = math.radians(self.tilt)
         self.half_span = self.pole_spacing
 
@@ -474,13 +482,10 @@ class PVTable(PVStructure):
 
         return combined
 
-        
     def make_start_and_end_block(self) -> pyv.PolyData:
         """
             PR is for Pole and rafter
         """
-        
-
         pole = Pole(self.pole_shape,
                     length=(self.base_height + self.height_offset),
                     width=self.pole_width,
@@ -494,29 +499,26 @@ class PVTable(PVStructure):
                                 inplace=True)
 
         pole_2 = Pole(self.pole_shape,
-                    length=(self.base_height - self.height_offset),
-                    width=self.pole_width,
-                    height=self.pole_height,
-                    side=self.pole_side,
-                    radius=self.pole_radius,
-                    positioning=self.pole_ground_positioning)
-        pole_2.polydata.translate((self.pole_spacing, 
-                                 -self.purlin_length/2,
-                                 0), 
-                                inplace=True)
+                      length=(self.base_height - self.height_offset),
+                      width=self.pole_width,
+                      height=self.pole_height,
+                      side=self.pole_side,
+                      radius=self.pole_radius,
+                      positioning=self.pole_ground_positioning)
+        pole_2.polydata.translate((self.pole_spacing,
+                                   -self.purlin_length/2,
+                                   0),
+                                  inplace=True)
         
-        rafter = Rafter(self.rafter_shape,
-                        length=self.rafter_length,
-                        radius=self.rafter_radius,
-                        side=self.rafter_side,
-                        width=self.rafter_width,
+        rafter = Rafter(self.rafter_shape, length=self.rafter_length,
+                        panel_tilt_y=self.tilt, radius=self.rafter_radius,
+                        side=self.rafter_side, width=self.rafter_width,
                         height=self.rafter_height,
-                        panel_tilt_Y=self.tilt,
                         positioning=self.pole_ground_positioning)
         rafter.polydata.translate((0,
                                    -self.purlin_length/2,
                                    self.base_height),
-                                   inplace= True)
+                                  inplace=True)
         
         diagonal = self.make_diagonal()
 
@@ -526,7 +528,6 @@ class PVTable(PVStructure):
                    + diagonal)
 
         return combine
-
 
     def build_structure(self) -> pyv.MultiBlock :
         """Replicate bays across the Y grid and cap with an end bay."""
@@ -565,14 +566,18 @@ class PVTable(PVStructure):
 
 
 class HSATS(PVStructure):
-    """HSATS: horizontal single-axis tracker managing purlins and tilted rafters."""
+    """
+    HSATS: horizontal single-axis tracker managing purlins and tilted rafters.
+    """
 
     def __init__(self, PV_i, **kwargs):
         """Initialize HSATS with common PV inputs."""
         super().__init__(PV_i, **kwargs)
 
     def make_elementary_group(self) -> pyv.PolyData:
-        """Create the tracker bay with central post plus purlin and rafter groups."""
+        """
+        Create the tracker bay with central post plus purlin and rafter groups.
+        """
 
         pole = Pole(self.pole_shape,
                     length=self.base_height,
@@ -581,10 +586,11 @@ class HSATS(PVStructure):
                     side=self.pole_side,
                     radius=self.pole_radius,
                     positioning=self.pole_ground_positioning)
+
         pole.polydata.translate((0, 
                                  0, 
-                                 0), 
-                                 inplace=True)
+                                 0),
+                                inplace=True)
 
         purlin_group = self.make_structure_part_group("purlin", 
                                                       self.numbers_of_purlin,
@@ -592,7 +598,7 @@ class HSATS(PVStructure):
         purlin_group.translate((0,
                                 0,
                                 0),
-                          inplace=True)
+                               inplace=True)
         
         rafter_group = self.make_structure_part_group("rafter",
                                                       self.numbers_of_rafter,
@@ -600,7 +606,7 @@ class HSATS(PVStructure):
         rafter_group.translate((0,
                                 0,
                                 0),
-                          inplace=True)
+                               inplace=True)
 
         combine = (pole.polydata + purlin_group + rafter_group)
 
