@@ -587,26 +587,13 @@ class HSATS(PVStructure):
                     radius=self.pole_radius,
                     positioning=self.pole_ground_positioning)
 
-        pole.polydata.translate((0, 
-                                 0, 
-                                 0),
-                                inplace=True)
-
         purlin_group = self.make_structure_part_group("purlin", 
                                                       self.numbers_of_purlin,
                                                       self.rafter_length)
-        purlin_group.translate((0,
-                                0,
-                                0),
-                               inplace=True)
         
         rafter_group = self.make_structure_part_group("rafter",
                                                       self.numbers_of_rafter,
                                                       self.purlin_length)
-        rafter_group.translate((0,
-                                0,
-                                0),
-                               inplace=True)
 
         combine = (pole.polydata + purlin_group + rafter_group)
 
