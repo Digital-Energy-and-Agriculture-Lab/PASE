@@ -30,6 +30,18 @@ WeatherDataOption:
    Limit: [1, 2]
    Unit: dimensionless [-]
    Definition: Option 1 means get the meteo data from PvGis and option 2 means get the meteo data from a file in DATABASE
+AlbedoDataOption:
+   Value: 2
+   Type: integer
+   Limit: [1, 2]
+   Unit: dimensionless [-]
+   Definition: Option 1 means default value (0.25) is used and option 2 means get the albedo data from a file in INPUTS, CROPS
+AlbedoFileName:
+   Value: albedo_colza
+   Type: string
+   Definition: Name of the daily or hourly albedo data csv file with (pay
+      attention to the format it should have and to the dates)
+      used if AlbedoDataOption is 2 (Custom Albedo).
 WeatherFileName:
    Value: Chanco_Chile_WD
    Type: string
