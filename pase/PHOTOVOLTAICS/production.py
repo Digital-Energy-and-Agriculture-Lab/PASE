@@ -40,9 +40,11 @@ class PV_Production:
         
         self.GCR_x = (inputs['PanelDimensionX']*inputs['NumberOfPanelsX']/
                       self.block_space_x)
-            
-    def get_several_years_of_electricity_production(self, SP, light, WD):
-        
+
+    def get_several_years_of_electricity_production(self, SP, light, WD,
+                                                    albedo_file=None,
+                                                    albedo_option=1):
+
         self.production = {}
         
         for year in light.keys():
