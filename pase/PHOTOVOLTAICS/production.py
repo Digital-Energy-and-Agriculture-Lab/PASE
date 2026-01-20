@@ -488,8 +488,8 @@ class PV_Production:
 
         if albedo.dropna().empty:
             print("Please check that albedo file dates are coherent with "
-                  "input Starting Year and Ending Year")
-
+                  "input Starting Year and Ending Year. Default value used")
+            albedo = albedo.fillna(0.25)
         nyears_albedo = {}
 
         for year in range(int(starting_year), int(ending_year)+1):
