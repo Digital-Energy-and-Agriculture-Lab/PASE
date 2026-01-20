@@ -50,6 +50,7 @@ def structure_inputs():
         "Height": 2.0,
         "PoleSpacingX": 1.0,
         "TiltY": 15.0,
+        "HeightOffset": -0.5,
     }
 
     def _factory(**overrides):
