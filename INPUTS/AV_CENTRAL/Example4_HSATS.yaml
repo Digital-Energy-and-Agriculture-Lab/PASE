@@ -34,6 +34,12 @@ TiltY:
    Limit: [-80, 80]
    Unit: degree [°]
    Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation
+HeightOffset:
+   Value: -0.5
+   Type: float
+   Limit: [-0.5,0.5]
+   Unit: dimensionless [-]
+   Definition: difference between the height of the two poles and the base height to create the slope of the table structure.
 Hinge:
    Value: center
    Type: string

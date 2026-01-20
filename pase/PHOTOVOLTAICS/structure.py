@@ -233,7 +233,7 @@ class PVStructure(ABC):
         self.base_height = float(PV_i["Height"])  # elevation
         self.pole_spacing = float(PV_i["PoleSpacingX"])
         self.tilt = float(PV_i["TiltY"])
-        self.height_offset = -0.5
+        self.height_offset = float(PV_i["HeightOffset"])
 
     def make_elementary_group(self):
         """
