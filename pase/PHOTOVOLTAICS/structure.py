@@ -250,13 +250,16 @@ class PVStructure(ABC):
     def make_structure_part_group(self, part_group, nb_part, span):
         """
         Create and position a group of purlins or rafters across a span.
-        Used in PV table and HSAT structures.
+        part_group define if you want generate a purlin or rafter group.
         """
 
+        # Short-circuit when there is nothing to build.
         if nb_part <= 0:
             return pyv.PolyData()
 
+        # check if you want a purlin group or a rafter group
         if part_group == "purlin":
+            # Compute evenly spaced X offsets centered on the span.
             if nb_part == 1:
                 offsets_x = [0.0]
             else:
@@ -264,6 +267,7 @@ class PVStructure(ABC):
                 step = span / (nb_part - 1)
                 offsets_x = [start + i * step for i in range(nb_part)]
 
+            # Instantiate and place each purlin and translate it with offset value.
             purlin_group = []
             for offx in offsets_x:
                 p = Purlin(self.purlin_shape, length=self.purlin_length,
@@ -277,19 +281,22 @@ class PVStructure(ABC):
                                      inplace=True)
                 purlin_group.append(p.polydata)
 
+            # Merge meshes into a single polydata group for apply transform to the group. 
+            # Need to precise the group height who's defined by the base_height.
             combined = purlin_group[0].copy()
             for mesh in purlin_group[1:]:
                 combined = combined + mesh
 
+            # Apply the table tilt around the new center of the group.
             combined.rotate_y(self.tilt,
                               point=(0, 
-                                     0, 
-                                     self.base_height),
+                                     0,                                     
+                                     self.base_height), 
                               inplace=True)
-            
+        # Same idea for the rafter
         elif part_group == "rafter":
             if nb_part == 1:
-                offsets_y = [0.0]
+                offsets_y = [0.0] # instead of x axis the rafter need a translate offset on y axis
             else:
                 start = -span / 2.0
                 step = span / (nb_part - 1)
