@@ -58,9 +58,10 @@ class PV_Production:
             tiltY, sv_CC = self.get_tiltY_along_time(sun_vect)
             SF_front = self.get_shading_factor_front(sv_CC, tiltY)
             SF_rear =self.get_shading_factor_rear(sv_CC, tiltY)
-            
-            #Temporary lines !!!!!!!
-            GHI_reaching_ground = light[year]['GHI'].to_numpy()*0.5
+
+            # Improved ground-transmitted GHI based on ground coverage ratio
+            ground_coverage_ratio = self.get_ground_coverage_ratio(tiltY)
+            GHI_reaching_ground = light[year]['GHI'].to_numpy() * (1.0 - ground_coverage_ratio)
             albedo = 0.25  #should be a vector with the albedo of the crop evolving on the year
             
             GTI_front, GTI_rear = self.get_GTI(sun_vect, app_zenith, 
@@ -249,7 +250,15 @@ class PV_Production:
             tiltY = tiltY_limited*180/np.pi
             
         return tiltY, sun_vect_central_coord
-            
+    def get_ground_coverage_ratio(self, tiltY_deg):
+
+        #Ground coverage ratio (fraction of ground covered by the projection of PV panels), computed at each instant.
+        tilt_rad = np.deg2rad(tiltY_deg)
+        # Projection effect along X (rotation around Y): projected length scales with cos(tilt)
+        coverage = self.GCR_x * np.cos(tilt_rad)
+
+        return np.clip(coverage, 0.0, 1.0)
+    
     def get_sun_vect_in_central_coord(self, sun_vect):
         # Do not take into account the slope of the area and the slope of the 
         # rotation axis (see the previous framework to complete)
