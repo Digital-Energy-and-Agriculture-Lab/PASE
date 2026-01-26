@@ -37,3 +37,6 @@ TEMPORARY_FILES/
 
 # IPython Notebook clutter
 *.ipynb_checkpoints
+
+# vscode clutter
+.vscode/
