@@ -20,7 +20,7 @@ from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualizati
 from pase.ENVIRONMENT.sky_model import ReinhartSky, fibonacci_half_sphere
 from pase.ENVIRONMENT.sky_model import CIEStandardSky
 from pase.user_support_tools import PASE_Logger
-from pase.ENVIRONMENT.shadings import Horizon
+from pase.ENVIRONMENT.shading import Horizon
 
 
 class Sun_positions:

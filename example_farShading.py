@@ -19,7 +19,7 @@ from pase.DATA_MANAGEMENT.weather_data_provider import (fetch_weather_from_pvgis
 from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
 from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from pase.ENVIRONMENT.light import Ray_casting_scene
-from pase.ENVIRONMENT.shadings import Horizon
+from pase.ENVIRONMENT.shading import Horizon
 from pase.ENVIRONMENT.mesh import Mesh
 from pase.ENVIRONMENT.sky_model import ReinhartSky
 from pase.PHOTOVOLTAICS.production import PV_Production
