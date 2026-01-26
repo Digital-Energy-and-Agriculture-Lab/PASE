@@ -20,6 +20,7 @@ from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualizati
 from pase.ENVIRONMENT.sky_model import ReinhartSky, fibonacci_half_sphere
 from pase.ENVIRONMENT.sky_model import CIEStandardSky
 from pase.user_support_tools import PASE_Logger
+from pase.ENVIRONMENT.shadings import Horizon
 
 
 class Sun_positions:
@@ -451,7 +452,7 @@ class Ray_casting_scene:
     The class is initiate with a mesh containing the source points and a geometry
     '''
     #The class light shade scene init with a geometry (pyvista.polydata) and a mesh instance
-    def __init__(self, mesh, geometry, discrete_sky):
+    def __init__(self, mesh, geometry, discrete_sky, horizon=None):
         self.mesh = mesh
         self.sourcepoints = self.mesh.get_sourcepoints()
 
@@ -460,6 +461,7 @@ class Ray_casting_scene:
         self.sources_flag_dict = mesh.get_sources_flag_dict()
 
         self.discrete_sky = discrete_sky
+        self.horizon = horizon
         self.get_diffuse_weights_map()
 
     def get_light_maps(self, sun_P, visualization=False, Sun_P_map_to_visualize=None):
@@ -525,7 +527,20 @@ class Ray_casting_scene:
         # Handle empty geometry: return full diffuse light
         if geometry.number_of_cells == 0 :
             print("Geometry is empty. Returning full diffuse illumination.")
-            return np.ones(self.n_sourcepoints, dtype=np.float16)
+            diffuse_mask = np.ones(self.n_sourcepoints, dtype=np.float16)
+
+            if self.horizon is not None:
+                 sky_az = self.discrete_sky.az
+                 sky_el = self.discrete_sky.el
+                 
+                 horizon_vis = self.horizon.get_horizon_mask(sky_az, sky_el)
+            
+                 n_sky_elements = len(self.discrete_sky)
+                 full_mask = np.ones((self.n_sourcepoints, n_sky_elements), dtype=bool)
+                 full_mask[:] = horizon_vis[np.newaxis, :]
+                 return full_mask
+
+            return np.ones((self.n_sourcepoints, len(self.discrete_sky)), dtype=bool)
     
         #Get direction of ray to reach the small suns and compute the sky view of each point
         pTarget = np.column_stack([self.discrete_sky.x,
@@ -570,6 +585,12 @@ class Ray_casting_scene:
         diffuse_mask[id_rays_stopped_filtred] = 0
 
         diffuse_mask = diffuse_mask.reshape(self.n_sourcepoints, n_sky_elements)
+
+        if self.horizon is not None:
+            sky_az = self.discrete_sky.az
+            sky_el = self.discrete_sky.el
+            horizon_vis = np.array(self.horizon.get_horizon_mask(sky_az, sky_el))
+            diffuse_mask[:] = diffuse_mask & horizon_vis[np.newaxis, :]
 
         return diffuse_mask
 
@@ -640,7 +661,22 @@ class Ray_casting_scene:
         if geometry.number_of_cells == 0 :
             n_sun_positions = sun_P.shape[0]
             print("Geometry is empty. Returning full direct illumination.")
-            return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
+            direct_mask = np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
+            
+            if self.horizon is not None:
+                 
+                 beta = np.arcsin(sun_P[:,2])
+                 gamma = np.arctan2(sun_P[:,0], sun_P[:,1])
+                 
+                 # Convert to degrees
+                 solar_el = np.degrees(beta)
+                 solar_az = np.degrees(gamma)
+                 solar_az = np.mod(solar_az, 360) 
+                 
+                 horizon_vis = self.horizon.is_sun_visible(solar_az, solar_el)
+                 direct_mask[:] = direct_mask & horizon_vis[np.newaxis, :]
+                 
+            return direct_mask
 
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
         SourcePoints = np.repeat(np.column_stack((
@@ -677,6 +713,23 @@ class Ray_casting_scene:
             id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
             #Computation of the shade by setting at 0 the locations where rays were intercepted
             direct_1D_map[id_rays_stopped_filtred] = 0
+        
+        # Apply Horizon Mask if present
+        if self.horizon is not None:
+             # See logic above for conversion
+             beta = np.arcsin(sun_P[:,2]) 
+             gamma = np.arctan2(sun_P[:,0], sun_P[:,1])
+             solar_el = np.degrees(beta)
+             solar_az = np.degrees(gamma)
+             solar_az = np.mod(solar_az, 360) 
+             
+             horizon_vis = self.horizon.is_sun_visible(solar_az, solar_el)
+             
+             # horizon_vis is (n_time, ). We need to tile it to match (n_source * n_time).
+             horizon_mask_1D = np.tile(horizon_vis, self.n_sourcepoints)
+             
+             # Apply
+             direct_1D_map = direct_1D_map & horizon_mask_1D
         
         
     
