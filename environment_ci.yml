@@ -13,7 +13,8 @@ dependencies:
   - trimesh
   - rtree
   - windrose
-  - pvlib
+  - scipy
+  - pvlib-python
   - pyembree
   - pyvista==0.44.1
   - pyyaml
