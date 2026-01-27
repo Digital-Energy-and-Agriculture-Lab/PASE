@@ -9,7 +9,7 @@ import pyvista as pyV
 import numpy as np
 
 
-def open_pyvista_3D_visualization(interest_points, spatialized_variable, scene, lgd_title):
+def open_pyvista_3D_visualization(interest_points, spatialized_variable, scene, lgd_title, extra_mesh=None):
     """
     
     Function to open a 3D visualization window of the scene with a specific spatialized variable plotted.
@@ -65,6 +65,11 @@ def open_pyvista_3D_visualization(interest_points, spatialized_variable, scene, 
     plotter.add_mesh(grnd, color='green')
     
     plotter.add_axes(**labels)
+    
+    plotter.set_background('white')
+    
+    if extra_mesh is not None:
+         plotter.add_mesh(extra_mesh, color='black')
     
     plotter.add_mesh(interest_points,
                      scalars=spatialized_variable,

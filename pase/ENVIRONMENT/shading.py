@@ -104,3 +104,62 @@ class Horizon:
         """
         return self.get_horizon_mask(np.array(solar_az), 
                                      np.array(solar_el))
+
+    def get_visualization_mesh(self, radius=500):
+        """
+        Generate a PyVista mesh representing the horizon (a 360° circular "wall").
+        
+        Parameters:
+            radius (float): Distance of the horizon wall from the center.
+            
+        Returns:
+            pyvista.StructuredGrid: The horizon mesh.
+        """
+        import pyvista as pyv
+        
+        if self.interp_func is None:
+            return None
+        
+        azimuths = np.linspace(0, 360, 361) # 1 degree resolution
+        elevations = self.interp_func(azimuths)
+        
+        bottom_el = -10.0
+        
+        az_rad = np.radians(azimuths)
+        el_rad = np.radians(elevations)
+        bot_rad = np.radians(np.full_like(azimuths, bottom_el))
+        
+        x_top = radius * np.sin(az_rad) * np.cos(el_rad)
+        y_top = radius * np.cos(az_rad) * np.cos(el_rad)
+        z_top = radius * np.sin(el_rad)
+
+        x_bot = radius * np.sin(az_rad) * np.cos(bot_rad)
+        y_bot = radius * np.cos(az_rad) * np.cos(bot_rad)
+        z_bot = radius * np.sin(bot_rad)
+
+        cols = len(azimuths)
+        rows = 2
+
+        points = []
+        faces = []
+        
+        n_points = len(azimuths)
+        
+        points = np.zeros((2 * n_points, 3))
+        points[:n_points, 0] = x_top
+        points[:n_points, 1] = y_top
+        points[:n_points, 2] = z_top
+        points[n_points:, 0] = x_bot
+        points[n_points:, 1] = y_bot
+        points[n_points:, 2] = z_bot
+
+        faces = []
+        for i in range(n_points - 1):
+            p1 = i
+            p2 = i + 1
+            p3 = i + 1 + n_points
+            p4 = i + n_points
+            faces.extend([4, p1, p2, p3, p4])
+            
+        mesh = pyv.PolyData(points, faces)
+        return mesh

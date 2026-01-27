@@ -975,10 +975,16 @@ class Ray_casting_scene:
         else:
             geo = self.geometry
 
+        if self.horizon is not None:
+             h_mesh = self.horizon.get_visualization_mesh()
+        else:
+             h_mesh = None
+
         open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
                                       self.dir_mask[:, Sun_P_map_to_visualize],
                                       geo,
-                                      "Direct map [-]")
+                                      "Direct map [-]",
+                                      extra_mesh=h_mesh)
 
     def visualize_diffuse_light_map(self, Sun_P_map_to_visualize):
         """
@@ -1012,10 +1018,16 @@ class Ray_casting_scene:
             map_to_display = np.array(diffuse_shaded_weights_map)
 
 
+        if self.horizon is not None:
+             h_mesh = self.horizon.get_visualization_mesh()
+        else:
+             h_mesh = None
+
         open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
                                       np.array(map_to_display, dtype=np.float32),
                                       geo,
-                                      "Unweighted shaded diffuse map [-]")
+                                      "Unweighted shaded diffuse map [-]",
+                                      extra_mesh=h_mesh)
 
     def visualize_daily_irrad_map(self, year, julian_day):
         """
@@ -1040,11 +1052,17 @@ class Ray_casting_scene:
         else:
             geo = self.geometry
 
+        if self.horizon is not None:
+             h_mesh = self.horizon.get_visualization_mesh()
+        else:
+             h_mesh = None
+
         open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
                                       self.daily_irr_spat[str(year)][:,
                                       julian_day],
                                       geo,
                                       "Total irradiation reaching the ground on the julian day " + str(
                                           julian_day) + " of " + str(
-                                          year) + " [MJ/m²]")
+                                          year) + " [MJ/m²]",
+                                      extra_mesh=h_mesh)
 

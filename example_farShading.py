@@ -31,7 +31,7 @@ PASE_Logger()
 ###############
 # Load inputs #
 ###############
-Loc_1 = YAML_Inputs_provider(file='Example1_loc.yaml', subpath='SCENARIOS').inputs
+Loc_1 = YAML_Inputs_provider(file='Mountain_loc.yaml', subpath='SCENARIOS').inputs
 # Import PV system and PV modules parameters
 AV_1 = YAML_Inputs_provider(file='Example1_AV.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='Example1_PV_Module.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
