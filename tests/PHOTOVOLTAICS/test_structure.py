@@ -51,6 +51,7 @@ def structure_inputs():
         "PoleSpacingX": 1.0,
         "TiltY": 15.0,
         "HeightOffset": -0.5,
+        "DiagonalEpsilon": 0.000001,
     }
 
     def _factory(**overrides):
@@ -88,6 +89,10 @@ def structure_inputs():
 def test_structure_builds_without_errors(structure_cls, structure_inputs, config_overrides):
     cfg = structure_inputs(**config_overrides)
     structure = structure_cls(cfg)
+    
+    # Check DiagonalEpsilon
+    assert structure.diagonal_epsilon == 0.000001
+    
     built = structure.build_structure()
 
     assert isinstance(built, pyv.DataSet)
