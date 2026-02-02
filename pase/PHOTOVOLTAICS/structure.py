@@ -234,6 +234,7 @@ class PVStructure(ABC):
         self.pole_spacing = float(PV_i["PoleSpacingX"])
         self.tilt = float(PV_i["TiltY"])
         self.height_offset = float(PV_i["HeightOffset"])
+        self.diagonal_epsilon = float(PV_i["DiagonalEpsilon"])
 
     def make_elementary_group(self):
         """
@@ -345,7 +346,7 @@ class PVStructure(ABC):
             high_z = right_pole_height
             low_x = -self.pole_spacing
 
-        low_z = min(self.diagonal_height + ground_offset, high_z - 1e-6)
+        low_z = min(self.diagonal_height + ground_offset, high_z - self.diagonal_epsilon)
 
         vertical_span = high_z - low_z
         horizontal_span = abs(high_x - low_x)

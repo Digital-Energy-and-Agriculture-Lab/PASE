@@ -169,6 +169,12 @@ DiagonalRadius:
   Limit: [0.01, 50.0]
   Unit: meters [m]
   Definition: diagonale radius (used in case of cylindrical diagonale)
+DiagonalEpsilon:
+  Value: 0.000001
+  Type: float
+  Limit: [0.000001, 0.000002]
+  Unit: dimensionless [-]
+  Definition: diagonale epsilon (used in case of cylindrical diagonale)
 
 StructureSpacingY:
   Value: 5.0
