@@ -146,15 +146,6 @@ class HorizontalBar(PVStructurePart):
         self.polydata.rotate_x(90, inplace=True)
 
 
-# class rotary_support(PVStructurePart):
-#     """Horizontal support that can pivot around the Z-axis."""
-#
-#     def __init__(self, shape_type, length, **kwargs):
-#         super().__init__(shape_type, length, **kwargs)
-#
-#         self.orientation = 'horizontal_y'
-#         self.polydata.rotate_z(90, inplace=True)
-
 class Diagonal(PVStructurePart):
     """Diagonal bracing connecting two posts to stiffen the bay."""
 
