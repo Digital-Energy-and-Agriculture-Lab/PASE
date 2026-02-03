@@ -5,10 +5,13 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
+import logging
 import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
 import os
+
+logger = logging.getLogger(__name__)
 
 class PV_Production:
     
@@ -492,8 +495,9 @@ class PV_Production:
         albedo = albedo[['Albedo']].reindex(new_index).ffill()
 
         if albedo.dropna().empty:
-            print("Please check that albedo file dates are consistent with "
-                  "input Starting Year and Ending Year. Default value used")
+            logger.warning("Please check that albedo file dates are consistent "
+                           "with input Starting Year and Ending Year. "
+                           "Default value used")
             albedo = albedo.fillna(albedo_default_value)
         nyears_albedo = {}
 
