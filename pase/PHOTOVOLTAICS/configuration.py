@@ -992,7 +992,7 @@ class PVConfiguration3D(MultiBlockPASE):
         num_blocks_x = int(config["NumberOfPVBlocksX"])  # blocks
         num_blocks_y = int(config["NumberOfPVBlocksY"])  # blocks
 
-        base_height = float(config["Height"])  # elevation
+        base_height = float(config["Height"]) + float(config["PanelOffset"])  # elevation
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
         hinge_style = config['Hinge']
@@ -1369,6 +1369,7 @@ class PV_Configuration_3D(PVConfiguration3D):
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
         hinge_style = config['Hinge']
+        panel_offset = float(config["PanelOffset"])
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             raise ValueError("All count parameters must be >= 1")
