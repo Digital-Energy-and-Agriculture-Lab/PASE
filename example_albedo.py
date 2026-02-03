@@ -159,7 +159,9 @@ L.visualize_daily_irrad_map(Loc_1['SimulationStartingYear'], 15)
 PV_central = PV_Production(PV_params_dict)
 PV_central.get_several_years_of_electricity_production(
     Sun_positions_complete, Light_instance.data, WD.nyears_data,
-    Loc_1['AlbedoFileName'],Loc_1['AlbedoDataOption'])
+    Loc_1['AlbedoFileName'],
+    Loc_1['AlbedoDataOption'],
+    Loc_1['AlbedoConstantValue'])
 
 for _ in range(Loc_1['SimulationStartingYear'], Loc_1['SimulationEndingYear']+1):
     PV_prod = PV_central.production[str(_)]

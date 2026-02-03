@@ -44,19 +44,23 @@ class PV_Production:
 
     def get_several_years_of_electricity_production(self, SP, light, WD,
                                                     albedo_file=None,
-                                                    albedo_option=1):
+                                                    albedo_option=1,
+                                                    albedo_default_value=0.2):
 
         self.production = {}
-        albedo = 0.25  # Default constant value
+
+        albedo = albedo_default_value  # Default constant value
+
         starting_year = min(light.keys())
         ending_year = max(light.keys())
         freq = SP.sp_leapY.index.freq
         albedo_nyears = 0
         if albedo_option == 2:
-            albedo_nyears = self.get_n_years_albedo_from_csvfile(
-                                                          albedo_file,
-                                                          starting_year,
-                                                          ending_year, freq)
+            albedo_nyears = self.get_n_years_albedo_from_csvfile(albedo_file,
+                                                                 starting_year,
+                                                                 ending_year,
+                                                                 freq,
+                                                                 albedo_default_value)
 
         for year in light.keys():
             
@@ -467,7 +471,8 @@ class PV_Production:
         return SF
 
     def get_n_years_albedo_from_csvfile(self, file: str, starting_year: str,
-                                        ending_year: str, freq: str):
+                                        ending_year: str, freq: str,
+                                        albedo_default_value:float):
 
         albedo = pd.read_csv(
             os.path.join('INPUTS', 'CROPS', file + '.csv'),
@@ -487,9 +492,9 @@ class PV_Production:
         albedo = albedo[['Albedo']].reindex(new_index).ffill()
 
         if albedo.dropna().empty:
-            print("Please check that albedo file dates are coherent with "
+            print("Please check that albedo file dates are consistent with "
                   "input Starting Year and Ending Year. Default value used")
-            albedo = albedo.fillna(0.25)
+            albedo = albedo.fillna(albedo_default_value)
         nyears_albedo = {}
 
         for year in range(int(starting_year), int(ending_year)+1):

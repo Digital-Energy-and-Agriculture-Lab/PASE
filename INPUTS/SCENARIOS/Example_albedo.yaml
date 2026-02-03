@@ -31,17 +31,26 @@ WeatherDataOption:
    Unit: dimensionless [-]
    Definition: Option 1 means get the meteo data from PvGis and option 2 means get the meteo data from a file in DATABASE
 AlbedoDataOption:
-   Value: 2
+   Value: 1
    Type: integer
    Limit: [1, 2]
    Unit: dimensionless [-]
-   Definition: Option 1 means default value (0.25) is used and option 2 means get the albedo data from a file in INPUTS, CROPS
+   Definition: Option 1 means constant value (parameter "AlbedoConstantValue", 
+     below) is used and option 2 means get the albedo data from a file 
+      in INPUTS/CROPS.
+AlbedoConstantValue:
+   Value: 0.2
+   Type: float
+   Limit: [0.01, 1]
+   Unit: dimensionless [-]
+   Definition: Albedo value when considered constant throughout the whole simulation period.
 AlbedoFileName:
    Value: albedo_colza
    Type: string
    Definition: Name of the daily or hourly albedo data csv file with (pay
       attention to the format it should have and to the dates)
-      used if AlbedoDataOption is 2 (Custom Albedo).
+      used if AlbedoDataOption is 2 (Custom Albedo). ".csv" extension is 
+      automatically added in the processing stage.
 WeatherFileName:
    Value: Chanco_Chile_WD
    Type: string
