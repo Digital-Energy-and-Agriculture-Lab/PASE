@@ -868,6 +868,7 @@ class PVConfiguration3D(MultiBlockPASE):
         config.setdefault("MeshConfig", False)
         config.setdefault("RotationAxisNumber", 0)
         config.setdefault("CentralAzimut",0)
+        config.setdefault("PanelOffset", 0.0)
         return config
 
     # ---- Panel primitives ----
