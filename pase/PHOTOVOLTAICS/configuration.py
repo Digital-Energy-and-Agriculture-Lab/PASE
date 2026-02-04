@@ -739,6 +739,11 @@ class PVConfiguration3D(MultiBlockPASE):
                 struct_color = 'grey'
             elif geom_struct.user_dict['Material'].lower() == 'wood':
                 struct_color = 'brown'
+            else:
+                msg = (f'Unrecognized Material value in structure configuration '
+                       f'input file : {geom_struct.user_dict["Material"]}')
+                raise ValueError(msg)
+
             pl.add_mesh(geom_struct, color=struct_color)
 
         ground = np.array([[-100, 100, 0],
@@ -863,6 +868,7 @@ class PVConfiguration3D(MultiBlockPASE):
         config.setdefault("MeshConfig", False)
         config.setdefault("RotationAxisNumber", 0)
         config.setdefault("CentralAzimut",0)
+        config.setdefault("PanelOffset", 0.0)
         return config
 
     # ---- Panel primitives ----
@@ -987,10 +993,11 @@ class PVConfiguration3D(MultiBlockPASE):
         num_blocks_x = int(config["NumberOfPVBlocksX"])  # blocks
         num_blocks_y = int(config["NumberOfPVBlocksY"])  # blocks
 
-        base_height = float(config["Height"])  # elevation
+        base_height = float(config["Height"])
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
         hinge_style = config['Hinge']
+        panel_offset = float(config["PanelOffset"])
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             msg = ('Some parameters on number of panels/blocks of panels are '
@@ -1033,14 +1040,14 @@ class PVConfiguration3D(MultiBlockPASE):
             if hinge_style.lower() == 'center':
                 panel = (
                     base_panel.copy()
-                    .translate([offx, offy, offz])
+                    .translate([offx, offy, offz + panel_offset])
                     .rotate_y(tilt_deg, point=(cx, cy, cz))
                     .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
                 )
             elif hinge_style.lower() == 'top':
                 panel = (
                     base_panel.copy()
-                    .translate([offx, offy, offz])
+                    .translate([offx, offy, offz + panel_offset])
                     .rotate_y(90, point=(cx, cy, cz))
                 )
                 panel.rotate_y(90-tilt_deg,
@@ -1128,12 +1135,10 @@ class PVConfiguration3D(MultiBlockPASE):
     def add_structure(self, config, block_centers):
 
         # Instantiate the base block (based on structure type)
-        try:
-            base_struct = build_structure(config)
-        except KeyError as e:
-            logging.getLogger(__name__).warning('No StructureType defined;'
-                                                ' skipping structure part: %s',
-                                                e)
+        base_struct = build_structure(config)
+        if base_struct is None:
+            logger.info('No StructureType defined; skipping structure geometry for central %s',
+                        self.central_id)
             return
 
         # How many blocks ?
@@ -1362,10 +1367,11 @@ class PV_Configuration_3D(PVConfiguration3D):
         num_blocks_x = int(config["NumberOfPVBlocksX"])  # blocks
         num_blocks_y = int(config["NumberOfPVBlocksY"])  # blocks
 
-        base_height = float(config["Height"])  # elevation
+        base_height = float(config["Height"])
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
         hinge_style = config['Hinge']
+        panel_offset = float(config["PanelOffset"])
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             raise ValueError("All count parameters must be >= 1")
@@ -1406,14 +1412,14 @@ class PV_Configuration_3D(PVConfiguration3D):
             if hinge_style.lower() == 'center':
                 panel = (
                     base_panel.copy()
-                    .translate([offx, offy, offz])
+                    .translate([offx, offy, offz + panel_offset])
                     .rotate_y(tilt_deg, point=(cx, cy, cz))
                     .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
                 )
             elif hinge_style.lower() == 'top':
                 panel = (
                     base_panel.copy()
-                    .translate([offx, offy, offz])
+                    .translate([offx, offy, offz + panel_offset])
                     .rotate_y(90, point=(cx, cy, cz))
                 )
                 panel.rotate_y(90 - tilt_deg,
