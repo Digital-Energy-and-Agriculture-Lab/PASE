@@ -35,7 +35,7 @@ TiltY:
    Unit: degree [°]
    Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation
 PanelOffset:
-   Value: -0.5
+   Value: 0.0
    Type: float
    Limit: [-0.5,0.5]
    Unit: meters [m]

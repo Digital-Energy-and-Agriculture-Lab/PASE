@@ -29,7 +29,7 @@ RotationAxisNumber:
    Unit: dimensionless [-]
    Definition: Number of rotation axis that drive the block of panels
 TiltY:
-   Value: 45
+   Value: 50
    Type: float
    Limit: [-80, 80]
    Unit: degree [°]

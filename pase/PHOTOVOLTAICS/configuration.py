@@ -993,10 +993,11 @@ class PVConfiguration3D(MultiBlockPASE):
         num_blocks_x = int(config["NumberOfPVBlocksX"])  # blocks
         num_blocks_y = int(config["NumberOfPVBlocksY"])  # blocks
 
-        base_height = float(config["Height"]) + float(config["PanelOffset"])  # elevation
+        base_height = float(config["Height"])
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
         hinge_style = config['Hinge']
+        panel_offset = float(config["PanelOffset"])
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             msg = ('Some parameters on number of panels/blocks of panels are '
@@ -1039,14 +1040,14 @@ class PVConfiguration3D(MultiBlockPASE):
             if hinge_style.lower() == 'center':
                 panel = (
                     base_panel.copy()
-                    .translate([offx, offy, offz])
+                    .translate([offx, offy, offz + panel_offset])
                     .rotate_y(tilt_deg, point=(cx, cy, cz))
                     .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
                 )
             elif hinge_style.lower() == 'top':
                 panel = (
                     base_panel.copy()
-                    .translate([offx, offy, offz])
+                    .translate([offx, offy, offz + panel_offset])
                     .rotate_y(90, point=(cx, cy, cz))
                 )
                 panel.rotate_y(90-tilt_deg,
@@ -1366,10 +1367,12 @@ class PV_Configuration_3D(PVConfiguration3D):
         num_blocks_x = int(config["NumberOfPVBlocksX"])  # blocks
         num_blocks_y = int(config["NumberOfPVBlocksY"])  # blocks
 
-        base_height = float(config["Height"]) + float(config["PanelOffset"])  # elevation
+        base_height = float(config["Height"])
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
         hinge_style = config['Hinge']
+        panel_offset = float(config["PanelOffset"])
+
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             raise ValueError("All count parameters must be >= 1")
         if any(v <= 0 for v in
@@ -1409,14 +1412,14 @@ class PV_Configuration_3D(PVConfiguration3D):
             if hinge_style.lower() == 'center':
                 panel = (
                     base_panel.copy()
-                    .translate([offx, offy, offz])
+                    .translate([offx, offy, offz + panel_offset])
                     .rotate_y(tilt_deg, point=(cx, cy, cz))
                     .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
                 )
             elif hinge_style.lower() == 'top':
                 panel = (
                     base_panel.copy()
-                    .translate([offx, offy, offz])
+                    .translate([offx, offy, offz + panel_offset])
                     .rotate_y(90, point=(cx, cy, cz))
                 )
                 panel.rotate_y(90 - tilt_deg,
