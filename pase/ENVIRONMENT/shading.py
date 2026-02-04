@@ -6,6 +6,8 @@ import pandas as pd
 import numpy as np
 from scipy.interpolate import interp1d
 
+FULL_CIRCLE_DEG = 360
+
 class Horizon:
     """
     Class managing the far shadings / horizon profile.
@@ -46,18 +48,16 @@ class Horizon:
                                                              timeout=timeout)
             
 
-            self.horizon_profile = pd.DataFrame({
-                'azimuth': data.index,
-                'elevation': data.values.flatten()
-            }).sort_values('azimuth')
+            self.horizon_profile = pd.DataFrame({'azimuth': data.index,
+                                                 'elevation': data.values.flatten()}).sort_values('azimuth')
 
             azimuths = self.horizon_profile['azimuth'].values
             elevations = self.horizon_profile['elevation'].values
             
             # Ensure strictly increasing azimuths for interpolation
-            if azimuths[-1] < 360:
+            if azimuths[-1] < FULL_CIRCLE_DEG:
                  azimuths = np.append(azimuths, 
-                                      360)
+                                      FULL_CIRCLE_DEG)
                  elevations = np.append(elevations, 
                                         elevations[0])
                  
@@ -89,7 +89,7 @@ class Horizon:
             return np.ones_like(azimuths, 
                                 dtype=bool)
         
-        az_norm = np.mod(azimuths, 360)
+        az_norm = np.mod(azimuths, FULL_CIRCLE_DEG)
         
         horizon_el = self.interp_func(az_norm)
         
@@ -120,7 +120,7 @@ class Horizon:
         if self.interp_func is None:
             return None
         
-        azimuths = np.linspace(0, 360, 361) # 1 degree resolution
+        azimuths = np.linspace(0, FULL_CIRCLE_DEG, FULL_CIRCLE_DEG + 1) # 1 degree resolution
         elevations = self.interp_func(azimuths)
         
         bottom_el = -10.0
