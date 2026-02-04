@@ -257,7 +257,7 @@ class PV_Production:
         # Projection effect along X (rotation around Y): projected length scales with cos(tilt)
         coverage = self.GCR_x * np.cos(tilt_rad)
 
-        return np.clip(coverage, 0.0, 1.0)
+        return coverage
     
     def get_sun_vect_in_central_coord(self, sun_vect):
         # Do not take into account the slope of the area and the slope of the 
