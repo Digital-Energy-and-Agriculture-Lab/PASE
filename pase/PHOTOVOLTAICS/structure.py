@@ -470,6 +470,12 @@ class PVTable(PVStructure):
                                  self.required_length)
         self.height_offset = self.half_span * math.tan(self.tilt_rad)
 
+        if self.base_height - self.height_offset < 0:
+            raise ValueError(f"Invalid PVTable configuration: The tilt angle ({self.tilt}°) "
+                             f"is too high for the given base height ({self.base_height}m). "
+                             f"This results in the structure extending {abs(self.base_height - self.height_offset):.2f}m "
+                             "below ground level. Please increase 'Height' or 'PoleSpacingX' or decrease 'TiltY'.")
+
     def make_elementary_group(self) -> pyv.PolyData:
         """Build one table bay with poles, rafters, diagonals, and purlins."""
         pole_and_rafter_group = self.make_start_and_end_block()
