@@ -17,7 +17,7 @@ safe.
 from __future__ import annotations
 
 import math
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -163,16 +163,43 @@ class Mesh:
         include_bottom: bool = False,
         density: float = 0.5,
         property_filter: Optional[Callable[[pv.PolyData], bool]] = None,
+        property_dict: Optional[Dict[str, Iterable[Any]]] = None,
+
     ) -> List[int]:
         """Create meshes for all polydata that match optional property filters.
 
         The method distinguishes between the top and bottom faces based on the
         Z component of the face normals, enabling targeted sampling of
-        photovoltaic surfaces.
+        photovoltaic surfaces. When ``property_dict`` is provided and the
+        input object exposes a ``df`` DataFrame (as with ``MultiBlockPASE``),
+        the properties are used to pre-filter the blocks by column values
+        (e.g. ``Block_X`` or ``Block_Y``). Use ``property_filter`` to apply an
+        additional boolean filter on each PolyData, for example:
+
+        >>> def keep_large_panels(poly):
+        ...     return poly.area > 1.0
+        >>> mesh.import_from_pvconfiguration(pv_objects, property_filter=keep_large_panels)
         """
 
         added_indices: List[int] = []
-        for index, polydata in enumerate(pv_objects):
+        if property_dict is not None and hasattr(pv_objects, "df") and hasattr(pv_objects, "get_block_by_oid"):
+            df = pv_objects.df
+            mask = pd.Series(True, index=df.index)
+            for prop, values in property_dict.items():
+                if prop not in df.columns:
+                    valid = ", ".join(df.columns)
+                    raise KeyError(f"Unknown property: {prop}. Valid: {valid}")
+                mask &= df[prop].isin(list(values))
+            idx = df.index[mask]
+            iterable = []
+            for oid in idx:
+                block = pv_objects.get_block_by_oid(int(oid))
+                if isinstance(block, pv.PolyData):
+                    iterable.append(block)
+        else:
+            iterable = pv_objects
+
+        for index, polydata in enumerate(iterable):
             if property_filter is not None and not property_filter(polydata):
                 continue
 
@@ -296,13 +323,37 @@ class Mesh:
         """Return centers, normals, and areas for a mesh referenced by ID or name."""
 
         mesh_index = self._resolve_mesh_index(identifier)
-        polydata = pv.PolyData(self.meshes[mesh_index])
+        if isinstance(mesh_index,int):
+            polydata = self.meshes[mesh_index]
+        else:
+            polydata = pv.MultiBlock([self.meshes[i] for i in mesh_index]).combine().extract_surface()
 
         cell_centers = polydata.cell_centers().points
         normals = polydata.compute_normals(cell_normals=True, point_normals=False).cell_data["Normals"]
         areas = polydata.compute_cell_sizes(length=False, area=True, volume=False).cell_data["Area"]
 
         return {"centers": cell_centers, "normals": normals, "areas": areas}
+
+    def get_sourcepoints(self) -> np.ndarray:
+        """Return the cell centers of every mesh as a single (n, 3) array."""
+
+        centers: List[np.ndarray] = []
+        for block in self.meshes:
+            polydata = pv.PolyData(block)
+            block_centers = polydata.cell_centers().points
+            if block_centers.size:
+                centers.append(block_centers)
+
+        if not centers:
+            return np.empty((0, 3))
+
+        return np.vstack(centers)
+
+    @property
+    def sourcepoints(self) -> np.ndarray:
+        """Return the cell centers of every mesh as a single (n, 3) array."""
+
+        return self.get_sourcepoints()
 
     # ======================================================================
     # Private helpers
@@ -376,10 +427,23 @@ class Mesh:
 
         return np.vstack(grid_points)
 
-    def _resolve_mesh_index(self, identifier: Union[int, str]) -> int:
+    def _resolve_mesh_index(
+        self, identifier: Union[int, str, Iterable[int]]
+    ) -> Union[int, List[int]]:
         """Translate a mesh id or name into its numerical index."""
         if isinstance(identifier, int):
             return identifier
+        if isinstance(identifier, (list, tuple, np.ndarray)):
+            if not identifier:
+                return []
+
+            if all(isinstance(item, int) for item in identifier):
+                return [int(item) for item in identifier]
+
+            if all(isinstance(item, str) for item in identifier):
+                return [self._resolve_mesh_index(item) for item in identifier]
+
+            raise TypeError("Mesh identifier list must contain only int or only str values.")
 
         matches = self.metadata[self.metadata["name"] == identifier]
         if matches.empty:

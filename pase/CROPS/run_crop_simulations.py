@@ -88,7 +88,7 @@ def visualize_map_of_a_variable(config, results, variable, scene_3D, meshes, yea
     if config['CropModel'] == 'stics':
         data = results[str(year)][variable]
     
-    open_pyvista_3D_visualization(meshes.sourcepoints[:,:-1], 
+    open_pyvista_3D_visualization(meshes.sourcepoints[:,:],
                                   data, 
                                   geo,
                                   variable+' map '+ config['CropModel']+' '+ str(year)+'-'+MM_DD+' ['+unit+']')

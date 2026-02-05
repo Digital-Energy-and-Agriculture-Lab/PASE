@@ -453,11 +453,11 @@ class Ray_casting_scene:
     #The class light shade scene init with a geometry (pyvista.polydata) and a mesh instance
     def __init__(self, mesh, geometry, discrete_sky):
         self.mesh = mesh
-        self.sourcepoints = self.mesh.get_sourcepoints()
+        self.sourcepoints = self.mesh.sourcepoints #center of each cell contained in the mesh
 
         self.geometry = geometry
         self.n_sourcepoints = self.sourcepoints.shape[0]
-        self.sources_flag_dict = mesh.get_sources_flag_dict()
+        #self.sources_flag_dict = mesh.get_sources_flag_dict()
 
         self.discrete_sky = discrete_sky
         self.get_diffuse_weights_map()
@@ -922,7 +922,7 @@ class Ray_casting_scene:
         else:
             geo = self.geometry
 
-        open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
                                       self.dir_mask[:, Sun_P_map_to_visualize],
                                       geo,
                                       "Direct map [-]")
@@ -959,7 +959,7 @@ class Ray_casting_scene:
             map_to_display = np.array(diffuse_shaded_weights_map)
 
 
-        open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
                                       np.array(map_to_display, dtype=np.float32),
                                       geo,
                                       "Unweighted shaded diffuse map [-]")
@@ -987,7 +987,7 @@ class Ray_casting_scene:
         else:
             geo = self.geometry
 
-        open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
                                       self.daily_irr_spat[str(year)][:,
                                       julian_day],
                                       geo,
