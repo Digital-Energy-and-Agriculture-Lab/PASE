@@ -107,7 +107,8 @@ def test_get_several_years_of_electricity_production_nominal(default_PV_Central,
         "albedo_colza",
         '2020',
         '2020',
-        freq)
+        freq,
+        0.25)
 
     assert isinstance(albedo, dict)
     assert "2020" in albedo
@@ -136,7 +137,8 @@ def test_get_several_years_of_electricity_production_hors_periode(default_PV_Cen
         "albedo_colza",
         '2021',
         '2021',
-        'H')
+        'H',
+        0.25)
 
     assert isinstance(albedo, dict)
     assert "2021" in albedo
