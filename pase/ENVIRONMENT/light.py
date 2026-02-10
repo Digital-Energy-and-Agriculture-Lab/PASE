@@ -525,7 +525,7 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full diffuse light
-        if geometry.polydata_all_centrals().number_of_cells == 0 :
+        if geometry.number_of_cells == 0 :
             print("Geometry is empty. Returning full diffuse illumination.")
             diffuse_mask = np.ones(self.n_sourcepoints, dtype=np.float16)
 
@@ -658,7 +658,7 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full direct light
-        if geometry.polydata_all_centrals().number_of_cells == 0 :
+        if geometry.number_of_cells == 0 :
             n_sun_positions = sun_P.shape[0]
             print("Geometry is empty. Returning full direct illumination.")
             direct_mask = np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
