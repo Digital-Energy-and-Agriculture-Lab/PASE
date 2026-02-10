@@ -11,13 +11,13 @@ Latitude:
    Type: float
    Limit: [-90, 90]
    Unit: degrés décimaux [-]
-   Definition: Latitude of the location
+   Definition: Latitude of the location, used for PVGIS weather data and sun position computation
 Longitude:
    Value: 4.702089
    Type: float
    Limit: [-180, 180]
    Unit: degrés décimaux [-]
-   Definition: Longitude of the location
+   Definition: Longitude of the location, used for PVGIS weather data and sun position computation
 Altitude:
    Value: 165
    Type: float

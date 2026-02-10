@@ -229,9 +229,18 @@ class Light:
         Ai = np.zeros(len(rad_top_atm))
         ind = np.where(rad_top_atm!=0)
         Ai[ind] = BHI[ind]/rad_top_atm[ind]
-        
-        return Ai  
-    
+        ind_ai_too_big = np.where(Ai > 1)
+        Ai[ind_ai_too_big] = 1
+
+        if len(ind_ai_too_big[0]) > 5:
+            print(
+                "\u001B[38;5;208mWarning: BHI exceeds top of atmosphere "
+                "radiation {0} times : check weather data location and "
+                "input location coherence\u001B[0m".format(
+                str(len(ind_ai_too_big[0]))))
+
+        return Ai
+
     def get_modulating_factor(self, GHI, BHI):
         
         f = np.zeros(len(GHI))
