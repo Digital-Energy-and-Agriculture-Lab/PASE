@@ -167,9 +167,11 @@ class PVStructure(ABC):
                                       /self.panels_per_group)
         self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
         self.structure_spacing_x = 0
-        self.structure_spacing_y = ((PV_i['RepetitionDistanceOfPanelsY']
-                                    * PV_i['NumberOfPanelsY'])
-                                    /self.n_groups_in_block)
+        calculated_spacing_y = ((PV_i['RepetitionDistanceOfPanelsY']
+                                     * PV_i['NumberOfPanelsY'])
+                                    / self.n_groups_in_block)
+        self.structure_spacing_y = max(calculated_spacing_y,
+                                       float(PV_i['RepetitionDistanceOfPanelsY']))
         self.structure_height = PV_i['StructureHeight']
 
         self.pole_shape = PV_i['PoleShape']
@@ -429,7 +431,9 @@ class AgrivoltaicFence(PVStructure):
             g = self.make_elementary_group()
             offx, offy, offz = map(float, positions[idx])
 
-            g.translate((0, offy, 0),
+            g.translate((offx, 
+                         offy, 
+                         0),
                         inplace=True)
             blocks.append(g)
 
@@ -551,19 +555,28 @@ class PVTable(PVStructure):
             g = self.make_elementary_group()
             offx, offy, offz = map(float, positions[idx])
 
-            g.translate((0, 
+            g.translate((offx, 
                          offy, 
                          0),
                         inplace=True)
             blocks.append(g)
 
-        end_pole = self.make_start_and_end_block()
-        end_pole.translate((0,
-                            offy+self.panel_spacing_y,
-                            0.0),
-                            inplace=True)
-        
-        blocks.append(end_pole)
+        unique_x_positions = set()
+        max_y_per_x = {}
+
+        for idx in range(self.n_groups_in_block):
+             x, y, z = map(float, positions[idx])
+             unique_x_positions.add(x)
+             if x not in max_y_per_x or y > max_y_per_x[x]:
+                 max_y_per_x[x] = y
+
+        for x in unique_x_positions:
+            end_pole = self.make_start_and_end_block()
+            end_pole.translate((x,
+                                max_y_per_x[x] + self.panel_spacing_y,
+                                0.0),
+                                inplace=True)
+            blocks.append(end_pole)
         combined_blocks = blocks.combine()
         combined_blocks.user_dict = {'Material': self.material}
 
@@ -618,8 +631,8 @@ class HSATS(PVStructure):
 
         for idx in range(self.n_groups_in_block):
             group = self.make_elementary_group()
-            _, offy, _ = map(float, positions[idx])
-            group.translate((0.0, offy, 0.0), inplace=True)
+            offx, offy, _ = map(float, positions[idx])
+            group.translate((offx, offy, 0.0), inplace=True)
             blocks.append(group)
 
         combined = blocks.combine()
