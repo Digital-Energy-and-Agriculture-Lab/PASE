@@ -431,7 +431,7 @@ class AgrivoltaicFence(PVStructure):
             g = self.make_elementary_group()
             offx, offy, offz = map(float, positions[idx])
 
-            g.translate((offx, 
+            g.translate((0, 
                          offy, 
                          0),
                         inplace=True)
@@ -555,28 +555,20 @@ class PVTable(PVStructure):
             g = self.make_elementary_group()
             offx, offy, offz = map(float, positions[idx])
 
-            g.translate((offx, 
+            g.translate((0, 
                          offy, 
                          0),
                         inplace=True)
             blocks.append(g)
 
-        unique_x_positions = set()
-        max_y_per_x = {}
+        end_pole = self.make_start_and_end_block()
+        end_pole.translate((0,
+                            offy+self.panel_spacing_y,
+                            0.0),
+                            inplace=True)
+        
+        blocks.append(end_pole)
 
-        for idx in range(self.n_groups_in_block):
-             x, y, z = map(float, positions[idx])
-             unique_x_positions.add(x)
-             if x not in max_y_per_x or y > max_y_per_x[x]:
-                 max_y_per_x[x] = y
-
-        for x in unique_x_positions:
-            end_pole = self.make_start_and_end_block()
-            end_pole.translate((x,
-                                max_y_per_x[x] + self.panel_spacing_y,
-                                0.0),
-                                inplace=True)
-            blocks.append(end_pole)
         combined_blocks = blocks.combine()
         combined_blocks.user_dict = {'Material': self.material}
 
@@ -631,8 +623,12 @@ class HSATS(PVStructure):
 
         for idx in range(self.n_groups_in_block):
             group = self.make_elementary_group()
-            offx, offy, _ = map(float, positions[idx])
-            group.translate((offx, offy, 0.0), inplace=True)
+            offx, offy, _ = map(float, 
+                                positions[idx])
+            group.translate((offx, 
+                             offy, 
+                             0.0), 
+                             inplace=True)
             blocks.append(group)
 
         combined = blocks.combine()
