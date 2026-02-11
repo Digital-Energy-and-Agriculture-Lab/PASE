@@ -625,7 +625,7 @@ class HSATS(PVStructure):
             group = self.make_elementary_group()
             offx, offy, _ = map(float, 
                                 positions[idx])
-            group.translate((offx, 
+            group.translate((0.0, 
                              offy, 
                              0.0), 
                              inplace=True)
