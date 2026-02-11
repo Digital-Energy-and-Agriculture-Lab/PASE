@@ -331,13 +331,13 @@ class PVStructure(ABC):
         right_pole_height = self.base_height - self.height_offset + ground_offset
 
         if left_pole_height <= right_pole_height:
-            high_x = -self.pole_spacing
+            high_x = -self.half_span
             high_z = left_pole_height
-            low_x = self.pole_spacing
+            low_x = self.half_span
         else:
-            high_x = self.pole_spacing
+            high_x = self.half_span
             high_z = right_pole_height
-            low_x = -self.pole_spacing
+            low_x = -self.half_span
 
         low_z = min(self.diagonal_height + ground_offset, high_z - self.diagonal_epsilon)
 
@@ -467,7 +467,7 @@ class PVTable(PVStructure):
         super().__init__(PV_i, **kwargs)
 
         self.tilt_rad = math.radians(self.tilt)
-        self.half_span = self.pole_spacing
+        self.half_span = self.pole_spacing/2
 
         self.required_length = 2 * self.half_span / math.cos(self.tilt_rad) 
         self.rafter_length = max(self.rafter_length, 
@@ -502,7 +502,7 @@ class PVTable(PVStructure):
                     side=self.pole_side,
                     radius=self.pole_radius,
                     positioning=self.pole_ground_positioning)
-        pole.polydata.translate((-self.pole_spacing, 
+        pole.polydata.translate((-self.half_span, 
                                  -self.purlin_length/2,
                                  0), 
                                 inplace=True)
@@ -514,7 +514,7 @@ class PVTable(PVStructure):
                       side=self.pole_side,
                       radius=self.pole_radius,
                       positioning=self.pole_ground_positioning)
-        pole_2.polydata.translate((self.pole_spacing,
+        pole_2.polydata.translate((self.half_span,
                                    -self.purlin_length/2,
                                    0),
                                   inplace=True)

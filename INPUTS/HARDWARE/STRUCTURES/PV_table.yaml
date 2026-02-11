@@ -64,7 +64,7 @@ PoleSpacingX:
   Type: float
   Limit: [0.2,4.0]
   Unit: meters [m]
-  Definition: the distance of a pole from the center of the structure (e.g if you want 2 meters between 2 poles set this to 1)
+  Definition: the distance between the two poles on x axis
 PurlinShape:
   Value: square
   Type: string
