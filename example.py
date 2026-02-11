@@ -105,9 +105,6 @@ PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
                                     Sun_positions_samp.solar_vector,
                                     visualization=True)  # !!!! Problem with rotation angle that are negative
 
-
-
-
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
 
