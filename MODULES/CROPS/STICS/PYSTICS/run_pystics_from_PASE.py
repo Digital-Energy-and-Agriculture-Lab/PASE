@@ -47,7 +47,7 @@ def run_independant_usms_in_pystics(config, WD, daily_irr, scenario_P):
                 
                 # Write the usms file containing this unit of simulation (for one position of one year)
                 generate_USMS_file(WD_file, WD_file_previous_year,
-                                   Simu_init, year, 'MODULES/CROPS/STICS/PYSTICS/pySTICS/pystics/parametrization_files/example/')
+                                   Simu_init, year, 'MODULES/CROPS/STICS/PYSTICS/pySTICS/pystics/parametrization_files/pase/')
                 
                 os.chdir("MODULES/CROPS/STICS/PYSTICS/pySTICS")
                 
@@ -55,7 +55,7 @@ def run_independant_usms_in_pystics(config, WD, daily_irr, scenario_P):
                 from pystics.simulation import run_pystics_simulation
                 
                 # Read input files from pystics/parametrization_files/example folder for the USM associated to chosen species and variety
-                weather, crop, manage, soil, station, constants, initial = parametrization_from_stics_example_files(WD_file, Simu_init['Variety'], PASE=1)
+                weather, crop, manage, soil, station, constants, initial = parametrization_from_stics_example_files(WD_file, Simu_init['Variety'], work_directory='pase')
                 ## !! WARNING: check ETP calculation parameter !!!! To do this, set it to 2.
                 # Run the simulation
                 pystics_df, pystics_mat_list = run_pystics_simulation(weather, crop, soil, constants, manage, station, initial)
