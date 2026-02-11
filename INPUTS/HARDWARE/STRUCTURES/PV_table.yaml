@@ -11,7 +11,7 @@ Material:
     Metal -> grey structure
     Wood -> brown structure
 PanelsPerGroup:
-  Value: 2
+  Value: 1
   Type: integer
   Limit: [1, 100]
   Unit: dimensionless [-]
@@ -63,7 +63,8 @@ PoleSpacingX:
   Value: 0.2
   Type: float
   Limit: [0.2,4.0]
-  Definition: Spacing between two poles on the x axis 
+  Unit: meters [m]
+  Definition: the distance between the two poles on x axis
 PurlinShape:
   Value: square
   Type: string
