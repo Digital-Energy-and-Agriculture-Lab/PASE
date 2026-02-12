@@ -14,6 +14,7 @@ import sys
 python_executable = sys.executable
 scripts = ['example.py',
            'example_HSATS.py',
+           'example_mesh.py',
            'example_multiblock.py',
            'example_NoPanels.py',
            'example_profiling.py',
