@@ -8,6 +8,7 @@ import yaml
 
 from pase.user_support_tools import PASE_Logger
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from pase.DATA_MANAGEMENT.helpers import _to_native
 
 def export_benchmark(df, fname_prefix='diffuse_benchmark_', mode='x', fpath=None):
     if mode == 'x':
@@ -112,6 +113,8 @@ def save_simulation_metadata(loc: Optional[dict], av: Optional[dict] = None,
     metadata['crop_config'] = crop_config
     if source is not None:
         metadata['source'] = source
+
+    metadata = _to_native(metadata)
 
     # Saving metadata dictionary into YAML file
     with open(output_path, 'w', encoding='utf-8') as f:
