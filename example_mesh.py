@@ -131,7 +131,7 @@ M = Mesh()
 # Interest Zone Orientation Mode
 M.set_interest_zone_orientation(Loc_1, AV_1)
 
-# Add of the points of interests on the ground for crop models
+# Add the points of interests on the ground for crop models
 M.add_oriented_plane_ground_mesh(
     Loc_1['Xmin_InterestZone'],
     Loc_1['Xmax_InterestZone'],
@@ -184,7 +184,7 @@ Light_instance = Light(WD.nyears_data, Sun_positions_complete, Loc_1['DiffuseSky
 L = Ray_casting_scene(mesh=M,
                       geometry=PV_1_3Dconfig.PV_central_PD,
                       discrete_sky=discrete_sky)
-#print(type(PV_1_3Dconfig.PV_central_PD))
+
 # Run light ray casting model (direct and diffuse) with points of interest and scene
 L.get_light_maps(Sun_positions_samp.solar_vector,
                  visualization=False,
@@ -203,22 +203,23 @@ L.visualize_daily_irrad_map(Loc_1['SimulationStartingYear'], 15)
 ##############
 # Processing #
 ##############
-print("\nRésumé des maillages enregistrés :")
+print("\nSummary of recorded meshes :")
 print(M.metadata)
 
 # Extract geometrical information for the crop interest zone
 crop_mesh_data = M.get_mesh_data("crop")
-print("\nInformations sur la zone d'intérêt :")
-print(f"- Nombre de cellules : {len(crop_mesh_data['centers'])}")
-print(f"- Exemple de centre : {crop_mesh_data['centers'][0]}")
-print(f"- Exemple de normale : {crop_mesh_data['normals'][0]}")
+print("\nInterest zone information :")
+print(f"- Number of cells : {len(crop_mesh_data['centers'])}")
+print(f"- Center example : {crop_mesh_data['centers'][0]}")
+print(f"- Normal example : {crop_mesh_data['normals'][0]}")
 
 # Additional check: compare the size of each mesh with basic statistics
 for mesh_name in ["crop", "tilted_surface", "sensor_probe"]:
     mesh_data = M.get_mesh_data(mesh_name)
     areas = mesh_data["areas"]
     print(
-        f"Surface '{mesh_name}': {areas.size} cellules, aire moyenne {np.mean(areas):.4f} m²"
+        f"'{mesh_name}' surface: {areas.size} cells, "
+        f"average area {np.mean(areas):.4f} m²"
     )
 
 # PV production model
