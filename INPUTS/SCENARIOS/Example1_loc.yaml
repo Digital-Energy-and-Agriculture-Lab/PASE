@@ -139,4 +139,3 @@ InterestZoneCustomAngle:
   Unit: degrees [°]
   Definition: Custom orientation angle for the interest zone. Starting from the north in a clockwise direction
     (used only if InterestZoneOrientationMode = "custom")
-
