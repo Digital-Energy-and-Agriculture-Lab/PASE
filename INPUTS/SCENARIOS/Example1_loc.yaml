@@ -124,19 +124,3 @@ dY_InterestZone:
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Increment in the y coordinates of the zone of interest for the light and crop modelling
-InterestZoneOrientationMode:
-  Value: custom
-  Type: string
-  Possibilities: [default, auto, custom]
-  Definition: Orientation mode for the interest zone.
-    - default  aligned to North (0°)
-    - auto aligned with PV azimuth
-    - custom use InterestZoneCustomAngle
-InterestZoneCustomAngle:
-  Value: 60
-  Type: float
-  Limit: [0, 360]
-  Unit: degrees [°]
-  Definition: Custom orientation angle for the interest zone. Starting from the north in a clockwise direction
-    (used only if InterestZoneOrientationMode = "custom")
-
