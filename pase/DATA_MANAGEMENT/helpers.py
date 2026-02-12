@@ -38,3 +38,19 @@ def get_sampling_period(series, format = '%d/%m/%Y %H:%M'):
     dt = t1 - t0
 
     return f'{dt.seconds}s'
+
+
+def _to_native(obj):
+    """Recursively convert numpy types to native Python types."""
+    if isinstance(obj, dict):
+        return {k: _to_native(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_to_native(v) for v in obj]
+    elif isinstance(obj, tuple):
+        return tuple(_to_native(v) for v in obj)
+    elif isinstance(obj, np.generic):
+        return obj.item()  # converts numpy scalar to Python scalar
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    else:
+        return obj
