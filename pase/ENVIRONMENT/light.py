@@ -7,6 +7,7 @@
 from matplotlib.patches import Polygon
 from scipy.spatial import cKDTree
 from calendar import isleap
+import logging
 import numpy as np
 import pandas as pd
 import pyvista as pyV
@@ -22,6 +23,7 @@ from pase.ENVIRONMENT.sky_model import ReinhartSky, fibonacci_half_sphere
 from pase.ENVIRONMENT.sky_model import CIEStandardSky
 from pase.user_support_tools import PASE_Logger
 
+logger = logging.getLogger(__name__)
 
 class Sun_positions:
     
@@ -453,12 +455,13 @@ class Ray_casting_scene:
     #The class light shade scene init with a geometry (pyvista.polydata) and a mesh instance
     def __init__(self, mesh, geometry, discrete_sky, diffusers=None):
         self.mesh = mesh
-        self.sourcepoints = self.mesh.get_sourcepoints()
+        self.sourcepoints = self.mesh.sourcepoints #center of each cell contained in the mesh
 
         self.geometry = geometry
         self.n_sourcepoints = self.sourcepoints.shape[0]
-        self.sources_flag_dict = mesh.get_sources_flag_dict()
+        #self.sources_flag_dict = mesh.get_sources_flag_dict()
         self.diffusers=diffusers
+
         self.discrete_sky = discrete_sky
         self.get_diffuse_weights_map()
 
@@ -483,8 +486,10 @@ class Ray_casting_scene:
             self.masks = self.get_mask_from_sky_dir(self.geometry)
             self.diffuse_mask = self.masks['Diffuse']
             self.dir_mask = self.get_direct_mask(sun_P, self.geometry)
-            if self.diffusers is not None:self.compute_diffuser_map(sun_P)
-        if visualization == True:
+            if self.diffusers is not None:
+                self.compute_diffuser_map(sun_P)
+
+        if visualization is True:
             self.visualize_direct_light_map(Sun_P_map_to_visualize)
             self.visualize_diffuse_light_map(Sun_P_map_to_visualize)
         else:
@@ -587,12 +592,16 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full diffuse light
-        if geometry.polydata_all_centrals().number_of_cells == 0 :
-            print("Geometry is empty. Returning full diffuse illumination.")
-            return np.ones(self.n_sourcepoints, dtype=np.float16)
+        try:
+            if geometry.polydata_all_centrals().number_of_cells == 0:
+                logger.info("Geometry is empty. Returning full diffuse illumination.")
+                return np.ones(self.n_sourcepoints, dtype=np.float16)
+        except AttributeError:
+            if geometry.number_of_cells == 0:
+                logger.info("Geometry is empty. Returning full diffuse illumination.")
+                return np.ones(self.n_sourcepoints, dtype=np.float16)
         geometry =  geometry.polydata_by_property(property_dict={'Type':['PV']})
-        # Handle empty geometry: return full diffuse light
-    
+
         #Get direction of ray to reach the small suns and compute the sky view of each point
         pTarget = np.column_stack([self.discrete_sky.x,
                                    self.discrete_sky.y,
@@ -703,7 +712,7 @@ class Ray_casting_scene:
         
         
         Parameters:
-            sun_P (int): sun positions
+            sun_P (int): sun positions  # TODO the type (int) seems wrong here
 
         Returns:
            direct_ID_t_map (np.array n x t):  Providing a matrix of boolean (0/1) for each source points (n) and each
@@ -711,10 +720,16 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full direct light
-        if geometry.polydata_all_centrals().number_of_cells == 0 :
-            n_sun_positions = sun_P.shape[0]
-            print("Geometry is empty. Returning full diffuse illumination.")
-            return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
+        try:
+            if geometry.polydata_all_centrals().number_of_cells == 0 :
+                n_sun_positions = sun_P.shape[0]
+                logger.info("Geometry is empty. Returning full direct illumination.")
+                return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
+        except:
+            if geometry.number_of_cells == 0:
+                n_sun_positions = sun_P.shape[0]
+                logger.info("Geometry is empty. Returning full direct illumination.")
+                return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
 
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
         SourcePoints = np.repeat(np.column_stack((
@@ -797,6 +812,7 @@ class Ray_casting_scene:
         # dfShade['RefHour'] = dfShade['hour']
         dfShade['RefSecond'] = dfShade['second']
         dfShade['SolPosInd'] = np.arange(len(dfShade))
+
         for year in light_data:
             
             freq_deter = len(light_data[year]['GHI'])
@@ -818,6 +834,7 @@ class Ray_casting_scene:
             irradianceMap_direct = {}
             irradianceMap_diffus = {}
             irradianceMap_diffuser = {}
+
             # Loop over days of year (doy) to compute daily irradiance.
             doy = dfWeatherMerged['index'].dt.dayofyear.unique()
             doy.sort()  # doy = [1, 2, 3, ..., 365]
@@ -839,7 +856,7 @@ class Ray_casting_scene:
                 if type(self.geometry) != list:  # no sun tracking
                     irradianceMap_diffus[day] = self.compute_daily_diff_irradiation(df_subShade_merged.dropna(), n)
                     indices = np.where(dfWeatherMerged['index'].dt.dayofyear == day)[0]
-                    if self.diffusers !=None:
+                    if self.diffusers is not None:
                         irradianceMap_diffuser[day] = self.compute_daily_diffuser_irradiation(df_subShade_merged.dropna(), n)
                     else:
                         irradianceMap_diffuser[day] = np.zeros(irradianceMap_diffus[day].shape)
@@ -866,7 +883,8 @@ class Ray_casting_scene:
 
             if type(self.geometry) == list:
                 irradianceMap_diffus = dict(zip(doy, temp_list))
-            #Conversion des dictionnaires en matrice numpy et ajout dans l attribut ad-hoc
+
+            # Convert dictionaries to Numpy arrays and add to the ad-hoc attribute
             self.daily_irr_spat[year] = (pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()
                                          + pd.DataFrame.from_dict(irradianceMap_direct).to_numpy()
                                          + pd.DataFrame.from_dict(irradianceMap_diffuser).to_numpy())
@@ -956,6 +974,7 @@ class Ray_casting_scene:
 
         outs = [self.get_shaded_radiance_contrib(az[i], el[i], sky_type[i]) for i in range(T)]
 
+        # Determine if outputs are 2D or 3D per-time and stack appropriately
         if outs[0].ndim == 2:  # No tracking
             stacked = np.stack(outs, axis=0)   # (T, M, P) if each out is (M,P)
             weighted = stacked * dhi[:, None, None]
@@ -1007,7 +1026,7 @@ class Ray_casting_scene:
         else:
             geo = self.geometry
 
-        open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
                                       self.dir_mask[:, Sun_P_map_to_visualize],
                                       geo,
                                       "Direct map [-]")
@@ -1044,7 +1063,7 @@ class Ray_casting_scene:
             map_to_display = np.array(diffuse_shaded_weights_map)
 
 
-        open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
                                       np.array(map_to_display, dtype=np.float32),
                                       geo,
                                       "Unweighted shaded diffuse map [-]")
@@ -1137,7 +1156,7 @@ class Ray_casting_scene:
         else:
             geo = self.geometry
 
-        open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
                                       self.daily_irr_spat[str(year)][:,
                                       julian_day],
                                       geo,

@@ -167,9 +167,11 @@ class PVStructure(ABC):
                                       /self.panels_per_group)
         self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
         self.structure_spacing_x = 0
-        self.structure_spacing_y = ((PV_i['RepetitionDistanceOfPanelsY']
-                                    * PV_i['NumberOfPanelsY'])
-                                    /self.n_groups_in_block)
+        calculated_spacing_y = ((PV_i['RepetitionDistanceOfPanelsY']
+                                     * PV_i['NumberOfPanelsY'])
+                                    / self.n_groups_in_block)
+        self.structure_spacing_y = max(calculated_spacing_y,
+                                       float(PV_i['RepetitionDistanceOfPanelsY']))
         self.structure_height = PV_i['StructureHeight']
 
         self.pole_shape = PV_i['PoleShape']
@@ -329,13 +331,13 @@ class PVStructure(ABC):
         right_pole_height = self.base_height - self.height_offset + ground_offset
 
         if left_pole_height <= right_pole_height:
-            high_x = -self.pole_spacing
+            high_x = -self.half_span
             high_z = left_pole_height
-            low_x = self.pole_spacing
+            low_x = self.half_span
         else:
-            high_x = self.pole_spacing
+            high_x = self.half_span
             high_z = right_pole_height
-            low_x = -self.pole_spacing
+            low_x = -self.half_span
 
         low_z = min(self.diagonal_height + ground_offset, high_z - self.diagonal_epsilon)
 
@@ -429,7 +431,9 @@ class AgrivoltaicFence(PVStructure):
             g = self.make_elementary_group()
             offx, offy, offz = map(float, positions[idx])
 
-            g.translate((0, offy, 0),
+            g.translate((0, 
+                         offy, 
+                         0),
                         inplace=True)
             blocks.append(g)
 
@@ -463,7 +467,7 @@ class PVTable(PVStructure):
         super().__init__(PV_i, **kwargs)
 
         self.tilt_rad = math.radians(self.tilt)
-        self.half_span = self.pole_spacing
+        self.half_span = self.pole_spacing/2
 
         self.required_length = 2 * self.half_span / math.cos(self.tilt_rad) 
         self.rafter_length = max(self.rafter_length, 
@@ -498,7 +502,7 @@ class PVTable(PVStructure):
                     side=self.pole_side,
                     radius=self.pole_radius,
                     positioning=self.pole_ground_positioning)
-        pole.polydata.translate((-self.pole_spacing, 
+        pole.polydata.translate((-self.half_span, 
                                  -self.purlin_length/2,
                                  0), 
                                 inplace=True)
@@ -510,7 +514,7 @@ class PVTable(PVStructure):
                       side=self.pole_side,
                       radius=self.pole_radius,
                       positioning=self.pole_ground_positioning)
-        pole_2.polydata.translate((self.pole_spacing,
+        pole_2.polydata.translate((self.half_span,
                                    -self.purlin_length/2,
                                    0),
                                   inplace=True)
@@ -564,6 +568,7 @@ class PVTable(PVStructure):
                             inplace=True)
         
         blocks.append(end_pole)
+
         combined_blocks = blocks.combine()
         combined_blocks.user_dict = {'Material': self.material}
 
@@ -618,8 +623,12 @@ class HSATS(PVStructure):
 
         for idx in range(self.n_groups_in_block):
             group = self.make_elementary_group()
-            _, offy, _ = map(float, positions[idx])
-            group.translate((0.0, offy, 0.0), inplace=True)
+            offx, offy, _ = map(float, 
+                                positions[idx])
+            group.translate((0.0, 
+                             offy, 
+                             0.0), 
+                             inplace=True)
             blocks.append(group)
 
         combined = blocks.combine()
