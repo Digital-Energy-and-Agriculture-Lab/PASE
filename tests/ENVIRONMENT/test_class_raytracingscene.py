@@ -34,7 +34,18 @@ def _create_example_centrale():
     M = Mesh()
     loc = dict(InterestZoneOrientationMode='custom',InterestZoneCustomAngle=0)
     M.set_interest_zone_orientation(loc, base_dict|variants["PV_C"])
-    M.add_oriented_plane_ground_mesh(-1, 1, -1, 1, 0.1, 0.1, flag="crop")
+    # M.add_oriented_plane_ground_mesh(-1, 1, -1, 1, 0.1, 0.1, flag="crop")
+    M.add_rectangular_surface(
+        width=2,
+        height=2,
+        density=0.1,
+        name="crop",
+        center=(0.0, 0.0, 0.0),
+        normal=(0.0, 0.0, 1.0),
+        reference_direction=(1.0, 0.0, 0.0),
+        face_type="rectangle",  # or "triangle"
+    )
+
     cfg[0].create_regular_central(base_dict|variants["PV_A"])
     cfg[1].create_regular_central(base_dict|variants["PV_B"])
     cfg[2].create_regular_central(base_dict|variants["PV_C"])
@@ -71,6 +82,9 @@ def test_self_intercept():
 
 def test_compute_diffuser_map():
     geometry, M = _create_example_centrale()
+    mesh_data = M.get_mesh_data("crop")
+    cell_area = mesh_data["areas"][0]
+
     L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)
     L.get_light_maps(suns,visualization=False)
     maps = L.diffuser_map
@@ -83,7 +97,11 @@ def test_compute_diffuser_map():
             for j in range(weight.shape[1]):
                 diffuser_map[i, k]+=weight[i, j]*_cos_elev_patch[j]*L.masks['Diffuser'][k, j]
     assert np.allclose(maps, diffuser_map, rtol=1e-05)
-    assert (np.sum(diffuser_map, axis=1)*0.1*0.1 <= 1.6).all()
+
+    # in the following assertion, 1.6 comes from the fact that the diffuser is a
+    # square of 1.6 m side (i.e. 1.6 m² area) and the light rays are unit rays ; thus
+    # by conservation of energy no value should be greater than 1.6 units of energy
+    assert (np.sum(diffuser_map, axis=1)*cell_area <= 1.6).all()
 
 def test_diffuser_map_theory():
     sky = ReinhartSky(MF=8).reinhart_patches
