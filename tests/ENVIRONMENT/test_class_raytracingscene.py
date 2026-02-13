@@ -6,6 +6,7 @@ from pase.ENVIRONMENT.diffuser import LenticularDiffuser
 import numpy as np
 import pandas as pd
 
+
 def _diffuser_trace(x, x0, a, l, DB):
     alpha = np.maximum(x0-l*np.ones(len(x))/2, x-a*np.tan(DB/2))
     beta = np.minimum(x0 + l * np.ones(len(x)) / 2, x + a * np.tan(DB / 2))
@@ -13,6 +14,7 @@ def _diffuser_trace(x, x0, a, l, DB):
     ind = np.where(I<0)
     I[ind] = 0
     return I
+
 
 def _create_example_centrale():
     cfg = [PVConfiguration3D(), PVConfiguration3D(), PVConfiguration3D()]
@@ -32,9 +34,9 @@ def _create_example_centrale():
                            DiffuserDimensionY=1.6, DiffusersBetweenPanels=True,
                            DiffusersAtRowEnds=False,DiffusersFillXAxis=True, TiltY=0.0)}
     M = Mesh()
-    loc = dict(InterestZoneOrientationMode='custom',InterestZoneCustomAngle=0)
+    loc = dict(InterestZoneOrientationMode='custom', InterestZoneCustomAngle=0)
+
     M.set_interest_zone_orientation(loc, base_dict|variants["PV_C"])
-    # M.add_oriented_plane_ground_mesh(-1, 1, -1, 1, 0.1, 0.1, flag="crop")
     M.add_rectangular_surface(
         width=2,
         height=2,
@@ -43,17 +45,23 @@ def _create_example_centrale():
         center=(0.0, 0.0, 0.0),
         normal=(0.0, 0.0, 1.0),
         reference_direction=(1.0, 0.0, 0.0),
-        face_type="rectangle",  # or "triangle"
+        face_type="rectangle",
     )
 
     cfg[0].create_regular_central(base_dict|variants["PV_A"])
     cfg[1].create_regular_central(base_dict|variants["PV_B"])
     cfg[2].create_regular_central(base_dict|variants["PV_C"])
     return cfg, M
+
+
 sky = ReinhartSky(MF=1).reinhart_patches
-suns  = np.array([np.array([i, j, 1]).reshape((1,3))/np.sqrt(i**2+j**2+1) for i in range(-1, 2, 1) for j in range(-1, 2, 1)]).reshape((9, 3))
+suns = np.array([np.array([i, j, 1]).reshape((1,3))/np.sqrt(i**2+j**2+1)
+                 for i in range(-1, 2, 1)
+                 for j in range(-1, 2, 1)]).reshape((9, 3))
 Diffusers = LenticularDiffuser(0, 10, omega = 30)
 Diffusers2 = LenticularDiffuser(0, 0, omega = 30)
+
+
 def test_check_mask_Ray_casting_scene():
     geometry,M = _create_example_centrale()
     L = Ray_casting_scene(M, geometry[0], sky)
@@ -66,6 +74,7 @@ def test_check_mask_Ray_casting_scene():
     assert L.masks['PV'].shape == (M.sourcepoints.shape[0], len(sky))
     assert L.masks['Diffuse'].shape == (M.sourcepoints.shape[0], len(sky))
 
+
 def test_self_intercept():
     geometry, M = _create_example_centrale()
     L = Ray_casting_scene(M, geometry[0], sky)
@@ -77,8 +86,9 @@ def test_self_intercept():
     Rays = np.arange(0, sourcepoints.shape[0], 1)
     Cells = np.zeros_like(Rays)
     R_filt, C_filt = L.self_intercept(sourcepoints, sourcepoints+Delta, Rays, Cells)
-    ind  = np.where(np.linalg.norm(Delta, axis=1)>0.01)
+    ind = np.where(np.linalg.norm(Delta, axis=1)>0.01)
     assert (R_filt == Rays[ind]).all()
+
 
 def test_compute_diffuser_map():
     geometry, M = _create_example_centrale()
@@ -88,7 +98,7 @@ def test_compute_diffuser_map():
     L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)
     L.get_light_maps(suns,visualization=False)
     maps = L.diffuser_map
-    pTarget  = np.column_stack([sky.x, sky.y, sky.z])
+    pTarget = np.column_stack([sky.x, sky.y, sky.z])
     weight = Diffusers2.get_light_direction(suns, pTarget, sky['Normalized surf area'], np.sqrt(np.min(sky['solid_angle_sr'])))
     _cos_elev_patch = sky['cos(z)']
     diffuser_map = np.zeros((weight.shape[0], L.masks['Diffuser'].shape[0]))
@@ -103,18 +113,20 @@ def test_compute_diffuser_map():
     # by conservation of energy no value should be greater than 1.6 units of energy
     assert (np.sum(diffuser_map, axis=1)*cell_area <= 1.6).all()
 
+
 def test_diffuser_map_theory():
     sky = ReinhartSky(MF=8).reinhart_patches
     geometry, M = _create_example_centrale()
     L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)
     L.get_light_maps(np.array([0,0,1]).reshape((1,3)), visualization=False)
     maps = L.diffuser_map
-    ind  = np.where(np.isclose(M.sourcepoints[:,0],np.unique(M.sourcepoints[:,0])[5]))
+    ind = np.where(np.isclose(M.sourcepoints[:,0],np.unique(M.sourcepoints[:,0])[5]))
     maps = maps[0, ind]
     x = np.linspace(min(M.sourcepoints[:, 0]), max(M.sourcepoints[:, 0]), maps.size)
     F = _diffuser_trace(x, 0, 2,1, np.radians(60))
     print(maps, F)
     assert np.allclose(maps, F, atol=1e-1)
+
 
 def test_compute_daily_diffuser_irradiation():
     geometry, M = _create_example_centrale()
