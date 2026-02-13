@@ -111,7 +111,7 @@ def test_diffuser_map_theory():
     maps = L.diffuser_map
     ind  = np.where(np.isclose(M.sourcepoints[:,0],np.unique(M.sourcepoints[:,0])[5]))
     maps = maps[0, ind]
-    x = np.arange(-1, 1.1, 0.1)
+    x = np.linspace(min(M.sourcepoints[:, 0]), max(M.sourcepoints[:, 0]), maps.size)
     F = _diffuser_trace(x, 0, 2,1, np.radians(60))
     print(maps, F)
     assert np.allclose(maps, F, atol=1e-1)
