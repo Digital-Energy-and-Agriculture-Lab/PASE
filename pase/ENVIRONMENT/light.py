@@ -516,6 +516,16 @@ class Ray_casting_scene:
         return id_rays_filt, id_cells[delta>tol][indices]
 
     def get_mask_from_sky_dir(self, geometry):
+        """
+        Create the visualisation matrices for all the different element type in the geometry. One matrix is created per
+         type plus one matrix for the diffuse sky (called 'diffuse')
+
+        Parameters:
+             geometry: geometry set at the initialization of the instance
+        Returns:
+              masks[dict]: dictionary containing the  different visualisation matrices.
+              The keys correspond to the different element types in the geometry (i.e. 'Diffuse', 'PV', 'Diffuser', etc.)
+        """
         masks = {}
         if geometry.number_of_cells == 0:
             print("Geometry is empty. Returning full diffuse illumination.")
