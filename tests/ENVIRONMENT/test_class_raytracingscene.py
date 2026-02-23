@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 
-def _diffuser_trace(x, x0, a, l, DB):
+def _diffuser_trace(x, x0, a, l, DB): # 2D lenticular diffuser analytical equation
     alpha = np.maximum(x0-l*np.ones(len(x))/2, x-a*np.tan(DB/2))
     beta = np.minimum(x0 + l * np.ones(len(x)) / 2, x + a * np.tan(DB / 2))
     I = np.arctan(a*(beta-alpha)/(a**2+x**2-x*(beta+alpha)+alpha*beta))/DB
@@ -16,7 +16,7 @@ def _diffuser_trace(x, x0, a, l, DB):
     return I
 
 
-def _create_example_centrale():
+def _create_example_centrale(): # creation of example centrals
     cfg = [PVConfiguration3D(), PVConfiguration3D(), PVConfiguration3D()]
 
     base_dict = dict(
@@ -64,14 +64,14 @@ Diffusers2 = LenticularDiffuser(0, 0, omega = 30)
 
 def test_check_mask_Ray_casting_scene():
     geometry,M = _create_example_centrale()
-    L = Ray_casting_scene(M, geometry[0], sky)
+    L = Ray_casting_scene(M, geometry[0], sky) # test with example 1
     L.get_light_maps(suns,visualization=False,Sun_P_map_to_visualize=3)
-    assert list(L.masks.keys()) == ['Diffuse', 'PV']
+    assert list(L.masks.keys()) == ['Diffuse', 'PV'] # check the keys of the visualisation matrices
     L = Ray_casting_scene(M, geometry[1], sky, diffusers=Diffusers)
     L.get_light_maps(suns, visualization=False, Sun_P_map_to_visualize=3)
     assert list(L.masks.keys()) == ['Diffuse', 'Diffuser', 'PV']
-    assert L.masks['Diffuser'].shape == (M.sourcepoints.shape[0], len(sky))
-    assert L.masks['PV'].shape == (M.sourcepoints.shape[0], len(sky))
+    assert L.masks['Diffuser'].shape == (M.sourcepoints.shape[0], len(sky)) # check the shape of the visualisation
+    assert L.masks['PV'].shape == (M.sourcepoints.shape[0], len(sky))       # matrices
     assert L.masks['Diffuse'].shape == (M.sourcepoints.shape[0], len(sky))
 
 
@@ -87,7 +87,7 @@ def test_self_intercept():
     Cells = np.zeros_like(Rays)
     R_filt, C_filt = L.self_intercept(sourcepoints, sourcepoints+Delta, Rays, Cells)
     ind = np.where(np.linalg.norm(Delta, axis=1)>0.01)
-    assert (R_filt == Rays[ind]).all()
+    assert (R_filt == Rays[ind]).all() # test if the 'delta' filtering is working
 
 
 def test_compute_diffuser_map():
@@ -109,21 +109,21 @@ def test_compute_diffuser_map():
     assert np.allclose(maps, diffuser_map, rtol=1e-05)
 
     # in the following assertion, 1.6 comes from the fact that the diffuser is a
-    # square of 1.6 m side (i.e. 1.6 m² area) and the light rays are unit rays ; thus
+    # rectangle of 1mx1.6 m  (i.e. 1.6 m² area) and the light rays are unit rays ; thus
     # by conservation of energy no value should be greater than 1.6 units of energy
     assert (np.sum(diffuser_map, axis=1)*cell_area <= 1.6).all()
 
 
-def test_diffuser_map_theory():
+def test_diffuser_map_theory(): # compare numirisation to analitical expression
     sky = ReinhartSky(MF=8).reinhart_patches
     geometry, M = _create_example_centrale()
-    L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)
+    L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2) # example 3
     L.get_light_maps(np.array([0,0,1]).reshape((1,3)), visualization=False)
     maps = L.diffuser_map
-    ind = np.where(np.isclose(M.sourcepoints[:,0],np.unique(M.sourcepoints[:,0])[5]))
-    maps = maps[0, ind]
+    ind = np.where(np.isclose(M.sourcepoints[:,0],np.unique(M.sourcepoints[:,0])[5])) # take the indices of the cells on
+    maps = maps[0, ind]                                                               # the sixth line
     x = np.linspace(min(M.sourcepoints[:, 0]), max(M.sourcepoints[:, 0]), maps.size)
-    F = _diffuser_trace(x, 0, 2,1, np.radians(60))
+    F = _diffuser_trace(x, 0, 2,1, np.radians(60)) # build the ground truth
     print(maps, F)
     assert np.allclose(maps, F, atol=1e-1)
 
@@ -137,4 +137,4 @@ def test_compute_daily_diffuser_irradiation():
     df = pd.DataFrame({'GHI': ghi, 'SolPosInd': sunIndex})
     Irr = L.compute_daily_diffuser_irradiation(df, 1)
     Irr2 = np.sum(L.diffuser_map[sunIndex, :]*ghi[:, np.newaxis], axis=0) * 3600.0 * 1e-6
-    assert np.allclose(Irr, Irr2)
+    assert np.allclose(Irr, Irr2) # test the time integration of the irradiation on a day for the diffuser
