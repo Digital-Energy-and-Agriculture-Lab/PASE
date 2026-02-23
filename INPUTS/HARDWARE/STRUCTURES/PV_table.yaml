@@ -1,7 +1,7 @@
 StructureType:
-  Value: Agrivoltaic Fence
+  Value: PV Table
   Type: string
-  Choices: [Agrivoltaic Fence]
+  Choices: [Agrivoltaic Fence, PV Table]
   Definition: which type of structure for the PV modules
 Material:
   Value: Wood
@@ -11,19 +11,13 @@ Material:
     Metal -> grey structure
     Wood -> brown structure
 PanelsPerGroup:
-  Value: 2
+  Value: 1
   Type: integer
   Limit: [1, 100]
   Unit: dimensionless [-]
   Definition: Number of panels per pole in the structure
-PoleSpacingX:
-  Value: 1.0
-  Type: float
-  Limit: [0.2,4.0]
-  Unit: meters [m]
-  Definition: the distance of a pole from the center of the structure (e.g if you want 2 meters between 2 poles set this to 1) 
 PoleShape:
-  Value: Cylinder
+  Value: square
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the pole profile
@@ -58,15 +52,21 @@ PoleLength:
   Unit: meters [m]
   Definition: Pole size along z
 PoleGroundPositioning:
-  Value: -0.5
+  Value: 0.0
   Type: float
   Limit: [-10, 0]
   Unit: meters [m]
   Definition: vertical positioning of the pole relative to the ground ;
     0 is flush with the ground, negative values mean the pole base is below
     ground level.
+PoleSpacingX:
+  Value: 0.2
+  Type: float
+  Limit: [0.2,4.0]
+  Unit: meters [m]
+  Definition: the distance between the two poles on x axis
 PurlinShape:
-  Value: Cylinder
+  Value: square
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the purlin profile
@@ -101,7 +101,7 @@ NumberOfPurlins:
   Definition: Number of Purlin for one group
 
 RafterShape:
-  Value: Cylinder
+  Value: square
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the rafter profile
@@ -124,11 +124,11 @@ RafterSide:
   Unit: meters [m]
   Definition: Pole side length (used in case of square rafter)
 RafterLength:
-  Value: 1.8
+  Value: 3.8
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: Pole size along z
+  Definition: rafter length
 RafterRadius:
   Value: 0.05
   Type: float
@@ -139,8 +139,7 @@ NumberOfRafters:
   Value: 3
   Type: integer
   Limit: [1, 10]
-  Definition: Number of Rafter for one group
-
+  Definition: Number of Rafters for one group
 DiagonalShape:
   Value: Cylinder
   Type: string
@@ -178,13 +177,13 @@ DiagonalEpsilon:
   Definition: diagonal epsilon (used in case of cylindrical diagonal)
 
 StructureSpacingY:
-  Value: 5.0
+  Value: 2.0
   Type: float
   Limit: [0.0, 50.0]
   Unit: meters [m]
   Definition: Spacing along Y
 StructureHeight:
-  Value: 3.3
+  Value: 0.0
   Type: float
   Limit: [0.0, 50.0]
   Unit: meters [m]

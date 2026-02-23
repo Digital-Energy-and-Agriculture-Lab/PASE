@@ -116,7 +116,7 @@ dY_InterestZone:
    Unit: meters [m]
    Definition: Increment in the y coordinates of the zone of interest for the light and crop modelling
 InterestZoneOrientationMode:
-  Value: default
+  Value: custom
   Type: string
   Possibilities: [default, auto, custom]
   Definition: Orientation mode for the interest zone.
