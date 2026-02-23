@@ -996,11 +996,11 @@ class Ray_casting_scene:
         return diff_irradiance_map_MJ_m2  # shape (nSourcePoints,)
 
     def  compute_daily_diffuser_irradiation(self, df, n_freq):
-        dhi = df['GHI'].to_numpy()  # (T,)
-        dhi = dhi[:, np.newaxis]
+        ghi = df['GHI'].to_numpy()  # (T,)
+        ghi = ghi[:, np.newaxis]
         indices = df['SolPosInd']
         outs = self.diffuser_map[indices,:]
-        weighted = dhi*outs
+        weighted = ghi*outs
         diffuser_irradiance_map = weighted.sum(axis=0)
         diffuser_irradiance_map_MJ_m2 = diffuser_irradiance_map * 3600.0 * 1e-6 / n_freq
         return diffuser_irradiance_map_MJ_m2
