@@ -527,11 +527,16 @@ class Ray_casting_scene:
               The keys correspond to the different element types in the geometry (i.e. 'Diffuse', 'PV', 'Diffuser', etc.)
         """
         masks = {}
-        if geometry.number_of_cells == 0:
-            print("Geometry is empty. Returning full diffuse illumination.")
-            masks['Diffuse'] = np.ones(self.n_sourcepoints, dtype=np.float16)
-            return masks
-
+        try:
+            if geometry.number_of_cells == 0:
+                print("Geometry is empty. Returning full diffuse illumination.")
+                masks['Diffuse'] = np.ones(self.n_sourcepoints, dtype=np.float16)
+                return masks
+        except AttributeError:
+            if geometry.polydata_all_centrals.number_of_cells == 0:
+                print("Geometry is empty. Returning full diffuse illumination.")
+                masks['Diffuse'] = np.ones(self.n_sourcepoints, dtype=np.float16)
+                return masks
         # Get direction of ray to reach the small suns and compute the sky view of each point
         pTarget = np.column_stack([self.discrete_sky.x,
                                    self.discrete_sky.y,
