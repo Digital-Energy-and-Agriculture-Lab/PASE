@@ -6,7 +6,7 @@
 #This file is part of the PASE software, and is distributed under the MIT license.
 
 import numpy as np
-from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 
 class Crop_outputs:
     

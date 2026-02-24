@@ -5,11 +5,11 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-from MODULES.CROPS.SIMPLE.run_simple import run_independant_years_of_crop
-from MODULES.CROPS.STICS.JAVASTICS.run_java_stics import run_independant_usms
-from MODULES.CROPS.STICS.PYSTICS.run_pystics_from_PASE import run_independant_usms_in_pystics
-from MODULES.CROPS.GRASSIM.run_grassim import run_grassim
-from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from pase.CROPS.SIMPLE.run_simple import run_independant_years_of_crop
+from pase.CROPS.STICS.JAVASTICS.run_java_stics import run_independant_usms
+from pase.CROPS.STICS.PYSTICS.run_pystics_from_PASE import run_independant_usms_in_pystics
+from pase.CROPS.GRASSIM.run_grassim import run_grassim
+from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 from datetime import datetime
 import numpy as np
 

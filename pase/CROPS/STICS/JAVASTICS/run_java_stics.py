@@ -5,15 +5,16 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
-from MODULES.CROPS.STICS.generate_java_stics_files import \
-    generate_weather_data_file, generate_USMS_file
-from MODULES.CROPS.STICS.get_java_stics_outputs import Crop_outputs
 import os
 import subprocess
 import platform
 import pandas as pd
 import numpy as np
+
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from pase.CROPS.STICS.generate_java_stics_files import \
+    generate_weather_data_file, generate_USMS_file
+from pase.CROPS.STICS.get_java_stics_outputs import Crop_outputs
 
 
 def run_independant_usms(config, WD, daily_irr, scenario_P):

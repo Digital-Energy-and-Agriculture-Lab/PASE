@@ -15,7 +15,7 @@ The implemented model was taken from:
 import math
 import numpy as np
 
-from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 
 class Crop:
     

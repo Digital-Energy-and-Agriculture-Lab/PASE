@@ -7,11 +7,11 @@
 import os
 import pandas as pd
 import yaml
-from MODULES.CROPS.GRASSIM.plants.plants import Plants
-from MODULES.CROPS.GRASSIM.soil.soil import Soil
-from MODULES.CROPS.GRASSIM.management.management import Management
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
-from MODULES.CROPS.evapotranspiration_FAO56_PM import get_ET0
+from pase.CROPS.GRASSIM.plants.plants import Plants
+from pase.CROPS.GRASSIM.soil.soil import Soil
+from pase.CROPS.GRASSIM.management.management import Management
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from pase.CROPS.evapotranspiration_FAO56_PM import get_ET0
 
 def run_grassim(config, WD, daily_irr, lat, alt):
     """

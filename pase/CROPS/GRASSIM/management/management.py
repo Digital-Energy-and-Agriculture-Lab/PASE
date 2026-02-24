@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import warnings
 from datetime import datetime
-from MODULES.CROPS.GRASSIM.utils.utils import subtract_with_min_values
-from MODULES.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
+from pase.CROPS.GRASSIM.utils.utils import subtract_with_min_values
+from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 import copy 
 
 class Management():

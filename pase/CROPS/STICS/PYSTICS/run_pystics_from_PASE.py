@@ -5,15 +5,16 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-from MODULES.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
-from MODULES.CROPS.STICS.generate_java_stics_files import \
-    generate_weather_data_file, generate_USMS_file
-from MODULES.CROPS.STICS.get_java_stics_outputs import Crop_outputs
 import os
 import subprocess
 import platform
 import pandas as pd
 import numpy as np
+
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
+from pase.CROPS.STICS.generate_java_stics_files import \
+    generate_weather_data_file, generate_USMS_file
+from pase.CROPS.STICS.get_java_stics_outputs import Crop_outputs
 
 
 def run_independant_usms_in_pystics(config, WD, daily_irr, scenario_P):
@@ -22,7 +23,7 @@ def run_independant_usms_in_pystics(config, WD, daily_irr, scenario_P):
     
     WD_files_dict = generate_weather_data_file(WD, daily_irr,
                                                scenario_P['LocationName'],
-                                               'MODULES/CROPS/STICS/PYSTICS/pySTICS/pystics/parametrization_files/example/')
+                                               'pase/CROPS/STICS/PYSTICS/pySTICS/pystics/parametrization_files/example/')
     
     Crop_plot = Crop_outputs()
     
@@ -47,9 +48,9 @@ def run_independant_usms_in_pystics(config, WD, daily_irr, scenario_P):
                 
                 # Write the usms file containing this unit of simulation (for one position of one year)
                 generate_USMS_file(WD_file, WD_file_previous_year,
-                                   Simu_init, year, 'MODULES/CROPS/STICS/PYSTICS/pySTICS/pystics/parametrization_files/pase/')
+                                   Simu_init, year, 'pase/CROPS/STICS/PYSTICS/pySTICS/pystics/parametrization_files/pase/')
                 
-                os.chdir("MODULES/CROPS/STICS/PYSTICS/pySTICS")
+                os.chdir("pase/CROPS/STICS/PYSTICS/pySTICS")
                 
                 from pystics.params import parametrization_from_stics_example_files
                 from pystics.simulation import run_pystics_simulation
