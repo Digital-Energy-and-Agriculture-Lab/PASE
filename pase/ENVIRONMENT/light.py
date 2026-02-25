@@ -1122,7 +1122,7 @@ class Ray_casting_scene:
 
         plotter.add_axes(**labels)
 
-        plotter.add_mesh(self.sourcepoints[:, :-1],
+        plotter.add_mesh(self.sourcepoints[:, :],
                          scalars=np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32),
                          point_size=10,
                          lighting=False,
