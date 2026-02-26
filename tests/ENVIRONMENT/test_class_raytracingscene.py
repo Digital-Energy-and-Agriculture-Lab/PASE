@@ -114,27 +114,40 @@ def test_compute_diffuser_map():
     assert (np.sum(diffuser_map, axis=1)*cell_area <= 1.6).all()
 
 
-def test_diffuser_map_theory(): # compare numirisation to analitical expression
+def test_diffuser_map_theory():
+    """
+    Compare the transfer function implementation against the discretized analytical
+    solution.
+    """
     sky = ReinhartSky(MF=8).reinhart_patches
     geometry, M = _create_example_centrale()
-    L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2) # example 3
+    L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)  # example 3
     L.get_light_maps(np.array([0,0,1]).reshape((1,3)), visualization=False)
     maps = L.diffuser_map
-    ind = np.where(np.isclose(M.sourcepoints[:,0],np.unique(M.sourcepoints[:,0])[5])) # take the indices of the cells on
-    maps = maps[0, ind]                                                               # the sixth line
+
+    # take the indices of the cells on the sixth line
+    ind = np.where(np.isclose(M.sourcepoints[:, 0], np.unique(M.sourcepoints[:, 0])[5]))
+    maps = maps[0, ind]
+
     x = np.linspace(min(M.sourcepoints[:, 0]), max(M.sourcepoints[:, 0]), maps.size)
-    F = _diffuser_trace(x, 0, 2,1, np.radians(60)) # build the ground truth
+    F = _diffuser_trace(x, 0, 2, 1, np.radians(60))  # build the ground truth
     print(maps, F)
+
     assert np.allclose(maps, F, atol=1e-1)
 
 
 def test_compute_daily_diffuser_irradiation():
+    """
+    Test the time integration of the irradiation on a day for the diffuser
+    """
+
     geometry, M = _create_example_centrale()
     L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)
     L.get_light_maps(suns,visualization=False)
     ghi = np.arange(1, 25, 1)
-    sunIndex = np.random.randint(0,9, 24)
+    sunIndex = np.random.randint(0, 9, 24)
     df = pd.DataFrame({'GHI': ghi, 'SolPosInd': sunIndex})
     Irr = L.compute_daily_diffuser_irradiation(df, 1)
     Irr2 = np.sum(L.diffuser_map[sunIndex, :]*ghi[:, np.newaxis], axis=0) * 3600.0 * 1e-6
-    assert np.allclose(Irr, Irr2) # test the time integration of the irradiation on a day for the diffuser
+
+    assert np.allclose(Irr, Irr2)

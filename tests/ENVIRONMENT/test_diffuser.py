@@ -34,7 +34,11 @@ def test_LenticularDiffuser_beta_gamma():
 sky = ReinhartSky(MF=1).reinhart_patches
 pTarget = np.column_stack([sky.x,sky.y,sky.z])
 
-def test_discretized_BSDF(): # check for energy conservation in the BSDF discretization
+
+def test_discretized_BSDF():
+    """
+    Check energy conservation in the BSDF discretization.
+    """
     res = 0.1
     beta = np.deg2rad(np.arange(-15, 15, 1)) # creation of the diffuser rays
     gamma = np.deg2rad([45])
@@ -49,10 +53,11 @@ def test_discretized_BSDF(): # check for energy conservation in the BSDF discret
         D.y_sr = y.reshape((1,len(beta)))
         D.z_sr = z.reshape((1,len(beta)))
         D.ds = ds.reshape((1,len(beta)))
-        D.rho = rho.reshape((1,len(beta)))# uniform repartition the energy within the rays
+        D.rho = rho.reshape((1,len(beta)))  # uniform repartition the energy within
+        # the rays
         D.get_discretized_BSDF(pTarget, sky['Normalized surf area'])
         W = D.W
-        assert np.isclose(W.sum(), 1, rtol=1e-5) # energy conservation if sum(W) == 1
+        assert np.isclose(W.sum(), 1, rtol=1e-5)  # energy conservation if sum(W) == 1
 
 
 

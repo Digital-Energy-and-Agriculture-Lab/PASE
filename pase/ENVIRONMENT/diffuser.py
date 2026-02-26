@@ -17,7 +17,7 @@ class Diffuser:
     geometry : Diffuser geometry (pyVista)
     """
 
-    def __init__(self, azimuth, elevation, kernel = 'gaussian'):
+    def __init__(self, azimuth, elevation, kernel='gaussian'):
         self.x_dr = None
         self.z_dr = None
         self.y_dr = None
@@ -27,7 +27,8 @@ class Diffuser:
 
     def generate_direction_diffuser_referential(self, vect_sun, angle_discr):
         """
-        Call the transfer function to compute the direction of the transferred light with a giver resolution.
+        Call the transfer function to compute the direction of the transferred light
+        with a given resolution.
         Input :
             vect_sun : the sun vectors
             res : the angle resolution for the transmitted light direction in degrees
@@ -58,7 +59,8 @@ class Diffuser:
 
     def get_BTDF_plot(self, azimuth, zenith):
         """
-        Create the BTDF plot for the given azimuth and zenith data.
+        Create the bidirectional transmittance distribution function (BTDF) plot for the
+        given azimuth and zenith data.
         """
         azimuth = np.radians(270-azimuth)
         fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))

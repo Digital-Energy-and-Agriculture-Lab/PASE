@@ -573,6 +573,9 @@ class Ray_casting_scene:
             masks['Diffuse'] = np.ones(self.n_sourcepoints * n_sky_elements, bool)
             masks['Diffuse'][id_rays_stopped_filtred[ind_diffuse]] = 0
             masks['Diffuse'] = masks['Diffuse'].reshape(self.n_sourcepoints, n_sky_elements)
+
+            # Loop over types of objects it in the ray casting stage, e.g. "Diffuser"
+            # and "PV"
             for type in np.unique(hit_object):
                 ind = np.where(hit_object == type)
                 masks[type] = np.zeros(self.n_sourcepoints * n_sky_elements, bool)
