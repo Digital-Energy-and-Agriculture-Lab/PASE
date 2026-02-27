@@ -576,11 +576,11 @@ class Ray_casting_scene:
 
             # Loop over types of objects it in the ray casting stage, e.g. "Diffuser"
             # and "PV"
-            for type in np.unique(hit_object):
-                ind = np.where(hit_object == type)
-                masks[type] = np.zeros(self.n_sourcepoints * n_sky_elements, bool)
-                masks[type][id_rays_stopped_filtred[ind]] = 1
-                masks[type] = masks[type].reshape(self.n_sourcepoints, n_sky_elements)
+            for object_type in np.unique(hit_object):
+                ind = np.where(hit_object == object_type)
+                masks[object_type] = np.zeros(self.n_sourcepoints * n_sky_elements, bool)
+                masks[object_type][id_rays_stopped_filtred[ind]] = 1
+                masks[object_type] = masks[object_type].reshape(self.n_sourcepoints, n_sky_elements)
 
         except AttributeError as e:
             intercept_points, id_rays_stopped, id_intercept_cell = geometry.multi_ray_trace(
