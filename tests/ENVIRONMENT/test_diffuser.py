@@ -6,11 +6,13 @@ az = [0, 45, 90, 135, 180, 225, 270, 315] # some azimuth angles
 ti = [-90, -45, 0, 45, 90] # some elevation angles
 Diffusers = [LenticularDiffuser(azi, tii, omega = 30) for azi in az for tii in ti] # some diffusers with different orientations
 def test_LenticularDiffuser_configuration():
-    for D in Diffusers: # test orthogonality between diffuser normal and diffuser lens direction
+    """test orthogonality between diffuser normal and diffuser lens direction"""
+    for D in Diffusers:
             assert np.isclose(np.sum(D.len_vector*D.normal), 0, rtol=1e-08)
 
 suns  = [np.array([i, j, 1]).reshape((1,3))/np.sqrt(i**2+j**2+1) for i in range(-1, 2, 1) for j in range(-1, 2, 1)] # some sun positions
 def test_LenticularDiffuser_beta_gamma():
+    """Test the values of the beta and gamma angles (i.e., angles defining the direction of the transmitted rays)."""
     for D in Diffusers:
         for sun in suns:
             print(sun)
@@ -36,9 +38,7 @@ pTarget = np.column_stack([sky.x,sky.y,sky.z])
 
 
 def test_discretized_BSDF():
-    """
-    Check energy conservation in the BSDF discretization.
-    """
+    """Check energy conservation in the BSDF discretization."""
     res = 0.1
     beta = np.deg2rad(np.arange(-15, 15, 1)) # creation of the diffuser rays
     gamma = np.deg2rad([45])
