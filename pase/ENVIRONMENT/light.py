@@ -582,7 +582,7 @@ class Ray_casting_scene:
                 masks[object_type][id_rays_stopped_filtred[ind]] = 1
                 masks[object_type] = masks[object_type].reshape(self.n_sourcepoints, n_sky_elements)
 
-        except AttributeError as e:
+        except AttributeError:
             intercept_points, id_rays_stopped, id_intercept_cell = geometry.multi_ray_trace(
                 SourcePoints,
                 TargetPoints,
@@ -618,7 +618,6 @@ class Ray_casting_scene:
             if geometry.number_of_cells == 0:
                 logger.info("Geometry is empty. Returning full diffuse illumination.")
                 return np.ones(self.n_sourcepoints, dtype=np.float16)
-        geometry =  geometry.polydata_by_property(property_dict={'Type':['PV']})
 
         #Get direction of ray to reach the small suns and compute the sky view of each point
         pTarget = np.column_stack([self.discrete_sky.x,
@@ -667,7 +666,14 @@ class Ray_casting_scene:
         return diffuse_mask
 
     def compute_diffuser_map(self, sun_P):
-
+        """
+        Compute the map (i.e., the normalized energy reaching the source points)  of the diffusers.
+        pTarget (nPatch, 3): the direction of the sky patches
+        _cos_elev_patch (nPatch): the cosine of the zenith angle of each patch
+        weight (nSolPos, nPatch): weight of each patch for the rays transmitted by the diffusers
+        Output:
+            diffuser_map (nSolPos, nsourcepoints): the normalized energy reaching the source points from the diffusers
+        """
         pTarget = np.column_stack([self.discrete_sky.x,
                                    self.discrete_sky.y,
                                    self.discrete_sky.z])
@@ -984,6 +990,15 @@ class Ray_casting_scene:
             return res
 
     def compute_daily_diff_irradiation(self, df, n_freq, indices=None):
+        """
+        Compute the daily irradiation received by each source points from the diffusers.
+        Input:
+            df (pandas DataFrame of size T): Weather data with at least 'GHI' and 'SolPosInd' columns.
+            n_freq (int) : number of samples per hours
+            indices (Mask of bool values) indices of the rows where CIE sky is a number
+        Output:
+            diff_irradiance_map_MJ_m2: daily diffuse irradiance in MJ/m²
+        """
         dhi = df['DHI'].to_numpy()  # (T,)
         az = df['azimuth'].to_numpy()  # (T,)
         el = df['elevation'].to_numpy()  # (T,)
@@ -1014,6 +1029,14 @@ class Ray_casting_scene:
         return diff_irradiance_map_MJ_m2  # shape (nSourcePoints,)
 
     def  compute_daily_diffuser_irradiation(self, df, n_freq):
+        """
+        Compute the daily irradiation received by each source points from the diffusers.
+        Input:
+            df (pandas DataFrame of size T): Weather data with at least 'GHI' and 'SolPosInd' columns.
+            n_freq (int) : number of samples per hours
+        Output:
+            diffuser_irradiance_map_MJ_m2: daily irradiance from the diffusers in MJ/m²
+        """
         ghi = df['GHI'].to_numpy()  # (T,)
         ghi = ghi[:, np.newaxis]
         indices = df['SolPosInd']
