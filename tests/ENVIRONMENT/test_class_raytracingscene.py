@@ -63,6 +63,7 @@ Diffusers2 = LenticularDiffuser(0, 0, omega = 30)
 
 
 def test_check_mask_Ray_casting_scene():
+    """Test the shape of the different masks"""
     geometry,M = _create_example_centrale()
     L = Ray_casting_scene(M, geometry[0], sky) # test with example 1
     L.get_light_maps(suns,visualization=False,Sun_P_map_to_visualize=3)
@@ -76,6 +77,7 @@ def test_check_mask_Ray_casting_scene():
 
 
 def test_self_intercept():
+    """Test the self-intercept function. Add a small delta to the rays and check the filtering based on this delta"""
     geometry, M = _create_example_centrale()
     L = Ray_casting_scene(M, geometry[0], sky)
     sourcepoints = M.sourcepoints[:, :3]
@@ -91,6 +93,11 @@ def test_self_intercept():
 
 
 def test_compute_diffuser_map():
+    """
+    1) Calculate the diffuser map in the standard way and compare it with another similar calculation.
+    2) Test energy conservation. The integral of the diffuser map shouldn't be
+    higher than the area of the diffuser times 1 (the value of the unit radiation). In this case the diffuser area
+    is 1.6 m² ==> The integral shouldn't be higher than 1.6 m²"""
     geometry, M = _create_example_centrale()
     mesh_data = M.get_mesh_data("crop")
     cell_area = mesh_data["areas"][0]
@@ -131,7 +138,6 @@ def test_diffuser_map_theory():
 
     x = np.linspace(min(M.sourcepoints[:, 0]), max(M.sourcepoints[:, 0]), maps.size)
     F = _diffuser_trace(x, 0, 2, 1, np.radians(60))  # build the ground truth
-    print(maps, F)
 
     assert np.allclose(maps, F, atol=1e-1)
 
@@ -139,6 +145,7 @@ def test_diffuser_map_theory():
 def test_compute_daily_diffuser_irradiation():
     """
     Test the time integration of the irradiation on a day for the diffuser
+    Compare the standard method with an alternative one.
     """
 
     geometry, M = _create_example_centrale()
