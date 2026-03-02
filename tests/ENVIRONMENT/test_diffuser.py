@@ -12,7 +12,8 @@ def test_LenticularDiffuser_configuration():
 
 suns  = [np.array([i, j, 1]).reshape((1,3))/np.sqrt(i**2+j**2+1) for i in range(-1, 2, 1) for j in range(-1, 2, 1)] # some sun positions
 def test_LenticularDiffuser_beta_gamma():
-    """Test the values of the beta and gamma angles (i.e., angles defining the direction of the transmitted rays)."""
+    """Test the values of the beta and gamma angles (i.e., angles defining the direction of the transmitted rays).
+    Compare the standard method with an alternative one."""
     for D in Diffusers:
         for sun in suns:
             print(sun)
