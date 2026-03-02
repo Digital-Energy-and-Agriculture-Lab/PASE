@@ -5,9 +5,13 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
+import logging
 import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
+import os
+
+logger = logging.getLogger(__name__)
 
 class PV_Production:
     
@@ -40,11 +44,27 @@ class PV_Production:
         
         self.GCR_x = (inputs['PanelDimensionX']*inputs['NumberOfPanelsX']/
                       self.block_space_x)
-            
-    def get_several_years_of_electricity_production(self, SP, light, WD):
-        
+
+    def get_several_years_of_electricity_production(self, SP, light, WD,
+                                                    albedo_file=None,
+                                                    albedo_option=1,
+                                                    albedo_default_value=0.2):
+
         self.production = {}
-        
+
+        albedo = albedo_default_value  # Default constant value
+
+        starting_year = min(light.keys())
+        ending_year = max(light.keys())
+        freq = SP.sp_leapY.index.freq
+        albedo_nyears = 0
+        if albedo_option == 2:
+            albedo_nyears = self.get_n_years_albedo_from_csvfile(albedo_file,
+                                                                 starting_year,
+                                                                 ending_year,
+                                                                 freq,
+                                                                 albedo_default_value)
+
         for year in light.keys():
             
             if int(year)%4 == 0:
@@ -54,15 +74,16 @@ class PV_Production:
             else:
                 sun_vect = SP.sun_vect_nonleapY
                 app_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
-            
+
+            if albedo_option == 2:
+                albedo = albedo_nyears[year].Albedo.values
+
             tiltY, sv_CC = self.get_tiltY_along_time(sun_vect)
             SF_front = self.get_shading_factor_front(sv_CC, tiltY)
             SF_rear =self.get_shading_factor_rear(sv_CC, tiltY)
             
             #Temporary lines !!!!!!!
             GHI_reaching_ground = light[year]['GHI'].to_numpy()*0.5
-            albedo = 0.25  #should be a vector with the albedo of the crop evolving on the year
-            
             GTI_front, GTI_rear = self.get_GTI(sun_vect, app_zenith, 
                                                light[year], GHI_reaching_ground,
                                                albedo, SF_front, SF_rear, tiltY)
@@ -452,4 +473,35 @@ class PV_Production:
         
         return SF
 
+    def get_n_years_albedo_from_csvfile(self, file: str, starting_year: str,
+                                        ending_year: str, freq: str,
+                                        albedo_default_value:float):
 
+        albedo = pd.read_csv(
+            os.path.join('INPUTS', 'CROPS', file + '.csv'),
+            delimiter=',|;',
+            engine='python')
+
+        albedo.index = pd.to_datetime(albedo.date, dayfirst=True)
+
+        # Modify datetime index to adapt to sun_vect and to light.
+
+        new_index = pd.date_range("01-01-" + str(starting_year)
+                                  + " 00:00:00",
+                                  "31-12-" + str(ending_year)
+                                  + " 23:59:59",
+                                  freq=freq)
+
+        albedo = albedo[['Albedo']].reindex(new_index).ffill()
+
+        if albedo.dropna().empty:
+            logger.warning("Please check that albedo file dates are consistent "
+                           "with input Starting Year and Ending Year. "
+                           "Default value used")
+            albedo = albedo.fillna(albedo_default_value)
+        nyears_albedo = {}
+
+        for year in range(int(starting_year), int(ending_year)+1):
+            one_year_df = albedo[albedo.index.year == year]
+            nyears_albedo[str(year)] = one_year_df
+        return nyears_albedo
