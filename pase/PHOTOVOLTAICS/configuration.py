@@ -1168,7 +1168,7 @@ class PVConfiguration3D(MultiBlockPASE):
             base_height,
         )
         base_area = diff_dimX*diff_dimY
-        N = positions.shape[0]
+        N = positions.shape[0] # number of diffusers in the central
 
         for idx in range(N):
             bx, by, mx, my = map(int, grid_indices[idx])
