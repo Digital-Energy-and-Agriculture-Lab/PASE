@@ -5,13 +5,13 @@ NumberOfPanelsX:
    Unit: dimensionless [-]
    Definition: Number of panels on the x axis in one block of panels (x axis being the second potential axis of rotation of the block of panels)
 NumberOfPanelsY:
-   Value: 10
+   Value: 5
    Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
    Definition: Number of panels on the y axis in one block of panels
 RepetitionDistanceOfPanelsX:
-   Value: 1.5
+   Value: 1.75
    Type: float
    Limit: [0, 100]
    Unit: meters [m]

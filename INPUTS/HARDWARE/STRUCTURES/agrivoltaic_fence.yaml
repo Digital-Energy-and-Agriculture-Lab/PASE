@@ -65,6 +65,12 @@ PoleGroundPositioning:
   Definition: vertical positioning of the pole relative to the ground ;
     0 is flush with the ground, negative values mean the pole base is below
     ground level.
+PurlinLength:
+  Value: 2.0
+  Type: float
+  Limit: [0.2,4.0]
+  Unit: meters [m]
+  Definition: Purlin size along y
 PurlinShape:
   Value: Cylinder
   Type: string

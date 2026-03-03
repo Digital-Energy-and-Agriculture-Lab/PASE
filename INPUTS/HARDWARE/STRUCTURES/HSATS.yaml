@@ -65,6 +65,12 @@ PoleSpacingX:
   Limit: [0.2,4.0]
   Unit: meters [m]
   Definition: the distance of a pole from the center of the structure (e.g if you want 2 meters between 2 poles set this to 1)
+PurlinLength:
+  Value: 2.0
+  Type: float
+  Limit: [0.2,4.0]
+  Unit: meters [m]
+  Definition: Purlin size along y
 PurlinShape:
   Value: Cylinder
   Type: string

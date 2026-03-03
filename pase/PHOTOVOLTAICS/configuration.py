@@ -1153,7 +1153,7 @@ class PVConfiguration3D(MultiBlockPASE):
                 # copy and translate the base structure
                 struct = (base_struct.copy()
                           .translate([block_centers[block_counter, 0],
-                                      block_centers[block_counter, 1] - block_centers[0, 1],
+                                      block_centers[block_counter, 1],
                                       0])
                           .rotate_z(-config['CentralAzimut'], point=(0.0, 0.0, 0.0))
                           )
