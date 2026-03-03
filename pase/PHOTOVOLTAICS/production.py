@@ -58,7 +58,7 @@ class PV_Production:
         ending_year = max(light.keys())
         freq = SP.sp_leapY.index.freq
         albedo_nyears = 0
-        if albedo_option == 2:
+        if albedo_option == 2:  # Albedo time series
             albedo_nyears = self.get_n_years_albedo_from_csvfile(albedo_file,
                                                                  starting_year,
                                                                  ending_year,
@@ -75,7 +75,7 @@ class PV_Production:
                 sun_vect = SP.sun_vect_nonleapY
                 app_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
 
-            if albedo_option == 2:
+            if albedo_option == 2:  # Albedo time series
                 albedo = albedo_nyears[year].Albedo.values
 
             tiltY, sv_CC = self.get_tiltY_along_time(sun_vect)
@@ -85,8 +85,7 @@ class PV_Production:
             # Improved ground-transmitted GHI based on ground coverage ratio
             ground_coverage_ratio = self.get_ground_coverage_ratio(tiltY)
             GHI_reaching_ground = light[year]['GHI'].to_numpy() * (1.0 - ground_coverage_ratio)
-            albedo = 0.25  #should be a vector with the albedo of the crop evolving on the year
-            
+
             GTI_front, GTI_rear = self.get_GTI(sun_vect, app_zenith, 
                                                light[year], GHI_reaching_ground,
                                                albedo, SF_front, SF_rear, tiltY)
