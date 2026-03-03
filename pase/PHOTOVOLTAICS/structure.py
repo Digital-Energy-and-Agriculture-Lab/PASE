@@ -425,11 +425,17 @@ class AgrivoltaicFence(PVStructure):
             self.base_height,
         )
 
+        group_centers = (
+            positions[: self.n_groups_in_block * self.panels_per_group]
+            .reshape(self.n_groups_in_block, self.panels_per_group, 3)
+            .mean(axis=1)
+        )
+
         blocks = pyv.MultiBlock()
 
         for idx in range(self.n_groups_in_block):
             g = self.make_elementary_group()
-            offx, offy, offz = map(float, positions[idx])
+            offx, offy, offz = map(float, group_centers[idx])
 
             g.translate((0, 
                          offy, 
@@ -472,6 +478,16 @@ class PVTable(PVStructure):
         self.required_length = 2 * self.half_span / math.cos(self.tilt_rad) 
         self.rafter_length = max(self.rafter_length, 
                                  self.required_length)
+
+        panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
+                        + self.panel_width)
+        if panel_span_x > self.rafter_length:
+            raise ValueError(
+                f"Invalid PVTable configuration: The total panel width in X "
+                f"({panel_span_x:.2f}m) exceeds the rafter length "
+                f"({self.rafter_length:.2f}m). "
+                f"Please change the panels configuration on X axis or increase the rafter length by increasing 'PoleSpacingX' or 'RafterLength'."
+            )
         self.height_offset = self.half_span * math.tan(self.tilt_rad)
 
         if self.base_height - self.height_offset < 0:
@@ -549,11 +565,17 @@ class PVTable(PVStructure):
             self.base_height,
         )
 
+        group_centers = (
+            positions[: self.n_groups_in_block * self.panels_per_group]
+            .reshape(self.n_groups_in_block, self.panels_per_group, 3)
+            .mean(axis=1)
+        )
+
         blocks = pyv.MultiBlock()
 
         for idx in range(self.n_groups_in_block):
             g = self.make_elementary_group()
-            offx, offy, offz = map(float, positions[idx])
+            offx, offy, offz = map(float, group_centers[idx])
 
             g.translate((0, 
                          offy, 
@@ -619,12 +641,18 @@ class HSATS(PVStructure):
             self.base_height,
         )
 
+        group_centers = (
+            positions[: self.n_groups_in_block * self.panels_per_group]
+            .reshape(self.n_groups_in_block, self.panels_per_group, 3)
+            .mean(axis=1)
+        )
+
         blocks = pyv.MultiBlock()
 
         for idx in range(self.n_groups_in_block):
             group = self.make_elementary_group()
-            offx, offy, _ = map(float, 
-                                positions[idx])
+            offx, offy, _ = map(float,
+                                group_centers[idx])
             group.translate((0.0, 
                              offy, 
                              0.0), 
