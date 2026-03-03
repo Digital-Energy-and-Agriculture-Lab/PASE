@@ -6,6 +6,7 @@
 #This file is part of the PASE software, and is distributed under the MIT license.
 
 from calendar import isleap
+import logging
 import numpy as np
 import pandas as pd
 import pyvista as pyV
@@ -21,6 +22,7 @@ from pase.ENVIRONMENT.sky_model import ReinhartSky, fibonacci_half_sphere
 from pase.ENVIRONMENT.sky_model import CIEStandardSky
 from pase.user_support_tools import PASE_Logger
 
+logger = logging.getLogger(__name__)
 
 class Sun_positions:
     
@@ -453,11 +455,11 @@ class Ray_casting_scene:
     #The class light shade scene init with a geometry (pyvista.polydata) and a mesh instance
     def __init__(self, mesh, geometry, discrete_sky):
         self.mesh = mesh
-        self.sourcepoints = self.mesh.get_sourcepoints()
+        self.sourcepoints = self.mesh.sourcepoints #center of each cell contained in the mesh
 
         self.geometry = geometry
         self.n_sourcepoints = self.sourcepoints.shape[0]
-        self.sources_flag_dict = mesh.get_sources_flag_dict()
+        #self.sources_flag_dict = mesh.get_sources_flag_dict()
 
         self.discrete_sky = discrete_sky
         self.get_diffuse_weights_map()
@@ -523,9 +525,14 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full diffuse light
-        if geometry.number_of_cells == 0 :
-            print("Geometry is empty. Returning full diffuse illumination.")
-            return np.ones(self.n_sourcepoints, dtype=np.float16)
+        try:
+            if geometry.polydata_all_centrals().number_of_cells == 0:
+                logger.info("Geometry is empty. Returning full diffuse illumination.")
+                return np.ones(self.n_sourcepoints, dtype=np.float16)
+        except AttributeError:
+            if geometry.number_of_cells == 0:
+                logger.info("Geometry is empty. Returning full diffuse illumination.")
+                return np.ones(self.n_sourcepoints, dtype=np.float16)
     
         #Get direction of ray to reach the small suns and compute the sky view of each point
         pTarget = np.column_stack([self.discrete_sky.x,
@@ -637,10 +644,16 @@ class Ray_casting_scene:
         """
 
         # Handle empty geometry: return full direct light
-        if geometry.number_of_cells == 0 :
-            n_sun_positions = sun_P.shape[0]
-            print("Geometry is empty. Returning full direct illumination.")
-            return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
+        try:
+            if geometry.polydata_all_centrals().number_of_cells == 0 :
+                n_sun_positions = sun_P.shape[0]
+                logger.info("Geometry is empty. Returning full direct illumination.")
+                return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
+        except:
+            if geometry.number_of_cells == 0:
+                n_sun_positions = sun_P.shape[0]
+                logger.info("Geometry is empty. Returning full direct illumination.")
+                return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
 
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
         SourcePoints = np.repeat(np.column_stack((
@@ -922,7 +935,7 @@ class Ray_casting_scene:
         else:
             geo = self.geometry
 
-        open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
                                       self.dir_mask[:, Sun_P_map_to_visualize],
                                       geo,
                                       "Direct map [-]")
@@ -959,7 +972,7 @@ class Ray_casting_scene:
             map_to_display = np.array(diffuse_shaded_weights_map)
 
 
-        open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
                                       np.array(map_to_display, dtype=np.float32),
                                       geo,
                                       "Unweighted shaded diffuse map [-]")
@@ -987,7 +1000,7 @@ class Ray_casting_scene:
         else:
             geo = self.geometry
 
-        open_pyvista_3D_visualization(self.sourcepoints[:, :-1],
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
                                       self.daily_irr_spat[str(year)][:,
                                       julian_day],
                                       geo,

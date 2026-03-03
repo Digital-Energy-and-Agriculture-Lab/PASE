@@ -1,10 +1,10 @@
 StructureType:
-  Value: Agrivoltaic Fence
+  Value: HSATS
   Type: string
-  Choices: [Agrivoltaic Fence]
+  Choices: [Agrivoltaic Fence, PV Table, HSATS]
   Definition: which type of structure for the PV modules
 Material:
-  Value: Wood
+  Value: Metal
   Type: string
   Choices: [Metal, Wood]
   Definition: used to apply texture to the structure ;
@@ -16,12 +16,6 @@ PanelsPerGroup:
   Limit: [1, 100]
   Unit: dimensionless [-]
   Definition: Number of panels per pole in the structure
-PoleSpacingX:
-  Value: 1.0
-  Type: float
-  Limit: [0.2,4.0]
-  Unit: meters [m]
-  Definition: the distance of a pole from the center of the structure (e.g if you want 2 meters between 2 poles set this to 1) 
 PoleShape:
   Value: Cylinder
   Type: string
@@ -58,13 +52,19 @@ PoleLength:
   Unit: meters [m]
   Definition: Pole size along z
 PoleGroundPositioning:
-  Value: -0.5
+  Value: 0.0
   Type: float
   Limit: [-10, 0]
   Unit: meters [m]
   Definition: vertical positioning of the pole relative to the ground ;
     0 is flush with the ground, negative values mean the pole base is below
     ground level.
+PoleSpacingX:
+  Value: 1.0
+  Type: float
+  Limit: [0.2,4.0]
+  Unit: meters [m]
+  Definition: the distance of a pole from the center of the structure (e.g if you want 2 meters between 2 poles set this to 1)
 PurlinShape:
   Value: Cylinder
   Type: string
@@ -178,13 +178,13 @@ DiagonalEpsilon:
   Definition: diagonal epsilon (used in case of cylindrical diagonal)
 
 StructureSpacingY:
-  Value: 5.0
+  Value: 2.0
   Type: float
   Limit: [0.0, 50.0]
   Unit: meters [m]
   Definition: Spacing along Y
 StructureHeight:
-  Value: 3.3
+  Value: 0.0
   Type: float
   Limit: [0.0, 50.0]
   Unit: meters [m]
