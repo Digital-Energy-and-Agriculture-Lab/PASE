@@ -58,7 +58,7 @@ class PV_Production:
         ending_year = max(light.keys())
         freq = SP.sp_leapY.index.freq
         albedo_nyears = 0
-        if albedo_option == 2:
+        if albedo_option == 2:  # Albedo time series
             albedo_nyears = self.get_n_years_albedo_from_csvfile(albedo_file,
                                                                  starting_year,
                                                                  ending_year,
@@ -75,15 +75,17 @@ class PV_Production:
                 sun_vect = SP.sun_vect_nonleapY
                 app_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
 
-            if albedo_option == 2:
+            if albedo_option == 2:  # Albedo time series
                 albedo = albedo_nyears[year].Albedo.values
 
             tiltY, sv_CC = self.get_tiltY_along_time(sun_vect)
             SF_front = self.get_shading_factor_front(sv_CC, tiltY)
             SF_rear =self.get_shading_factor_rear(sv_CC, tiltY)
-            
-            #Temporary lines !!!!!!!
-            GHI_reaching_ground = light[year]['GHI'].to_numpy()*0.5
+
+            # Improved ground-transmitted GHI based on ground coverage ratio
+            ground_coverage_ratio = self.get_ground_coverage_ratio(tiltY)
+            GHI_reaching_ground = light[year]['GHI'].to_numpy() * (1.0 - ground_coverage_ratio)
+
             GTI_front, GTI_rear = self.get_GTI(sun_vect, app_zenith, 
                                                light[year], GHI_reaching_ground,
                                                albedo, SF_front, SF_rear, tiltY)
@@ -270,7 +272,15 @@ class PV_Production:
             tiltY = tiltY_limited*180/np.pi
             
         return tiltY, sun_vect_central_coord
-            
+    def get_ground_coverage_ratio(self, tiltY_deg):
+
+        #Ground coverage ratio (fraction of ground covered by the projection of PV panels), computed at each instant.
+        tilt_rad = np.deg2rad(tiltY_deg)
+        # Projection effect along X (rotation around Y): projected length scales with cos(tilt)
+        coverage = self.GCR_x * np.cos(tilt_rad)
+
+        return coverage
+    
     def get_sun_vect_in_central_coord(self, sun_vect):
         # Do not take into account the slope of the area and the slope of the 
         # rotation axis (see the previous framework to complete)
