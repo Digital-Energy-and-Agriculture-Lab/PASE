@@ -11,7 +11,7 @@ Material:
     Metal -> grey structure
     Wood -> brown structure
 PanelsPerGroup:
-  Value: 1
+  Value: 5
   Type: integer
   Limit: [1, 100]
   Unit: dimensionless [-]
@@ -60,7 +60,7 @@ PoleGroundPositioning:
     0 is flush with the ground, negative values mean the pole base is below
     ground level.
 PoleSpacingX:
-  Value: 0.2
+  Value: 2.0
   Type: float
   Limit: [0.2,4.0]
   Unit: meters [m]

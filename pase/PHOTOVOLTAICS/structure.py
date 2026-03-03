@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import pyvista as pyv
 import math
+import numpy as np
 
 from pase.pase_math import compute_block_centers, compute_panel_grid_positions
 
@@ -472,6 +473,11 @@ class PVTable(PVStructure):
         """
         super().__init__(PV_i, **kwargs)
 
+        self.n_groups_in_block = math.ceil(
+            self.panels_per_block_y / self.panels_per_group
+        )
+        self.purlin_length = self.panels_per_group * self.panel_spacing_y
+
         self.tilt_rad = math.radians(self.tilt)
         self.half_span = self.pole_spacing/2
 
@@ -565,11 +571,9 @@ class PVTable(PVStructure):
             self.base_height,
         )
 
-        group_centers = (
-            positions[: self.n_groups_in_block * self.panels_per_group]
-            .reshape(self.n_groups_in_block, self.panels_per_group, 3)
-            .mean(axis=1)
-        )
+        first_col = positions[: self.panels_per_block_y]
+        groups = np.array_split(first_col, self.n_groups_in_block)
+        group_centers = np.array([g.mean(axis=0) for g in groups])
 
         blocks = pyv.MultiBlock()
 
@@ -585,7 +589,7 @@ class PVTable(PVStructure):
 
         end_pole = self.make_start_and_end_block()
         end_pole.translate((0,
-                            offy+self.panel_spacing_y,
+                            offy + self.purlin_length,
                             0.0),
                             inplace=True)
         
