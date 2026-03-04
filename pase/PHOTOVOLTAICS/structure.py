@@ -166,7 +166,6 @@ class PVStructure(ABC):
         self.number_of_structure_groups  = PV_i['NumberOfStructureGroups']
         self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
         self.repetition_distance_group_Y = PV_i['RepetitionDistanceGroupY']
-        self.structure_height = PV_i['StructureHeight']
 
         self.pole_shape = PV_i['PoleShape']
         self.pole_width    = PV_i['PoleWidth']
@@ -388,7 +387,7 @@ class AgrivoltaicFence(PVStructure):
 
         horizontal_bar_top.polydata.translate((0.0,
                                                0,
-                                               self.structure_height),
+                                               self.base_height),
                                               inplace=True)
 
         # 2nd horizontal bar is a copy of horizontal_bar_top,

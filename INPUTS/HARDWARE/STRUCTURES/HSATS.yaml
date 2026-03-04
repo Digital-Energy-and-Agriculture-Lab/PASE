@@ -176,10 +176,4 @@ RepetitionDistanceGroupY:
   Type: float
   Limit: [0.0, 50.0]
   Unit: meters [m]
-  Definition: Spacing along Y
-StructureHeight:
-  Value: 0.0
-  Type: float
-  Limit: [0.0, 50.0]
-  Unit: meters [m]
-  Definition: Structure height
+  Definition: spacing of structure groups along Y
