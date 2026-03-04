@@ -183,7 +183,7 @@ DiagonalEpsilon:
   Unit: dimensionless [-]
   Definition: diagonal epsilon (used in case of cylindrical diagonal)
 
-StructureSpacingY:
+RepetitionDistanceGroupY:
   Value: 5.0
   Type: float
   Limit: [0.0, 50.0]

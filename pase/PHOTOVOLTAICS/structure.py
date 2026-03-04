@@ -166,7 +166,7 @@ class PVStructure(ABC):
         self.number_of_structure_groups  = PV_i['NumberOfStructureGroups']
         self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
         self.structure_spacing_x = 0
-        self.structure_spacing_y = PV_i['StructureSpacingY']
+        self.repetition_distance_group_Y = PV_i['RepetitionDistanceGroupY']
         self.structure_height = PV_i['StructureHeight']
 
         self.pole_shape = PV_i['PoleShape']
@@ -181,7 +181,7 @@ class PVStructure(ABC):
         self.purlin_width = PV_i['PurlinWidth']
         self.purlin_height = PV_i['PurlinHeight']
         self.purlin_side = PV_i['PurlinSide']
-        self.purlin_length = self.structure_spacing_y
+        self.purlin_length = self.repetition_distance_group_Y
         self.purlin_radius = PV_i['PurlinRadius']
         self.numbers_of_purlin = PV_i['NumberOfPurlins']
 
@@ -564,10 +564,10 @@ class PVTable(PVStructure):
     def build_structure(self) -> pyv.MultiBlock :
         """Replicate bays across the Y grid and cap with an end bay."""
 
-        # Bay positions centered around 0, spaced by structure_spacing_y
-        half_span = (self.number_of_structure_groups - 1) * self.structure_spacing_y / 2
+        # Bay positions centered around 0, spaced by repetition_distance_group_Y
+        half_span = (self.number_of_structure_groups - 1) * self.repetition_distance_group_Y / 2
         bay_y_offsets = [
-            -half_span + idx * self.structure_spacing_y
+            -half_span + idx * self.repetition_distance_group_Y
             for idx in range(self.number_of_structure_groups)
         ]
 
@@ -580,7 +580,7 @@ class PVTable(PVStructure):
 
         end_pole = self.make_start_and_end_block()
         end_pole.translate((0,
-                            offy + self.structure_spacing_y,
+                            offy + self.repetition_distance_group_Y,
                             0.0),
                             inplace=True)
         
