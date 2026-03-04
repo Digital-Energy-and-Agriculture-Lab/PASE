@@ -10,7 +10,7 @@ Material:
   Definition: used to apply texture to the structure ;
     Metal -> grey structure
     Wood -> brown structure
-NGroupsInBay:
+NumberOfStructureGroups:
   Value: 3
   Type: integer
   Limit: [1, 100]

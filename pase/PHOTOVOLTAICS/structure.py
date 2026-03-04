@@ -163,7 +163,7 @@ class PVStructure(ABC):
         """Load common geometric, spacing, and material parameters for the PV layout."""
         
         self.panels_per_group = 0
-        self.n_groups_in_bay  = PV_i['NGroupsInBay']
+        self.number_of_structure_groups  = PV_i['NumberOfStructureGroups']
         self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
         self.structure_spacing_x = 0
         self.structure_spacing_y = PV_i['StructureSpacingY']
@@ -421,14 +421,14 @@ class AgrivoltaicFence(PVStructure):
         )
 
         group_centers = (
-            positions[: self.n_groups_in_bay * self.panels_per_group]
-            .reshape(self.n_groups_in_bay, self.panels_per_group, 3)
+            positions[: self.number_of_structure_groups * self.panels_per_group]
+            .reshape(self.number_of_structure_groups, self.panels_per_group, 3)
             .mean(axis=1)
         )
 
         blocks = pyv.MultiBlock()
 
-        for idx in range(self.n_groups_in_bay):
+        for idx in range(self.number_of_structure_groups):
             g = self.make_elementary_group()
             offx, offy, offz = map(float, group_centers[idx])
 
@@ -486,7 +486,7 @@ class PVTable(PVStructure):
 
         panel_span_y = ((self.panels_per_block_y - 1) * self.panel_spacing_y
                         + self.panel_height)
-        structure_span_y = self.n_groups_in_bay * self.purlin_length
+        structure_span_y = self.number_of_structure_groups * self.purlin_length
         if panel_span_y > structure_span_y:
             raise ValueError(
                 f"Invalid PVTable configuration: The total panel height in Y "
@@ -565,10 +565,10 @@ class PVTable(PVStructure):
         """Replicate bays across the Y grid and cap with an end bay."""
 
         # Bay positions centered around 0, spaced by structure_spacing_y
-        half_span = (self.n_groups_in_bay - 1) * self.structure_spacing_y / 2
+        half_span = (self.number_of_structure_groups - 1) * self.structure_spacing_y / 2
         bay_y_offsets = [
             -half_span + idx * self.structure_spacing_y
-            for idx in range(self.n_groups_in_bay)
+            for idx in range(self.number_of_structure_groups)
         ]
 
         blocks = pyv.MultiBlock()
@@ -637,14 +637,14 @@ class HSATS(PVStructure):
         )
 
         group_centers = (
-            positions[: self.n_groups_in_bay * self.panels_per_group]
-            .reshape(self.n_groups_in_bay, self.panels_per_group, 3)
+            positions[: self.number_of_structure_groupsy * self.panels_per_group]
+            .reshape(self.number_of_structure_groups, self.panels_per_group, 3)
             .mean(axis=1)
         )
 
         blocks = pyv.MultiBlock()
 
-        for idx in range(self.n_groups_in_bay):
+        for idx in range(self.number_of_structure_groups):
             group = self.make_elementary_group()
             offx, offy, _ = map(float,
                                 group_centers[idx])
