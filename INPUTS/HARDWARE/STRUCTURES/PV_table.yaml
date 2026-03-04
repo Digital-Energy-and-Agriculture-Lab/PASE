@@ -45,12 +45,6 @@ PoleRadius:
   Limit: [0.01, 50.0]
   Unit: meters [m]
   Definition: Pole radius (used in case of cylindrical pole)
-PoleLength:
-  Value: 3.8
-  Type: float
-  Limit: [0.01, 50.0]
-  Unit: meters [m]
-  Definition: Pole size along z
 PoleGroundPositioning:
   Value: 0.0
   Type: float

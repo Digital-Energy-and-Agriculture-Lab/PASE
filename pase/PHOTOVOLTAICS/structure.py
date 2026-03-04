@@ -162,7 +162,7 @@ class PVStructure(ABC):
     def __init__(self, PV_i):
         """Load common geometric, spacing, and material parameters for the PV layout."""
         
-        self.panels_per_group = 0
+        self.panels_per_group = 1
         self.number_of_structure_groups  = PV_i['NumberOfStructureGroups']
         self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
         self.structure_spacing_x = 0
@@ -174,7 +174,6 @@ class PVStructure(ABC):
         self.pole_height    = PV_i['PoleHeight']
         self.pole_side = PV_i['PoleSide']
         self.pole_radius = PV_i['PoleRadius']
-        self.pole_length    = PV_i['PoleLength']
         self.pole_ground_positioning = PV_i['PoleGroundPositioning']
 
         self.purlin_shape = PV_i['PurlinShape']
@@ -373,7 +372,7 @@ class AgrivoltaicFence(PVStructure):
         """Create a fence bay by combining one post and two horizontal bars."""
 
         pole = Pole(self.pole_shape,
-                    length=self.pole_length,
+                    length=self.base_height,
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
@@ -439,7 +438,7 @@ class AgrivoltaicFence(PVStructure):
             blocks.append(g)
 
         end_pole = Pole(self.pole_shape,
-                        length=self.pole_length,
+                        length=self.base_height,
                         width=self.pole_width,
                         height=self.pole_height,
                         side=self.pole_side,
