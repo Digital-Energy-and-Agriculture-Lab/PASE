@@ -56,8 +56,8 @@ class Sun_positions:
         self.sun_vect_leapY = self.get_sun_vector(self.sp_leapY['elevation'], 
                                                   self.sp_leapY['azimuth'])
         
-        self.sp_leapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_leap_year,
-                                                               n)
+        self.sp_leapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(
+            index_leap_year)
         
     def SD_nonleap_year(self, frq, n, TZ):
         
@@ -70,8 +70,8 @@ class Sun_positions:
         self.sun_vect_nonleapY = self.get_sun_vector(self.sp_nonleapY['elevation'], 
                                                      self.sp_nonleapY['azimuth'])
         
-        self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_com_year,
-                                                                  n)
+        self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(
+            index_com_year)
         
         
     def get_sun_vector(self, beta, gamma):
@@ -86,7 +86,7 @@ class Sun_positions:
         #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
         return solar_vector
         
-    def get_top_of_atm_radiation(self, index, n):
+    def get_top_of_atm_radiation(self, index):
         """
         Compute extraterrestrial (i.e. at the top of the atmosphere) radiation on a
         horizontal surface.
@@ -96,7 +96,6 @@ class Sun_positions:
 
         :param index: timestamp in %Y-%m-%d %H:%M:%S format
         :type index: DatetimeIndex day of the year (numeric)
-        :param n: unused ?
         :return: irradiance at top of atmosphere on a horizontal surface [W/m²]
         """
         day_of_year = np.array(index.dayofyear)
