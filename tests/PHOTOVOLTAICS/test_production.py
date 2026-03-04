@@ -73,8 +73,8 @@ def test_get_several_years_of_electricity_production(default_PV_Central,
                                                 AlbedoOptionAndName,
                                                 default_series_input):
     default_Sun_positions,default_Light,default_WD=default_series_input
-    #Using a PV central facing down (tilt=180) so direct component is null
-    #Using no diffuse component in light data so diffuse component is null
+    # Using a PV central facing down (tilt=180) so direct component is null
+    # Using no diffuse component in light data so diffuse component is null
     default_WD.nyears_data['2020']['G(h)']=100
     default_WD.nyears_data['2020']['Gb(n)'] = 100
     default_WD.nyears_data['2020']['Gd(h)'] = 0
@@ -117,20 +117,23 @@ def test_get_several_years_of_electricity_production_nominal(default_PV_Central,
 
     albedo2020 = albedo["2020"]["Albedo"]
     assert "2020-01-01 00:00" in albedo2020.index,\
-        "La date de début '2020-01-01 00:00' est absente de la série albedo_colza."
+        "Starting date '2020-01-01 00:00' not in albedo_colza series."
     assert albedo2020["2020-01-01 00:00"]==0.18,\
-        f"Valeur incorrecte pour '2020-01-01 00:00' : obtenu={albedo2020['2020-01-01 00:00']}, attendu=0.26535534"
+        (f"Incorrect value for '2020-01-01 00:00' : got "
+         f"={albedo2020['2020-01-01 00:00']}, expected=0.26535534")
     assert albedo2020["2020-03-28 16:00"]==0.26535534,\
-        f"Valeur incorrecte pour '2020-03-28 16:00' : obtenu={albedo2020['2020-03-28 16:00']}, attendu=0.26535534"
-    assert albedo2020.notna().all(), f"La série contient des NaN : {albedo2020[albedo2020.isna()].index.tolist()}"
+        (f"Incorrect value for '2020-03-28 16:00' : got={albedo2020['2020-03-28 16:00']},"
+         f" expected=0.26535534")
+    assert albedo2020.notna().all(), (f"The series contains NaN values: NaN "
+                                      f"{albedo2020[albedo2020.isna()].index.tolist()}")
 
     if freq=="15min":
         assert "2020-12-31 23:45" in albedo2020.index, \
-            "La date de début '2020-12-31 23:45' est absente de la série " \
-            "albedo_colza."
+            "End timestamp '2020-12-31 23:45' not in " \
+            "albedo_colza series."
     elif freq=="H":
         assert "2020-12-31 23:00" in albedo2020.index, \
-            "La date de début '2020-12-31 23:00' est absente de la série albedo_colza."
+            "End timestamp '2020-12-31 23:00' not in albedo_colza series."
 
 def test_get_several_years_of_electricity_production_hors_periode(default_PV_Central):
     albedo=default_PV_Central.get_n_years_albedo_from_csvfile(
@@ -147,13 +150,14 @@ def test_get_several_years_of_electricity_production_hors_periode(default_PV_Cen
 
     albedo2021 = albedo["2021"]["Albedo"]
     assert albedo2021.nunique() == 1, \
-        f"La série n'est pas constante : {albedo2021.unique()}"
+        f"Series is not constant: {albedo2021.unique()}"
     assert "2021-01-01 00:00" in albedo2021.index,\
-        "La date de début '2021-01-01 00:00' est absente de la série albedo_colza."
+        "Start timestamp '2021-01-01 00:00' not in albedo_colza series."
     assert "2021-12-31 23:00" in albedo2021.index, \
-        "La date de début '2021-12-31 23:00' est absente de la série albedo_colza."
+        "End timestamp '2021-12-31 23:00' not in albedo_colza series."
     assert albedo2021.notna().all(),\
-        f"La série contient des NaN :{albedo2021[albedo2021.isna()].index.tolist()}"
+        (f"The series contains NaN values: NaN :"
+         f"{albedo2021[albedo2021.isna()].index.tolist()}")
 
 def test_csv_file_matches_format():
     yaml_path = (
