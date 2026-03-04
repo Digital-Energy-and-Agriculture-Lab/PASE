@@ -7,10 +7,26 @@ import numpy as np
 import pandas as pd
 
 
-def _diffuser_trace(x, x0, a, l, DB): # 2D lenticular diffuser analytical equation
-    alpha = np.maximum(x0-l*np.ones(len(x))/2, x-a*np.tan(DB/2))
-    beta = np.minimum(x0 + l * np.ones(len(x)) / 2, x + a * np.tan(DB / 2))
-    I = np.arctan(a*(beta-alpha)/(a**2+x**2-x*(beta+alpha)+alpha*beta))/DB
+def _diffuser_trace(x, x0, a, l, beta_max):
+    """trace of a diffuser parallel to the "ground", with an incoming light normal to the plane of the diffuser
+     and a unit energy
+     Input:
+        x (1d vector of size len(x)): coordinates to which a value of the function will be computed
+        x0 (scalar): center of the diffuser
+        a (scalar): height of the diffuser
+        l (scalar): length of the diffuser
+        beta_max (scalar): half of the aperture angle of the diffuser lens in radians
+    x, x0, a, and l are length and should have the same units.
+    Output:
+        I (1d vector of size len(x)): Intensity repartition of the energy on the "ground" in m-1 m_{perp}-1
+        tan(DB*I) = a*(beta-alpha)/(a^2 + x^2 - x*(beta+alpha)+alpha*beta)
+    Variables:
+        alpha (1d vector of size len(x)): maximum between x0-l/2 and x-a*tan(DB/2), same length units
+        beta (1d vector of size len(x)): minimum between x0+l/2 and x+a*tan(DB/2), same length units
+    """
+    alpha = np.maximum(x0-l*np.ones(len(x))/2, x-a*np.tan(beta_max))
+    beta = np.minimum(x0 + l * np.ones(len(x)) / 2, x + a * np.tan(beta_max))
+    I = np.arctan(a*(beta-alpha)/(a**2+x**2-x*(beta+alpha)+alpha*beta))/(2*beta_max)
     ind = np.where(I<0)
     I[ind] = 0
     return I
@@ -137,7 +153,7 @@ def test_diffuser_map_theory():
     maps = maps[0, ind]
 
     x = np.linspace(min(M.sourcepoints[:, 0]), max(M.sourcepoints[:, 0]), maps.size)
-    F = _diffuser_trace(x, 0, 2, 1, np.radians(60))  # build the ground truth
+    F = _diffuser_trace(x, 0, 2, 1, np.radians(30))  # build the ground truth
 
     assert np.allclose(maps, F, atol=1e-1)
 
