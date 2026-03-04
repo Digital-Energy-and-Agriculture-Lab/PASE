@@ -198,8 +198,8 @@ class PVStructure(ABC):
         
         self.material = PV_i['Material']
 
-        self.panel_width = float(PV_i["PanelDimensionX"])  # X
-        self.panel_height = float(PV_i["PanelDimensionY"])  # Y
+        self.panel_height = float(PV_i["PanelDimensionX"])  # X
+        self.panel_width = float(PV_i["PanelDimensionY"])  # Y
 
         self.panel_spacing_x = float(
             PV_i["RepetitionDistanceOfPanelsX"])  # pitch X
@@ -472,21 +472,21 @@ class PVTable(PVStructure):
                                  self.required_length)
 
         panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
-                        + self.panel_width)
+                        + self.panel_height)
         if panel_span_x > self.rafter_length:
             raise ValueError(
-                f"Invalid PVTable configuration: The total panel width in X "
+                f"Invalid PVTable configuration: The total panel height in X "
                 f"({panel_span_x:.2f}m) exceeds the rafter length "
                 f"({self.rafter_length:.2f}m). "
                 f"Please change the panels configuration on X axis or increase the rafter length by increasing 'PoleSpacingX' or 'RafterLength'."
             )
 
         panel_span_y = ((self.panels_per_block_y - 1) * self.panel_spacing_y
-                        + self.panel_height)
+                        + self.panel_width)
         structure_span_y = self.number_of_structure_groups * self.purlin_length
         if panel_span_y > structure_span_y:
             raise ValueError(
-                f"Invalid PVTable configuration: The total panel height in Y "
+                f"Invalid PVTable configuration: The total panel width in Y "
                 f"({panel_span_y:.2f}m) exceeds the structural span in Y "
                 f"({structure_span_y:.2f}m). "
                 f"Please change the panels configuration on Y axis or adjust 'NumberOfStructureGroups' or 'RepetitionDistanceOfPanelsY'."
