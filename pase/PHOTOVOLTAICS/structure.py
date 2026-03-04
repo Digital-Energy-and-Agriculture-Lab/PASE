@@ -148,7 +148,7 @@ class HorizontalBar(PVStructurePart):
 
 
 class Diagonal(PVStructurePart):
-    """Diagonal bracing connecting two posts to stiffen the bay."""
+    """Diagonal bracing connecting two posts to stiffen the group."""
 
     def __init__(self, shape_type, length, **kwargs):
         super().__init__(shape_type, length, **kwargs)
@@ -367,7 +367,7 @@ class AgrivoltaicFence(PVStructure):
         super().__init__(PV_i, **kwargs)
 
     def make_elementary_group(self) -> pyv.PolyData:
-        """Create a fence bay by combining one post and two horizontal bars."""
+        """Create a fence group by combining one post and two horizontal bars."""
 
         pole = Pole(self.pole_shape,
                     length=self.base_height,
@@ -405,7 +405,7 @@ class AgrivoltaicFence(PVStructure):
 
     def build_structure(self) -> pyv.MultiBlock:
         """
-        Assemble all fence bays along Y and add a terminal post.
+        Assemble all fence groups along Y and add a terminal post.
         """
 
         # Compute position of groups
@@ -501,7 +501,7 @@ class PVTable(PVStructure):
                              "below ground level. Please increase 'Height' or 'PoleSpacingX' or decrease 'TiltY'.")
 
     def make_elementary_group(self) -> pyv.PolyData:
-        """Build one table bay with poles, rafters, diagonals, and purlins."""
+        """Build one table group with poles, rafters, diagonals, and purlins."""
         pole_and_rafter_group = self.make_start_and_end_block()
         purlin_group = self.make_structure_part_group("purlin",
                                             self.numbers_of_purlin,
@@ -559,18 +559,18 @@ class PVTable(PVStructure):
         return combine
 
     def build_structure(self) -> pyv.MultiBlock :
-        """Replicate bays across the Y grid and cap with an end bay."""
+        """Replicate groups across the Y grid and cap with an end group."""
 
-        # Bay positions centered around 0, spaced by repetition_distance_group_Y
+        # group positions centered around 0, spaced by repetition_distance_group_Y
         half_span = (self.number_of_structure_groups - 1) * self.repetition_distance_group_Y / 2
-        bay_y_offsets = [
+        group_y_offsets = [
             -half_span + idx * self.repetition_distance_group_Y
             for idx in range(self.number_of_structure_groups)
         ]
 
         blocks = pyv.MultiBlock()
 
-        for offy in bay_y_offsets:
+        for offy in group_y_offsets:
             g = self.make_elementary_group()
             g.translate((0, offy, 0), inplace=True)
             blocks.append(g)
@@ -600,7 +600,7 @@ class HSATS(PVStructure):
 
     def make_elementary_group(self) -> pyv.PolyData:
         """
-        Create the tracker bay with central post plus purlin and rafter groups.
+        Create the tracker group with central post plus purlin and rafter groups.
         """
 
         pole = Pole(self.pole_shape,
@@ -624,7 +624,7 @@ class HSATS(PVStructure):
         return combine
     
     def build_structure(self):
-        """Return the assembled HSATS bay (single-axis tracker)."""
+        """Return the assembled HSATS group (single-axis tracker)."""
         positions, block_centers, grid_indices = compute_panel_grid_positions(
             self.num_blocks_x, self.num_blocks_y,
             self.panels_per_block_x, self.panels_per_block_y,
