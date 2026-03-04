@@ -1,7 +1,7 @@
 StructureType:
-  Value: PV Table
+  Value: Agrivoltaic Fence
   Type: string
-  Choices: [Agrivoltaic Fence, PV Table]
+  Choices: [Agrivoltaic Fence, PV Table, HSATS]
   Definition: which type of structure for the PV modules
 Material:
   Value: Wood
@@ -15,9 +15,9 @@ NumberOfStructureGroups:
   Type: integer
   Limit: [1, 100]
   Unit: dimensionless [-]
-  Definition: Number of poles in one bay
+  Definition: Number of structure groups in one PV block
 PoleShape:
-  Value: square
+  Value: cylinder
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the pole profile
@@ -60,14 +60,8 @@ PoleSpacingX:
   Unit: meters [m]
   Definition: the distance between the two poles on x axis
 
-PurlinLength:
-  Value: 2.0
-  Type: float
-  Limit: [0.2,4.0]
-  Unit: meters [m]
-  Definition: Purlin size along y
 PurlinShape:
-  Value: square
+  Value: cylinder
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the purlin profile
@@ -102,7 +96,7 @@ NumberOfPurlins:
   Definition: Number of Purlin for one group
 
 RafterShape:
-  Value: square
+  Value: cylinder
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the rafter profile
