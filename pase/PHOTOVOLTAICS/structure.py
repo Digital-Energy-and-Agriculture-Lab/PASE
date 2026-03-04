@@ -165,7 +165,6 @@ class PVStructure(ABC):
         self.panels_per_group = 1
         self.number_of_structure_groups  = PV_i['NumberOfStructureGroups']
         self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
-        self.structure_spacing_x = 0
         self.repetition_distance_group_Y = PV_i['RepetitionDistanceGroupY']
         self.structure_height = PV_i['StructureHeight']
 
@@ -491,7 +490,7 @@ class PVTable(PVStructure):
                 f"Invalid PVTable configuration: The total panel height in Y "
                 f"({panel_span_y:.2f}m) exceeds the structural span in Y "
                 f"({structure_span_y:.2f}m). "
-                f"Please change the panels configuration on Y axis or adjust 'NGroupsInBay' or 'RepetitionDistanceOfPanelsY'."
+                f"Please change the panels configuration on Y axis or adjust 'NumberOfStructureGroups' or 'RepetitionDistanceOfPanelsY'."
             )
 
         self.height_offset = self.half_span * math.tan(self.tilt_rad)
