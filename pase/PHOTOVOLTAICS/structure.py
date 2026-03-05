@@ -162,7 +162,6 @@ class PVStructure(ABC):
     def __init__(self, PV_i):
         """Load common geometric, spacing, and material parameters for the PV layout."""
         
-        self.panels_per_group = 1
         self.number_of_structure_groups  = PV_i['NumberOfStructureGroups']
         self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
         self.repetition_distance_group_Y = PV_i['RepetitionDistanceGroupY']
