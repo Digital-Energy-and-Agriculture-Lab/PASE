@@ -167,8 +167,8 @@ class PVStructure(ABC):
         self.repetition_distance_group_Y = PV_i['RepetitionDistanceGroupY']
 
         self.pole_shape = PV_i['PoleShape']
-        self.pole_width    = PV_i['PoleWidth']
-        self.pole_height    = PV_i['PoleHeight']
+        self.pole_width = PV_i['PoleWidth']
+        self.pole_height = PV_i['PoleHeight']
         self.pole_side = PV_i['PoleSide']
         self.pole_radius = PV_i['PoleRadius']
         self.pole_ground_positioning = PV_i['PoleGroundPositioning']
@@ -392,7 +392,7 @@ class AgrivoltaicFence(PVStructure):
         """Create a fence group by combining one post and two horizontal bars."""
 
         pole = Pole(self.pole_shape,
-                    length=self.base_height,
+                    length=self.base_height - self.pole_ground_positioning,
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
@@ -443,7 +443,7 @@ class AgrivoltaicFence(PVStructure):
             blocks.append(g)
 
         end_pole = Pole(self.pole_shape,
-                        length=self.base_height,
+                        length=self.base_height - self.pole_ground_positioning,
                         width=self.pole_width,
                         height=self.pole_height,
                         side=self.pole_side,
