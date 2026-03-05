@@ -257,9 +257,11 @@ class PVStructure(ABC):
             purlin_group = []
             for offx in offsets_x:
                 p = Purlin(self.purlin_shape, length=self.purlin_length,
-                           panel_tilt_y=0, side=self.purlin_side,
-                           radius=self.purlin_radius, width=self.purlin_width,
-                           height=self.purlin_width,
+                           panel_tilt_y=0,
+                           side=self.purlin_side,
+                           radius=self.purlin_radius,
+                           width=self.purlin_width,
+                           height=self.purlin_height,
                            positioning=self.pole_ground_positioning)
                 p.polydata.translate((offx,
                                       0,
