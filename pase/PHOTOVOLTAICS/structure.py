@@ -366,6 +366,29 @@ class AgrivoltaicFence(PVStructure):
         """Initialize agrivoltaic fence parameters from aggregated PV inputs."""
         super().__init__(PV_i, **kwargs)
 
+        panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
+                        + self.panel_height)
+        if panel_span_x > self.rafter_length:
+            raise ValueError(
+                f"Invalid HSATS configuration: The total panel height in X "
+                f"({panel_span_x:.2f}m) exceeds the rafter length "
+                f"({self.rafter_length:.2f}m). "
+                f"Please change the panels configuration on X axis or increase "
+                f"the rafter length by increasing 'RafterLength'."
+            )
+
+        panel_span_y = ((self.panels_per_block_y - 1) * self.panel_spacing_y
+                        + self.panel_width)
+        structure_span_y = self.number_of_structure_groups * self.repetition_distance_group_Y
+        if panel_span_y > structure_span_y:
+            raise ValueError(
+                f"Invalid HSATS configuration: The total panel width in Y "
+                f"({panel_span_y:.2f}m) exceeds the structural span in Y "
+                f"({structure_span_y:.2f}m). "
+                f"Please change the panels configuration on Y axis or adjust "
+                f"'NumberOfStructureGroups' or 'RepetitionDistanceGroupY'."
+            )
+
     def make_elementary_group(self) -> pyv.PolyData:
         """Create a fence group by combining one post and two horizontal bars."""
 
@@ -407,32 +430,17 @@ class AgrivoltaicFence(PVStructure):
         """
         Assemble all fence groups along Y and add a terminal post.
         """
-
-        # Compute position of groups
-        positions, block_centers, grid_indices = compute_panel_grid_positions(
-            self.num_blocks_x, self.num_blocks_y,
-            self.panels_per_block_x, self.panels_per_block_y,
-            self.block_spacing_x, self.block_spacing_y,
-            self.panel_spacing_x, self.panel_spacing_y,
-            self.base_height,
-        )
-
-        group_centers = (
-            positions[: self.number_of_structure_groups * self.panels_per_group]
-            .reshape(self.number_of_structure_groups, self.panels_per_group, 3)
-            .mean(axis=1)
-        )
+        half_span = (self.number_of_structure_groups - 1) * self.repetition_distance_group_Y / 2
+        group_y_offsets = [
+            -half_span + idx * self.repetition_distance_group_Y
+            for idx in range(self.number_of_structure_groups)
+        ]
 
         blocks = pyv.MultiBlock()
 
-        for idx in range(self.number_of_structure_groups):
+        for offy in group_y_offsets:
             g = self.make_elementary_group()
-            offx, offy, offz = map(float, group_centers[idx])
-
-            g.translate((0, 
-                         offy, 
-                         0),
-                        inplace=True)
+            g.translate((0, offy, 0), inplace=True)
             blocks.append(g)
 
         end_pole = Pole(self.pole_shape,
@@ -444,7 +452,7 @@ class AgrivoltaicFence(PVStructure):
                         positioning=self.pole_ground_positioning)
 
         end_pole.polydata.translate((0,
-                                     offy+self.panel_spacing_y/2,
+                                     group_y_offsets[-1] + self.repetition_distance_group_Y / 2,
                                      0.0),
                                     inplace=True)
         blocks.append(end_pole.polydata)
@@ -598,6 +606,29 @@ class HSATS(PVStructure):
         """Initialize HSATS with common PV inputs."""
         super().__init__(PV_i, **kwargs)
 
+        panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
+                        + self.panel_height)
+        if panel_span_x > self.rafter_length:
+            raise ValueError(
+                f"Invalid HSATS configuration: The total panel height in X "
+                f"({panel_span_x:.2f}m) exceeds the rafter length "
+                f"({self.rafter_length:.2f}m). "
+                f"Please change the panels configuration on X axis or increase "
+                f"the rafter length by increasing 'RafterLength'."
+            )
+
+        panel_span_y = ((self.panels_per_block_y - 1) * self.panel_spacing_y
+                        + self.panel_width)
+        structure_span_y = self.number_of_structure_groups * self.repetition_distance_group_Y
+        if panel_span_y > structure_span_y:
+            raise ValueError(
+                f"Invalid HSATS configuration: The total panel width in Y "
+                f"({panel_span_y:.2f}m) exceeds the structural span in Y "
+                f"({structure_span_y:.2f}m). "
+                f"Please change the panels configuration on Y axis or adjust "
+                f"'NumberOfStructureGroups' or 'RepetitionDistanceGroupY'."
+            )
+
     def make_elementary_group(self) -> pyv.PolyData:
         """
         Create the tracker group with central post plus purlin and rafter groups.
@@ -625,30 +656,17 @@ class HSATS(PVStructure):
     
     def build_structure(self):
         """Return the assembled HSATS group (single-axis tracker)."""
-        positions, block_centers, grid_indices = compute_panel_grid_positions(
-            self.num_blocks_x, self.num_blocks_y,
-            self.panels_per_block_x, self.panels_per_block_y,
-            self.block_spacing_x, self.block_spacing_y,
-            self.panel_spacing_x, self.panel_spacing_y,
-            self.base_height,
-        )
-
-        group_centers = (
-            positions[: self.number_of_structure_groups * self.panels_per_group]
-            .reshape(self.number_of_structure_groups, self.panels_per_group, 3)
-            .mean(axis=1)
-        )
+        half_span = (self.number_of_structure_groups - 1) * self.repetition_distance_group_Y / 2
+        group_y_offsets = [
+            -half_span + idx * self.repetition_distance_group_Y
+            for idx in range(self.number_of_structure_groups)
+        ]
 
         blocks = pyv.MultiBlock()
 
-        for idx in range(self.number_of_structure_groups):
+        for offy in group_y_offsets:
             group = self.make_elementary_group()
-            offx, offy, _ = map(float,
-                                group_centers[idx])
-            group.translate((0.0, 
-                             offy, 
-                             0.0), 
-                             inplace=True)
+            group.translate((0.0, offy, 0.0), inplace=True)
             blocks.append(group)
 
         combined = blocks.combine()
