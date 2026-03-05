@@ -634,7 +634,7 @@ class HSATS(PVStructure):
         )
 
         group_centers = (
-            positions[: self.number_of_structure_groupsy * self.panels_per_group]
+            positions[: self.number_of_structure_groups * self.panels_per_group]
             .reshape(self.number_of_structure_groups, self.panels_per_group, 3)
             .mean(axis=1)
         )

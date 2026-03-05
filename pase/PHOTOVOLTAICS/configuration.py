@@ -997,7 +997,7 @@ class PVConfiguration3D(MultiBlockPASE):
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
         struct_type = (config.get('StructureType'))
-        hinge_style = "top" if struct_type.lower() == 'agrivoltaic fence' else "center"
+        hinge_style = "top" if (struct_type or '').lower() == 'agrivoltaic fence' else "center"
         panel_offset = float(config["PanelOffset"])
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
@@ -1372,7 +1372,7 @@ class PV_Configuration_3D(PVConfiguration3D):
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
         struct_type = (config.get('StructureType'))
-        hinge_style = "top" if struct_type.lower() == 'agrivoltaic fence' else "center"
+        hinge_style = "top" if (struct_type or '').lower() == 'agrivoltaic fence' else "center"
         panel_offset = float(config["PanelOffset"])
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):

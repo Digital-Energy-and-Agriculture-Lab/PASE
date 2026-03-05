@@ -10,6 +10,8 @@ def structure_inputs():
 
     base = {
         "PanelsPerGroup": 2,
+        "NumberOfStructureGroups": 2,
+        "RepetitionDistanceGroupY": 2.0,
         "NumberOfPanelsX": 2,
         "NumberOfPanelsY": 2,
         "RepetitionDistanceOfPanelsX": 2.0,
@@ -72,6 +74,8 @@ def structure_inputs():
                 "NumberOfPanelsX": 4,
                 "NumberOfPanelsY": 2,
                 "PanelsPerGroup": 4,
+                "NumberOfStructureGroups": 2,
+                "RepetitionDistanceGroupY": 2.4,
                 "NumberOfPVBlocksX": 2,
                 "NumberOfPVBlocksY": 1,
                 "RepetitionDistanceOfPVBlocksX": 6.0,
@@ -80,6 +84,7 @@ def structure_inputs():
                 "NumberOfRafters": 3,
                 "PoleSpacingX": 1.5,
                 "PoleLength": 3.5,
+                "RafterLength": 8.0,
                 "TiltY": 5.0,
             },
             id="wider-layout",
