@@ -7,15 +7,17 @@ import numpy as np
 import pandas as pd
 
 
-def _diffuser_trace(x, x0, a, l, beta_max):
-    """trace of a diffuser parallel to the "ground", with an incoming light normal to the plane of the diffuser
-     and a unit energy
+def _diffuser_trace(x, x0, a, l, theta_max):
+    """
+    Trace of a diffuser parallel to the "ground", with an incoming light of unit
+    energy, normal to the plane of the diffuser.
+
      Input:
         x (1d vector of size len(x)): coordinates to which a value of the function will be computed
         x0 (scalar): center of the diffuser
         a (scalar): height of the diffuser
         l (scalar): length of the diffuser
-        beta_max (scalar): half of the aperture angle of the diffuser lens in radians
+        theta_max (scalar): half of the aperture angle of the diffuser lens in radians
     x, x0, a, and l are length and should have the same units.
     Output:
         I (1d vector of size len(x)): Intensity repartition of the energy on the "ground" in m-1 m_{perp}-1
@@ -24,10 +26,10 @@ def _diffuser_trace(x, x0, a, l, beta_max):
         alpha (1d vector of size len(x)): maximum between x0-l/2 and x-a*tan(DB/2), same length units
         beta (1d vector of size len(x)): minimum between x0+l/2 and x+a*tan(DB/2), same length units
     """
-    alpha = np.maximum(x0-l*np.ones(len(x))/2, x-a*np.tan(beta_max))
-    beta = np.minimum(x0 + l * np.ones(len(x)) / 2, x + a * np.tan(beta_max))
-    I = np.arctan(a*(beta-alpha)/(a**2+x**2-x*(beta+alpha)+alpha*beta))/(2*beta_max)
-    ind = np.where(I<0)
+    alpha = np.maximum(x0 - l * np.ones(len(x)) / 2, x - a * np.tan(theta_max))
+    beta = np.minimum(x0 + l * np.ones(len(x)) / 2, x + a * np.tan(theta_max))
+    I = np.arctan(a*(beta-alpha)/(a**2+x**2-x*(beta+alpha)+alpha*beta))/(2 * theta_max)
+    ind = np.where(I < 0)
     I[ind] = 0
     return I
 
@@ -80,7 +82,7 @@ Diffusers2 = LenticularDiffuser(0, 0, omega = 30)
 
 def test_check_mask_Ray_casting_scene():
     """Test the shape of the different masks"""
-    geometry,M = _create_example_centrale()
+    geometry,M = _create_example_central()
     L = Ray_casting_scene(M, geometry[0], sky) # test with example 1
     L.get_light_maps(suns,visualization=False,Sun_P_map_to_visualize=3)
     assert list(L.masks.keys()) == ['Diffuse', 'PV'] # check the keys of the visualisation matrices
@@ -94,7 +96,7 @@ def test_check_mask_Ray_casting_scene():
 
 def test_self_intercept():
     """Test the self-intercept function. Add a small delta to the rays and check the filtering based on this delta"""
-    geometry, M = _create_example_centrale()
+    geometry, M = _create_example_central()
     L = Ray_casting_scene(M, geometry[0], sky)
     sourcepoints = M.sourcepoints[:, :3]
     Delta = np.zeros(sourcepoints.shape)
@@ -114,7 +116,7 @@ def test_compute_diffuser_map():
     2) Test energy conservation. The integral of the diffuser map shouldn't be
     higher than the area of the diffuser times 1 (the value of the unit radiation). In this case the diffuser area
     is 1.6 m² ==> The integral shouldn't be higher than 1.6 m²"""
-    geometry, M = _create_example_centrale()
+    geometry, M = _create_example_central()
     mesh_data = M.get_mesh_data("crop")
     cell_area = mesh_data["areas"][0]
 
@@ -143,7 +145,7 @@ def test_diffuser_map_theory():
     solution.
     """
     sky = ReinhartSky(MF=8).reinhart_patches
-    geometry, M = _create_example_centrale()
+    geometry, M = _create_example_central()
     L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)  # example 3
     L.get_light_maps(np.array([0,0,1]).reshape((1,3)), visualization=False)
     maps = L.diffuser_map
@@ -164,7 +166,7 @@ def test_compute_daily_diffuser_irradiation():
     Compare the standard method with an alternative one.
     """
 
-    geometry, M = _create_example_centrale()
+    geometry, M = _create_example_central()
     L = Ray_casting_scene(M, geometry[2], sky, diffusers=Diffusers2)
     L.get_light_maps(suns,visualization=False)
     ghi = np.arange(1, 25, 1)
