@@ -1048,7 +1048,7 @@ class PVConfiguration3D(MultiBlockPASE):
             elif hinge_style.lower() == 'top':
                 panel = (
                     base_panel.copy()
-                    .translate([offx, offy, offz + panel_offset])
+                    .translate([offx + panel_height, offy, offz + panel_offset])
                     .rotate_y(90, point=(cx, cy, cz))
                 )
                 panel.rotate_y(90-tilt_deg,
