@@ -165,7 +165,6 @@ class PVStructure(ABC):
         
         self.number_of_structure_groups  = PV_i['NumberOfStructureGroups']
         self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
-        self.repetition_distance_group_Y = PV_i['RepetitionDistanceGroupY']
 
         self.pole_shape = PV_i['PoleShape']
         self.pole_width = PV_i['PoleWidth']
@@ -178,7 +177,6 @@ class PVStructure(ABC):
         self.purlin_width = PV_i['PurlinWidth']
         self.purlin_height = PV_i['PurlinHeight']
         self.purlin_side = PV_i['PurlinSide']
-        self.purlin_length = self.repetition_distance_group_Y
         self.purlin_radius = PV_i['PurlinRadius']
         self.numbers_of_purlin = PV_i['NumberOfPurlins']
 
@@ -220,6 +218,19 @@ class PVStructure(ABC):
         self.tilt = float(PV_i["TiltY"])
         self.panel_offset = float(PV_i["PanelOffset"])
         self.diagonal_epsilon = float(PV_i["DiagonalEpsilon"])
+
+        self.repetition_distance_group_Y_mode = PV_i["RepetitionDistanceGroupYMode"]
+
+        if self.repetition_distance_group_Y_mode.lower() == "auto":
+            # Auto compute repetition_distance_group_Y based on panel layout
+            self.repetition_distance_group_Y = (
+                    self.panels_per_block_y*self.panel_spacing_y/self.number_of_structure_groups)
+        elif self.repetition_distance_group_Y_mode.lower() == "manual":
+            # Read repetition_distance_group_Y as a parameter
+            self.repetition_distance_group_Y = PV_i['RepetitionDistanceGroupY']
+
+        self.purlin_length = self.repetition_distance_group_Y
+
 
     def make_elementary_group(self):
         """
