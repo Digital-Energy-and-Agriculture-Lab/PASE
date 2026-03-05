@@ -247,6 +247,21 @@ class PVStructure(ABC):
         Abstract method overridden in inherited classes.
         """
         pass
+    
+    def get_characteristic_dim(self, part_type):
+        """
+        Get the characteristic dimension of a part of the structure.
+        """
+
+        shape = getattr(self, f"{part_type}_shape").lower()
+        
+        mapping = {
+            'cylinder': getattr(self, f"{part_type}_radius"),
+            'rectangle': getattr(self, f"{part_type}_height"),
+            'square': getattr(self, f"{part_type}_side")
+        }
+
+        return mapping.get(shape, 0)
 
     def make_structure_part_group(self, part_group, nb_part, span):
         """
@@ -290,11 +305,14 @@ class PVStructure(ABC):
             for mesh in purlin_group[1:]:
                 combined = combined + mesh
 
-            # Apply the table tilt around the new center of the group.
+
+            dim_purlin = self.get_characteristic_dim("purlin")
+            dim_rafter = self.get_characteristic_dim("rafter")
+            # Apply the table tilt around the new center of the group and the purlin offset.
             combined.rotate_y(self.tilt,
-                              point=(0, 
+                              point=(-dim_purlin - dim_rafter/2,
                                      0,                                     
-                                     self.base_height), 
+                                     self.base_height),
                               inplace=True)
         # Same idea for the rafter
         elif part_group == "rafter":

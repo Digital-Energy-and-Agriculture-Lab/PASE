@@ -1,5 +1,5 @@
 NumberOfPanelsX:
-   Value: 3
+   Value: 2
    Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
@@ -35,7 +35,7 @@ TiltY:
    Unit: degree [°]
    Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation
 PanelOffset:
-   Value: 0.1
+   Value: 0.5
    Type: float
    Limit: [0.0, 0.5]
    Unit: meters [m]

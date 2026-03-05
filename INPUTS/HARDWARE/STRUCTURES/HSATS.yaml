@@ -32,7 +32,7 @@ RepetitionDistanceGroupY:
   Definition: spacing of structure groups along Y. Only used when
     RepetitionDistanceGroupYMode is set to manual.
 PoleShape:
-  Value: cylinder
+  Value: Rectangle
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the pole profile
@@ -76,20 +76,20 @@ PoleSpacingX:
   Definition: the distance between the two poles on x axis
 
 PurlinShape:
-  Value: cylinder
+  Value: Cylinder
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the purlin profile
 PurlinWidth:
-  Value: 0.2
+  Value: 0.05
   Type: float
   Limit: [0.01, 10.0]
   Unit: meters [m]
   Definition: purlin size along x (used in case of square or rectangular purlin)
 PurlinHeight:
-  Value: 0.2
+  Value: 0.08
   Type: float
-  Limit: [0.05, 10.0]
+  Limit: [0.01, 10.0]
   Unit: meters [m]
   Definition: purlin size along y (used in case of square or rectangular purlin)
 PurlinSide:
@@ -111,12 +111,12 @@ NumberOfPurlins:
   Definition: Number of Purlin for one group
 
 RafterShape:
-  Value: cylinder
+  Value: Square
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the rafter profile
 RafterWidth:
-  Value: 0.2
+  Value: 0.1
   Type: float
   Limit: [0.01, 10.0]
   Unit: meters [m]
@@ -124,7 +124,7 @@ RafterWidth:
 RafterHeight:
   Value: 0.2
   Type: float
-  Limit: [0.05, 10.0]
+  Limit: [0.01, 10.0]
   Unit: meters [m]
   Definition: rafter size along y (used in case of square or rectangular rafter)
 RafterSide:
