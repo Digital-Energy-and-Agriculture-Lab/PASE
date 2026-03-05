@@ -153,7 +153,7 @@ class LenticularDiffuser(Diffuser):
         Specific transfer function for lenticular diffusers.
 
         Gamma : Angle between the lens direction and the sun direction
-        beta : Angle between the diffuser plan and the plan created by the
+        beta : Angle between the diffuser plane and the plane created by the
         sun vector and the lens vector.
 
         Input :
@@ -177,8 +177,8 @@ class LenticularDiffuser(Diffuser):
 
     def get_beta_angle(self, vect_sun, angle_res):
         """
-        Compute the beta angle (i.e. angle between the diffuser plan and
-        the plan created by the sun vector and the lens vector.)
+        Compute the beta angle (i.e. angle between the diffuser plane and
+        the plane defined by the sun vector and the lens vector.)
 
         Input:
             vect_sun (nSunPos, 3): sun vectors
@@ -205,7 +205,8 @@ class LenticularDiffuser(Diffuser):
             vect_sun (nSunPos, 3): sun vectors
             angle_res (scalar): output angular resolution in radians
         Output:
-            gamma (nSolPos, Nvec): beta angle in radians, Nvec is the number of segments discretizing the diffuser trace
+            gamma (nSolPos, Nvec): gamma angle in radians, Nvec is the number of segments
+            discretizing the diffuser trace
         """
         cos_gamma = np.clip(np.dot(vect_sun, self.len_vector), -1, 1)
         gamma = np.arccos(cos_gamma)

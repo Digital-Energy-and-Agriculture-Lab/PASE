@@ -32,7 +32,7 @@ def _diffuser_trace(x, x0, a, l, beta_max):
     return I
 
 
-def _create_example_centrale(): # creation of example centrals
+def _create_example_central():  # creation of example centrals
     cfg = [PVConfiguration3D(), PVConfiguration3D(), PVConfiguration3D()]
 
     base_dict = dict(
