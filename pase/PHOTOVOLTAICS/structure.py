@@ -129,6 +129,7 @@ class Rafter(PVStructurePart):
 
         # Rotate to make horizontal along x
         self.orientation = 'horizontal_x'
+        self.polydata.rotate_z(90, inplace=True)
         self.polydata.rotate_y(90, inplace=True)
 
         # Tilt the rafter
