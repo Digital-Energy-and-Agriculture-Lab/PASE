@@ -5,6 +5,7 @@ import numpy as np
 
 from pase.pase_math import compute_block_centers, compute_panel_grid_positions
 
+pyv.global_theme.allow_empty_mesh = True
 
 def build_structure(config_dict):
     """
@@ -63,22 +64,25 @@ class PVStructurePart(ABC):
         """
         Create a vertical polydata of the requested shape; subclasses rotate it
         """
-        if self.shape_type.lower() in ['circle', 'cylinder']:
-            self.polydata = pyv.Cylinder(center=(0, 0, 0),
-                                         direction=(0, 0, 1),
-                                         radius=self.radius,
-                                         height=self.length).triangulate()
-        elif self.shape_type.lower() == 'square':
-            self.polydata = pyv.Cube(center=(0, 0, 0),
-                                     x_length=self.side,
-                                     y_length=self.side,
-                                     z_length=self.length
-                                     ).triangulate()
-        elif self.shape_type.lower() == 'rectangle':
-            self.polydata = pyv.Cube(center=(0, 0, 0),
-                                     x_length=self.width,
-                                     y_length=self.height,
-                                     z_length=self.length).triangulate()
+        if self.length < 1e-6:
+            self.polydata = pyv.PolyData()
+        else:
+            if self.shape_type.lower() in ['circle', 'cylinder']:
+                self.polydata = pyv.Cylinder(center=(0, 0, 0),
+                                             direction=(0, 0, 1),
+                                             radius=self.radius,
+                                             height=self.length).triangulate()
+            elif self.shape_type.lower() == 'square':
+                self.polydata = pyv.Cube(center=(0, 0, 0),
+                                         x_length=self.side,
+                                         y_length=self.side,
+                                         z_length=self.length
+                                         ).triangulate()
+            elif self.shape_type.lower() == 'rectangle':
+                self.polydata = pyv.Cube(center=(0, 0, 0),
+                                         x_length=self.width,
+                                         y_length=self.height,
+                                         z_length=self.length).triangulate()
 
 
 class Pole(PVStructurePart):
