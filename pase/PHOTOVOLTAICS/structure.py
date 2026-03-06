@@ -721,20 +721,39 @@ if __name__ == "__main__":
                                                            Inputs_aggregator)
     import os
 
+    struct_type = "HSATS"  # "HSATS" or "pv table" or "agrivoltaic fence"
+    panel_orientation = "landscape"  # "landscape" or "portrait"
+
+    if struct_type == "HSATS":
+        av_file = "Example4_HSATS.yaml"
+        struct_file = "HSATS.yaml"
+    elif struct_type.lower() == "pv table":
+        av_file = "Example5_PVTable.yaml.yaml"
+        struct_file = "PV_table.yaml.yaml"
+    elif struct_type.lower() == "agrivoltaic fence":
+        av_file = "Example3_AV_agrivoltaic_fence.yaml.yaml"
+        struct_file = "agrivoltaic_fence.yaml"
+
+    if panel_orientation == "landscape":
+        pv_file = "Example1_PV_Module_landscape.yaml"
+    elif panel_orientation == "portrait":
+        pv_file = "Example1_PV_Module.yaml"
+
+
     AV_1 = YAML_Inputs_provider(
-        file="Example4_HSATS.yaml",
+        file=av_file,
         subpath="AV_CENTRAL",
         parentdir=2
     ).inputs
 
     PV_module_1 = YAML_Inputs_provider(
-        file="Example1_PV_Module_landscape.yaml",
+        file=pv_file,
         subpath=os.path.join("HARDWARE", "PV_MODULES"),
         parentdir=2
     ).inputs
 
     Structure = YAML_Inputs_provider(
-        file="HSATS.yaml",
+        file=struct_file,
         subpath=os.path.join("HARDWARE", "STRUCTURES"),
         parentdir=2
     ).inputs
