@@ -16,6 +16,21 @@ NumberOfStructureGroups:
   Limit: [1, 100]
   Unit: dimensionless [-]
   Definition: Number of structure groups in one PV block
+RepetitionDistanceGroupYMode:
+  Value: auto
+  Type: string
+  Choices: [ auto, manual ]
+  Definition: Choose how the repetition distance of structure groups along Y axis is
+    handled.
+    - auto means the software adjusts the structure layout to the panels layout
+    - manual requires the RepetitionDistanceGroupY to be provided by the user
+RepetitionDistanceGroupY:
+  Value: 6.2
+  Type: float
+  Limit: [ 0.0, 50.0 ]
+  Unit: meters [m]
+  Definition: spacing of structure groups along Y. Only used when
+    RepetitionDistanceGroupYMode is set to manual.
 PoleShape:
   Value: square
   Type: string
@@ -170,10 +185,3 @@ DiagonalEpsilon:
   Limit: [0.000001, 0.000002]
   Unit: dimensionless [-]
   Definition: diagonal epsilon (used in case of cylindrical diagonal)
-
-RepetitionDistanceGroupY:
-  Value: 5.0
-  Type: float
-  Limit: [0.0, 50.0]
-  Unit: meters [m]
-  Definition: spacing of structure groups along Y
