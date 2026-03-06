@@ -721,17 +721,17 @@ if __name__ == "__main__":
                                                            Inputs_aggregator)
     import os
 
-    struct_type = "HSATS"  # "HSATS" or "pv table" or "agrivoltaic fence"
+    struct_type = "pv_table"  # "HSATS" or "pv_table" or "agrivoltaic_fence"
     panel_orientation = "landscape"  # "landscape" or "portrait"
 
     if struct_type == "HSATS":
         av_file = "Example4_HSATS.yaml"
         struct_file = "HSATS.yaml"
-    elif struct_type.lower() == "pv table":
-        av_file = "Example5_PVTable.yaml.yaml"
-        struct_file = "PV_table.yaml.yaml"
-    elif struct_type.lower() == "agrivoltaic fence":
-        av_file = "Example3_AV_agrivoltaic_fence.yaml.yaml"
+    elif struct_type.lower() == "pv_table":
+        av_file = "Example5_PVTable.yaml"
+        struct_file = "PV_table.yaml"
+    elif struct_type.lower() == "agrivoltaic_fence":
+        av_file = "Example3_AV_agrivoltaic_fence.yaml"
         struct_file = "agrivoltaic_fence.yaml"
 
     if panel_orientation == "landscape":
@@ -762,7 +762,13 @@ if __name__ == "__main__":
                                         PV_module_1,
                                         Structure]).aggregated_inputs
 
-    blocks = HSATS(PV_params_dict).build_structure()
+    if struct_type == "HSATS":
+        blocks = HSATS(PV_params_dict).build_structure()
+    elif struct_type == "pv_table":
+        blocks = PVTable(PV_params_dict).build_structure()
+    elif struct_type == "agrivoltaic_fence":
+        blocks = AgrivoltaicFence(PV_params_dict).build_structure()
+
 
     pl = pyv.Plotter()
     pl.add_mesh(blocks, show_edges=True)
