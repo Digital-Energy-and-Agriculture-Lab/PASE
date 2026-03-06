@@ -293,9 +293,12 @@ class PVStructure(ABC):
                            width=self.purlin_width,
                            height=self.purlin_height,
                            positioning=self.pole_ground_positioning)
+
+                dim_purlin = self.get_characteristic_dim("purlin")
+                dim_rafter = self.get_characteristic_dim("rafter")
                 p.polydata.translate((offx,
                                       0,
-                                      self.base_height),
+                                      self.base_height + dim_purlin + dim_rafter/2),
                                      inplace=True)
                 purlin_group.append(p.polydata)
 
@@ -305,12 +308,9 @@ class PVStructure(ABC):
             for mesh in purlin_group[1:]:
                 combined = combined + mesh
 
-
-            dim_purlin = self.get_characteristic_dim("purlin")
-            dim_rafter = self.get_characteristic_dim("rafter")
             # Apply the table tilt around the new center of the group and the purlin offset.
             combined.rotate_y(self.tilt,
-                              point=(-dim_purlin - dim_rafter/2,
+                              point=(0,
                                      0,                                     
                                      self.base_height),
                               inplace=True)
