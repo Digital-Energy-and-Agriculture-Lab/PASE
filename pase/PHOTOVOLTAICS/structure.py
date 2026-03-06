@@ -250,15 +250,21 @@ class PVStructure(ABC):
     
     def get_characteristic_dim(self, part_type):
         """
-        Get the characteristic dimension of a part of the structure.
-        """
+        Get the characteristic dimension of a part of the structure, used to place
+        parts on top of each other without clipping.
 
+        :param part_type: type of part (should be "purlin" or "rafter"
+        :type part_type: string
+        :return: radius (if the part is a cylinder), half height (if the part has a
+            rectangular section), half side (if the part has a square section)
+        :rtype: float
+        """
         shape = getattr(self, f"{part_type}_shape").lower()
         
         mapping = {
             'cylinder': getattr(self, f"{part_type}_radius"),
-            'rectangle': getattr(self, f"{part_type}_height"),
-            'square': getattr(self, f"{part_type}_side")
+            'rectangle': getattr(self, f"{part_type}_height")/2,
+            'square': getattr(self, f"{part_type}_side")/2
         }
 
         return mapping.get(shape, 0)
@@ -298,7 +304,7 @@ class PVStructure(ABC):
                 dim_rafter = self.get_characteristic_dim("rafter")
                 p.polydata.translate((offx,
                                       0,
-                                      self.base_height + dim_purlin + dim_rafter/2),
+                                      self.base_height + dim_purlin + dim_rafter),
                                      inplace=True)
                 purlin_group.append(p.polydata)
 
