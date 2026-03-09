@@ -1123,9 +1123,9 @@ class PVConfiguration3D(MultiBlockPASE):
             self.df = pd.concat([self.df, df_new])
 
         if 'DiffusersBetweenPanels' in pv_config:
-            if (pv_config['DiffusersBetweenPanels']
-                    ==True):
+            if pv_config['DiffusersBetweenPanels']:
                 self.add_diffusers_to_central(pv_config)
+
         only_block_centers = compute_block_centers(
             num_blocks_x, num_blocks_y,
             panels_per_block_x, panels_per_block_y,
