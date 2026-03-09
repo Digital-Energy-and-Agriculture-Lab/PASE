@@ -908,6 +908,10 @@ class Ray_casting_scene:
             if type(self.geometry) == list:
                 irradianceMap_diffus = dict(zip(doy, temp_list))
 
+                if self.diffusers is None:
+                    irradianceMap_diffuser[day] = np.zeros(
+                        irradianceMap_diffus[day].shape)
+
             # Convert dictionaries to Numpy arrays and add to the ad-hoc attribute
             self.daily_irr_spat[year] = (pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()
                                          + pd.DataFrame.from_dict(irradianceMap_direct).to_numpy()
