@@ -1,4 +1,4 @@
-from pase.ENVIRONMENT.diffuser import LenticularDiffuser, rotation_coordinate
+from pase.PHOTOVOLTAICS.diffuser import LenticularDiffuser, rotation_coordinate
 from pase.ENVIRONMENT.sky_model import ReinhartSky
 import numpy as np
 

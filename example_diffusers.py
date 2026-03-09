@@ -14,7 +14,7 @@ from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from pase.ENVIRONMENT.light import Ray_casting_scene
 from pase.ENVIRONMENT.mesh import Mesh
 from pase.ENVIRONMENT.sky_model import ReinhartSky
-from pase.ENVIRONMENT.diffuser import LenticularDiffuser
+from pase.PHOTOVOLTAICS.diffuser import LenticularDiffuser
 from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
 
 

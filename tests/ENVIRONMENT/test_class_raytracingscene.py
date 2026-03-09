@@ -2,7 +2,7 @@ from pase.ENVIRONMENT.light import Ray_casting_scene
 from pase.PHOTOVOLTAICS.configuration import PVConfiguration3D
 from pase.ENVIRONMENT.sky_model import ReinhartSky
 from pase.ENVIRONMENT.mesh import Mesh
-from pase.ENVIRONMENT.diffuser import LenticularDiffuser
+from pase.PHOTOVOLTAICS.diffuser import LenticularDiffuser
 import numpy as np
 import pandas as pd
 

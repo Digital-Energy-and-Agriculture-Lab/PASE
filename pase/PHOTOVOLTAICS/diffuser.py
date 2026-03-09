@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 """
-diffusers class
+Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+Author : Joran Dartevelle <Joran.Dartevelle@uliege.be>
+This file is part of the PASE software, and is distributed under the MIT license.
 """
+
 import numpy as np
-from scipy.special import i0
-import matplotlib.pyplot as plt
 from pase.conversion_functions import rotation_coordinate
 
 
