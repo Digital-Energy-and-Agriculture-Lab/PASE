@@ -16,7 +16,6 @@ dependencies:
   - pyembree
   - pyvista==0.44.1
   - pyyaml
-  - scipy==1.15.2
   - seaborn
   - yaml
   - pytest
