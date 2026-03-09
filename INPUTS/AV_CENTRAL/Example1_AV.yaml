@@ -83,7 +83,7 @@ CentralAzimut:
    Unit: degrees [°]
    Definition: Rotation angle of the central around the z axis. 0 is N ; 90 is E ; 180 is S ; 270 is W
 DiffusersBetweenPanels:
-   Value: True
+   Value: False
    Type: boolean
    Possibilities: [False, True]
    Definition: Boolean flag to indicate whether there are diffusers between the solar modules
