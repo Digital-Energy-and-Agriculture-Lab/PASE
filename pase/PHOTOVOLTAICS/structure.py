@@ -3,8 +3,6 @@ import pyvista as pyv
 import math
 import numpy as np
 
-from pase.pase_math import compute_block_centers, compute_panel_grid_positions
-
 pyv.global_theme.allow_empty_mesh = True
 
 def build_structure(config_dict):
@@ -723,6 +721,7 @@ if __name__ == "__main__":
 
     struct_type = "pv_table"  # "HSATS" or "pv_table" or "agrivoltaic_fence"
     panel_orientation = "landscape"  # "landscape" or "portrait"
+    display_style = "lean"  # "lean", "nice" or "technical"
 
     if struct_type == "HSATS":
         av_file = "Example4_HSATS.yaml"
@@ -769,9 +768,33 @@ if __name__ == "__main__":
     elif struct_type == "agrivoltaic_fence":
         blocks = AgrivoltaicFence(PV_params_dict).build_structure()
 
+    if display_style == "technical":
+        show_edges = True
+    else:
+        show_edges = False
 
     pl = pyv.Plotter()
-    pl.add_mesh(blocks, show_edges=True)
-    pl.show_axes()
-    pl.show_grid(color='gray')
+    pl.add_mesh(blocks, show_edges=show_edges)
+    if display_style == "technical":
+        pl.show_axes()
+        pl.show_grid(color='gray')
+    elif display_style == "nice":
+        x_half_span = 5
+        y_half_span = 10
+        ground = np.array([[-x_half_span, y_half_span, 0],
+                           [x_half_span, y_half_span, 0],
+                           [-x_half_span, -y_half_span, 0],
+                           [x_half_span, -y_half_span, 0]])
+
+        ground_m = np.hstack([[3, 0, 1, 2],
+                              [3, 1, 2, 3], ])
+
+        grnd = pyv.PolyData(ground, ground_m)
+
+        pl.add_mesh(grnd, color='green', opacity=0.5)
+
+        light = pyv.Light(intensity=0.2,
+                          position=(10, 10, 10))
+        # light.set_direction_angle(30, 45)
+        pl.add_light(light)
     pl.show()

@@ -1,5 +1,5 @@
 NumberOfPanelsX:
-   Value: 2
+   Value: 1
    Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
@@ -29,7 +29,7 @@ RotationAxisNumber:
    Unit: dimensionless [-]
    Definition: Number of rotation axis that drive the block of panels
 TiltY:
-   Value: -50
+   Value: 50
    Type: float
    Limit: [-80, 80]
    Unit: degree [°]
@@ -41,7 +41,7 @@ PanelOffset:
    Unit: meters [m]
    Definition: Spacing between the center of the panel and the height of the base through the normal of the panel
 Height:
-   Value: 2.3
+   Value: 4.3
    Type: float
    Limit: [0.1, 20]
    Unit: meters [m]

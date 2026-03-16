@@ -11,7 +11,7 @@ Material:
     Metal -> grey structure
     Wood -> brown structure
 NumberOfStructureGroups:
-  Value: 3
+  Value: 16
   Type: integer
   Limit: [1, 100]
   Unit: dimensionless [-]
