@@ -533,7 +533,7 @@ class Ray_casting_scene:
                 masks['Diffuse'] = np.ones(self.n_sourcepoints, dtype=np.float16)
                 return masks
         except AttributeError:
-            if geometry.polydata_all_centrals.number_of_cells == 0:
+            if geometry.polydata_all_centrals().number_of_cells == 0:
                 print("Geometry is empty. Returning full diffuse illumination.")
                 masks['Diffuse'] = np.ones(self.n_sourcepoints, dtype=np.float16)
                 return masks
