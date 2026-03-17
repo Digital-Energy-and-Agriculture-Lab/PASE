@@ -7,6 +7,8 @@ Created on Tue Sep 23 11:20:22 2025
 """
 
 import numpy as np
+import pytest
+
 from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
 from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider
 from pase.DATA_MANAGEMENT.weather_data_provider import (Weather_data,
@@ -65,3 +67,49 @@ def test_get_anisotropy_index():
     BHI = np.array([0, 0, 0, 1.123, 1.18, 138.43, 250.21, 126.54, 0, 0, 0])
         
     assert (light_test.get_anisotropy_index(rad_top_atm, BHI) == np.array([0, 0, 0, 1.123/52.01, 1.18/215.54, 138.43/453.69, 250.21/273.43, 126.54/127.08, 0, 0, 0])).all()
+
+@pytest.mark.parametrize(
+    "kc_in, cle_in, expected_sky_types",
+    [
+        (0.01, 0.0, 1), # Overcast sky
+        (0.01, 0.15, 1),
+        (0.40, 0.00, 1),
+        (0.4001, 0.0001, 1),
+        (0.01, 0.2, 4), # Intermediate overcast sky
+        (0.25, 0.25, 4),
+        (0.45, 0.00, 4),
+        (0.4501, 0.0001, 4),
+        (0.25, 0.30, 7), # Intermediate sky
+        (0.40, 0.15, 7),
+        (0.40, 0.30, 7),
+        (0.70, 0.15, 7),
+        (0.7001, 0.1501, 7),
+        (0.75, 1.05, 11),  # Intermediate clear sky
+        (1.0, 0.65, 11),
+        (1.15, 1.0, 11),
+        (1.1501, 1.001, 11),
+        (1.0, 1.0, 13),  # Clear sky
+        (1.10, 0.90, 13),
+        (1.10001, 0.90001, 13),
+    ]
+)
+def test_get_sky_type(kc_in, cle_in, expected_sky_types, verbose=True):
+    """
+
+    Parameters
+    ----------
+    kc_in list
+    cle_in list
+    expected_sky_type list
+    """
+    # Kc_values = np.array(kc_in)
+    # Cle_values = np.array(cle_in)Cle_in
+
+    sky_types = light_test.get_sky_type(np.array([kc_in]), np.array([cle_in]))
+
+    if verbose:
+        print(f"{sky_types=}")
+        print(type(sky_types))
+
+    assert sky_types == [expected_sky_types]
+
