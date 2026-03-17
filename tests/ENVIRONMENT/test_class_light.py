@@ -91,6 +91,12 @@ def test_get_anisotropy_index():
         (1.0, 1.0, 13),  # Clear sky
         (1.10, 0.90, 13),
         (1.10001, 0.90001, 13),
+        (0.1, 0.7, 5),  # undefined sky (low Kc, high Cle)
+        (0.101, 0.701, 5),
+        (1.0, 0.15, 5),  # undefined sky (high Kc, low Cle)
+        (1.001, 0.1501, 5),
+        (1.25, 1.05, 5),  # undefined sky (high Kc, high Cle)
+        (1.2501, 1.0501, 5),
     ]
 )
 def test_get_sky_type(kc_in, cle_in, expected_sky_types, verbose=True):
