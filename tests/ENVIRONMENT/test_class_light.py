@@ -99,7 +99,7 @@ def test_get_anisotropy_index():
         (1.2501, 1.0501, 5),
     ]
 )
-def test_get_sky_type(kc_in, cle_in, expected_sky_types, verbose=True):
+def test_get_sky_type(kc_in, cle_in, expected_sky_types):
     """
 
     Parameters
@@ -111,11 +111,5 @@ def test_get_sky_type(kc_in, cle_in, expected_sky_types, verbose=True):
     # Kc_values = np.array(kc_in)
     # Cle_values = np.array(cle_in)Cle_in
 
-    sky_types = light_test.get_sky_type(np.array([kc_in]), np.array([cle_in]))
-
-    if verbose:
-        print(f"{sky_types=}")
-        print(type(sky_types))
-
-    assert sky_types == [expected_sky_types]
+    assert light_test.get_sky_type(np.array([kc_in]), np.array([cle_in])) == [expected_sky_types]
 
