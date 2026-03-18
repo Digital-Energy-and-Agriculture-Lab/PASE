@@ -291,8 +291,8 @@ class Light:
             if np.isnan(v['Kc']):
                 temp_list.append(np.nan)
             else:
-                i = ((self.sky_type_lut['Kc']-v['Kc']) *
-                     (self.sky_type_lut['Cle']-v['Cle'])).abs().idxmin()
+                dist = np.sqrt((self.sky_type_lut['Kc']-v['Kc'])**2 + (self.sky_type_lut['Cle']-v['Cle'])**2)
+                i = np.argmin(dist)
                 temp_list.append(int(self.sky_type_lut['CIE Sky Type'].iloc[i]))
 
         return temp_list
