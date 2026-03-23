@@ -1,7 +1,8 @@
 import math
-
 import numpy as np
+import pytest
 import pyvista as pv
+
 from pase.ENVIRONMENT.mesh import Mesh
 
 
@@ -149,3 +150,55 @@ def test_compute_homogeneity_returns_zero_for_single_cell():
     mesh.add_triangular_probe(position=(0, 0, 0), normal=(0, 0, 1), area=1.0)
 
     assert mesh.compute_homogeneity(0) == 0.0
+
+
+class TestSetInterestZoneOrientation:
+    """Tests for Mesh.set_interest_zone_orientation()."""
+
+    def test_default_mode_returns_zero(self):
+        """'default' mode must yield azimut=0 regardless of AV config."""
+        mesh = Mesh()
+        result = mesh.set_interest_zone_orientation(
+            {"InterestZoneOrientationMode": "default"},
+            {"CentralAzimut": 45.0},
+        )
+        assert result == 0.0
+        assert mesh.default_azimut == 0.0
+
+    def test_auto_mode_negates_central_azimut(self):
+        """'auto' mode must return the negation of AV_1['CentralAzimut']."""
+        mesh = Mesh()
+        result = mesh.set_interest_zone_orientation(
+            {"InterestZoneOrientationMode": "auto"},
+            {"CentralAzimut": 30.0},
+        )
+        assert result == -30.0
+        assert mesh.default_azimut == -30.0
+
+    def test_custom_mode_negates_custom_angle(self):
+        """'custom' mode must return the negation of InterestZoneCustomAngle."""
+        mesh = Mesh()
+        result = mesh.set_interest_zone_orientation(
+            {"InterestZoneOrientationMode": "custom", "InterestZoneCustomAngle": 120.0},
+            {"CentralAzimut": 0.0},
+        )
+        assert result == -120.0
+        assert mesh.default_azimut == -120.0
+
+    def test_mode_is_case_insensitive(self):
+        """Mode string comparison must be case-insensitive."""
+        mesh = Mesh()
+        result = mesh.set_interest_zone_orientation(
+            {"InterestZoneOrientationMode": "AUTO"},
+            {"CentralAzimut": 15.0},
+        )
+        assert result == -15.0
+
+    def test_unknown_mode_raises_value_error(self):
+        """An unrecognised mode must raise ValueError."""
+        mesh = Mesh()
+        with pytest.raises(ValueError, match="Unknown InterestZoneOrientationMode"):
+            mesh.set_interest_zone_orientation(
+                {"InterestZoneOrientationMode": "diagonal"},
+                {"CentralAzimut": 0.0},
+            )
