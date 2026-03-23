@@ -286,9 +286,9 @@ class Mesh:
         if mode_lower == "default":
             zone_azimut = 0.0
         elif mode_lower == "auto":
-            zone_azimut = float(AV_1["CentralAzimut"])
+            zone_azimut = -float(AV_1["CentralAzimut"])
         elif mode_lower == "custom":
-            zone_azimut = float(custom_angle)
+            zone_azimut = -float(custom_angle)
         else:
             raise ValueError(f"Unknown InterestZoneOrientationMode: {mode}")
 
