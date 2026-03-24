@@ -682,11 +682,11 @@ class CIEStandardSky:
         indicatrix = self.scattering_indicatrix_fun(c, d, e, chi)
 
         rel_quantity = (phi * indicatrix) / (self._phi_zenith * self._indicatrix_zenith)
-        return rel_quantity/len(self.sky)
+        return rel_quantity
 
     def compute_rel_radiance(self, az=None, el=None):
         if self.sky_type == 5:
-            return np.ones_like(self.az)/len(self.sky)
+            return np.ones_like(self.az)
         rel = self.relative_radiance_fun(az=az, el=el)
         return rel
 

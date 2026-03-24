@@ -939,8 +939,8 @@ class Ray_casting_scene:
         norm = np.asarray(self.normalized_diffuse_weights_map, dtype=np.float64)
         ndim = mask.ndim
 
-        if ndim == 1:  # Obsolete - binary mask (does not account for cos(z) or sky patch area)
-            self.diffuse_shaded_weights_map = mask
+        if ndim == 1:
+            self.diffuse_shaded_weights_map = norm[np.newaxis, :] * mask[:, np.newaxis]
             return
 
         if ndim == 2:
@@ -995,7 +995,7 @@ class Ray_casting_scene:
 
     def compute_daily_diff_irradiation(self, df, n_freq, indices=None):
         """
-        Compute the daily irradiation received by each source points from the diffusers.
+        Compute the daily irradiation received by each source points from the sky (diffuse irradiation).
         Input:
             df (pandas DataFrame of size T): Weather data with at least 'GHI' and 'SolPosInd' columns.
             n_freq (int) : number of samples per hours
