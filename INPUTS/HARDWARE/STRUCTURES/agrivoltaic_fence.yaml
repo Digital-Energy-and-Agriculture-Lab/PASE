@@ -20,7 +20,8 @@ PoleSpacingX:
   Value: 1.0
   Type: float
   Limit: [0.2,4.0]
-  Definition: Spacing between two poles on the x axis 
+  Unit: meters [m]
+  Definition: the distance of a pole from the center of the structure (e.g if you want 2 meters between 2 poles set this to 1) 
 PoleShape:
   Value: Cylinder
   Type: string
@@ -144,37 +145,37 @@ DiagonalShape:
   Value: Cylinder
   Type: string
   Choices: [Square, Rectangle, Cylinder]
-  Definition: shape of the diagonale profile
+  Definition: shape of the diagonal profile
 DiagonalWidth:
   Value: 0.2
   Type: float
   Limit: [0.01, 10.0]
   Unit: meters [m]
-  Definition: diagonale size along x (used in case of square or rectangular diagonale)
+  Definition: diagonal size along x (used in case of square or rectangular diagonal)
 DiagonalHeight:
   Value: 0.2
   Type: float
   Limit: [0.05, 10.0]
   Unit: meters [m]
-  Definition: diagonale size along y (used in case of square or rectangular diagonale)
+  Definition: diagonal size along y (used in case of square or rectangular diagonal)
 DiagonalSide:
   Value: 0.1
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: Pole side length (used in case of square diagonale)
+  Definition: Pole side length (used in case of square diagonal)
 DiagonalRadius:
   Value: 0.05
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: diagonale radius (used in case of cylindrical diagonale)
+  Definition: diagonal radius (used in case of cylindrical diagonal)
 DiagonalEpsilon:
   Value: 0.000001
   Type: float
   Limit: [0.000001, 0.000002]
   Unit: dimensionless [-]
-  Definition: diagonale epsilon (used in case of cylindrical diagonale)
+  Definition: diagonal epsilon (used in case of cylindrical diagonal)
 
 StructureSpacingY:
   Value: 5.0

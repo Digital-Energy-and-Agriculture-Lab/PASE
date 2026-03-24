@@ -30,7 +30,7 @@ PASE_Logger()
 ###############
 # Load inputs #
 ###############
-Loc_1 = YAML_Inputs_provider(file='Example1_loc.yaml', subpath='SCENARIOS').inputs
+Loc_1 = YAML_Inputs_provider(file='Example_albedo.yaml',subpath='SCENARIOS').inputs
 # Import PV system and PV modules parameters
 AV_1 = YAML_Inputs_provider(file='Example1_AV.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='Example1_PV_Module.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
@@ -105,6 +105,9 @@ PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
                                     Sun_positions_samp.solar_vector,
                                     visualization=True)  # !!!! Problem with rotation angle that are negative
 
+
+
+
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
 
@@ -154,7 +157,11 @@ L.visualize_daily_irrad_map(Loc_1['SimulationStartingYear'], 15)
 
 # PV production model
 PV_central = PV_Production(PV_params_dict)
-PV_central.get_several_years_of_electricity_production(Sun_positions_complete, Light_instance.data, WD.nyears_data)
+PV_central.get_several_years_of_electricity_production(
+    Sun_positions_complete, Light_instance.data, WD.nyears_data,
+    Loc_1['AlbedoFileName'],
+    Loc_1['AlbedoDataOption'],
+    Loc_1['AlbedoConstantValue'])
 
 for _ in range(Loc_1['SimulationStartingYear'], Loc_1['SimulationEndingYear']+1):
     PV_prod = PV_central.production[str(_)]

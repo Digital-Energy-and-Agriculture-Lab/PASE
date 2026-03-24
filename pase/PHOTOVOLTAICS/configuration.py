@@ -723,6 +723,7 @@ class PVConfiguration3D(MultiBlockPASE):
         try:
             geom_panels = self.polydata_by_property({'Type': ['PV']}, extract_surface=True)
             geom_struct = self.polydata_by_property({'Type': ['Structure block']}, extract_surface=True)
+            geom_diffus = self.polydata_by_property({'Type': ['Diffuser']}, extract_surface=True)
         except Exception as _e:
             logging.getLogger(__name__).warning("Visualization skipped (geometry build failed): %s", _e)
             return
@@ -745,6 +746,9 @@ class PVConfiguration3D(MultiBlockPASE):
                 raise ValueError(msg)
 
             pl.add_mesh(geom_struct, color=struct_color)
+
+        if geom_diffus.n_cells > 0:
+            pl.add_mesh(geom_diffus, color='skyblue')
 
         ground = np.array([[-100, 100, 0],
                            [100, 100, 0],
@@ -930,7 +934,6 @@ class PVConfiguration3D(MultiBlockPASE):
             )
         )
         return box.triangulate()
-
 
     # ---- Generation ----
     def create_regular_central(self, pv_config: Dict[str, Any]) -> None:
@@ -1119,6 +1122,10 @@ class PVConfiguration3D(MultiBlockPASE):
             df_new.index.name = "ObjectID"
             self.df = pd.concat([self.df, df_new])
 
+        if 'DiffusersBetweenPanels' in pv_config:
+            if pv_config['DiffusersBetweenPanels']:
+                self.add_diffusers_to_central(pv_config)
+
         only_block_centers = compute_block_centers(
             num_blocks_x, num_blocks_y,
             panels_per_block_x, panels_per_block_y,
@@ -1131,6 +1138,78 @@ class PVConfiguration3D(MultiBlockPASE):
 
         # Bump central ID
         self.central_id += 1
+
+    def add_diffusers_to_central(self, pv_config):
+        ndiff = 1 if pv_config['DiffusersAtRowEnds'] == True else -1
+        diff_dimX, diff_dimY, diff_dimZ = (float(pv_config['DiffuserDimensionX']),
+                                           float(pv_config['DiffuserDimensionY']),
+                                           float(pv_config['DiffuserDimensionZ']))
+        num_blocks_x, num_blocks_y = int(pv_config["NumberOfPVBlocksX"]), int(pv_config["NumberOfPVBlocksY"])
+        panel_spacing_x = float(pv_config["RepetitionDistanceOfPanelsX"])  # pitch X
+        panel_spacing_y = float(pv_config["RepetitionDistanceOfPanelsY"])  # pitch Y
+        panels_per_block_x = int(pv_config["NumberOfPanelsX"])  # per block
+        panels_per_block_y = int(pv_config["NumberOfPanelsY"] + ndiff)  # per block
+
+        block_spacing_x = float(pv_config["RepetitionDistanceOfPVBlocksX"])  # block pitch X
+        block_spacing_y = float(pv_config["RepetitionDistanceOfPVBlocksY"])  # block pitch Y
+        base_height = float(pv_config["Height"])  # elevation
+        azimuth_deg = float(pv_config["CentralAzimut"])  # degrees
+        tilt_deg = float(pv_config["TiltY"])
+        if diff_dimZ > 0.0:
+            base_panel = self._create_panel_3d(diff_dimX, diff_dimY, diff_dimZ)
+        else:
+            base_panel = self._create_panel_2d(diff_dimX, diff_dimY, 0.0)
+
+        positions, block_centers, grid_indices = compute_panel_grid_positions(
+            num_blocks_x, num_blocks_y,
+            panels_per_block_x, panels_per_block_y,
+            block_spacing_x, block_spacing_y,
+            panel_spacing_x, panel_spacing_y,
+            base_height,
+        )
+        base_area = diff_dimX*diff_dimY
+        N = positions.shape[0] # number of diffusers in the central
+
+        for idx in range(N):
+            bx, by, mx, my = map(int, grid_indices[idx])
+            offx, offy, offz = map(float, positions[idx])
+            cx, cy, cz = map(float, block_centers[idx])
+
+            diffuser = (
+                base_panel.copy()
+                .translate([offx, offy, offz])
+                .rotate_y(tilt_deg, point=(cx, cy, cz))
+                .rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0))
+            )
+
+            oid = self.object_id
+            name = f"Diffuser_{oid}"
+
+            # field_data for robust mapping
+            try:
+                diffuser.field_data["ObjectID"] = np.array([oid], dtype=np.int64)
+                diffuser.field_data["Type"] = np.array([2], dtype=np.int32)  # 1 = PV, 2 = Diffuser
+            except Exception:
+                pass
+
+            info = {
+                "Central": self.central_id,
+                "Block_X": bx,
+                "Block_Y": by,
+                "Module_X": mx,
+                "Module_Y": my,
+                "Type": "Diffuser",
+                "Center": tuple(map(float, diffuser.center)),
+                "Bounds": tuple(map(float, diffuser.bounds)),
+                "Area": base_area,  # area preserved under rigid transforms
+                "Azimuth_deg": azimuth_deg,
+                "Tilt_deg": tilt_deg,
+                # Default tracking geometry: per-panel center pivot, X then Y axes
+                "HingePoint": (float(diffuser.center[0]), float(diffuser.center[1]), float(diffuser.center[2])),
+                "HingeAxis": (1.0, 0.0, 0.0),
+                "SecondAxis": (0.0, 1.0, 0.0),
+            }
+            self.add_custom_polydata(diffuser, info, name)
 
     def add_structure(self, config, block_centers):
 
@@ -1201,6 +1280,7 @@ class PVConfiguration3D(MultiBlockPASE):
         for oid in idx:
             blk = self.get_block_by_oid(int(oid))
             if isinstance(blk, pyv.PolyData):
+                blk.cell_data['Type'] = np.full(blk.n_cells, self.df['Type'][oid])
                 dsets.append(blk)
         return merge_polydata(dsets, extract_surface=extract_surface)
 
