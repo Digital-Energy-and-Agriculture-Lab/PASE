@@ -65,7 +65,7 @@ for y, x in product(y_sensors, x_sensors):
 
 
 MFs = [1, 2, 4, 6, 8]
-results_indices = ['point ID', 0, 1, 2, 3, 4, 5, 6, 7, 8, 'Relative error center point [%]', 'COV corners', 'COV midpoints', 'Test result']
+results_indices = ['point ID', 0, 1, 2, 3, 4, 5, 6, 7, 8, 'Relative error center point [0-1]', 'COV corners', 'COV midpoints', 'Test result']
 results = []
 results_cols = ['point ID']
 
@@ -83,7 +83,7 @@ for MF in MFs:
     L.get_diffuse_shaded_weights_map()
 
     if PLOT:
-        L.visualize_diffuse_light_map()
+        L.visualize_diffuse_light_map(0)
 
     L.diffuse_shaded_weights_map = L.diffuse_shaded_weights_map.sum(axis=1)
 
@@ -98,7 +98,7 @@ for MF in MFs:
     center_computed_value = L.diffuse_shaded_weights_map[center_id]
     print(f'Center point computed value = {center_computed_value}')
     print(f'Center point expected value = {analytical_f}')
-    rel_error_center_value = (1 - center_computed_value / analytical_f) * 100  # [%]
+    rel_error_center_value = (1 - center_computed_value / analytical_f)  # [-]
     print(f'Relative error on center value = {rel_error_center_value:.3g} %')
 
     # Analyze corners
@@ -120,19 +120,41 @@ for MF in MFs:
     cov_midpoints = L.diffuse_shaded_weights_map[midpoints_ids].std() / L.diffuse_shaded_weights_map[midpoints_ids].mean()
 
 
+    TOL_STRICT = 0.01
+    TOL_LOOSE  = 0.05
+
+    center_ok_strict  = np.isclose(rel_error_center_value, 0, atol=TOL_STRICT)
+    center_ok_loose   = np.isclose(rel_error_center_value, 0, atol=TOL_LOOSE)
+    corners_ok_strict  = math.isclose(cov_corners,   0, abs_tol=TOL_STRICT)
+    corners_ok_loose   = math.isclose(cov_corners,   0, abs_tol=TOL_LOOSE)
+    midpoints_ok_strict = math.isclose(cov_midpoints, 0, abs_tol=TOL_STRICT)
+    midpoints_ok_loose  = math.isclose(cov_midpoints, 0, abs_tol=TOL_LOOSE)
+
     print(20*'=')
-    if (cov_midpoints == 0) and (cov_corners == 0):
+    if center_ok_strict and corners_ok_strict and midpoints_ok_strict:
         result = 'passed'
         print('Test passed !')
-        # results.append({f'{MF=}': 'pass', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
-    elif (math.isclose(cov_midpoints, 0, abs_tol=0.01)) or (math.isclose(cov_midpoints, 0, abs_tol=0.01)):
+    elif center_ok_loose and corners_ok_loose and midpoints_ok_loose:
         result = 'borderline'
-        print('Test borderline.')
-        # results.append({f'{MF=}': 'Borderline', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
+        failed_criteria = []
+        if not center_ok_strict:
+            failed_criteria.append(f'center rel. error ({rel_error_center_value:.3g}) > {TOL_STRICT}')
+        if not corners_ok_strict:
+            failed_criteria.append(f'COV corners ({cov_corners:.3g}) > {TOL_STRICT}')
+        if not midpoints_ok_strict:
+            failed_criteria.append(f'COV midpoints ({cov_midpoints:.3g}) > {TOL_STRICT}')
+        print('Test borderline. Criteria outside strict tolerance: ' + '; '.join(failed_criteria))
     else:
         result = 'FAILED'
-        print('Test failed.')
-        # results.append({f'{MF=}': 'FAIL', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
+        failed_criteria = []
+        if not center_ok_loose:
+            failed_criteria.append(f'center rel. error ({rel_error_center_value:.3g} %) > {TOL_LOOSE} %')
+        if not corners_ok_loose:
+            failed_criteria.append(f'COV corners ({cov_corners:.3g}) > {TOL_LOOSE}')
+        if not midpoints_ok_loose:
+            failed_criteria.append(f'COV midpoints ({cov_midpoints:.3g}) > {TOL_LOOSE}')
+        print('Test FAILED. Failed criteria: ' + '; '.join(failed_criteria))
+        
     results.append([L.diffuse_shaded_weights_map[0], L.diffuse_shaded_weights_map[1], L.diffuse_shaded_weights_map[2],
                     L.diffuse_shaded_weights_map[3], L.diffuse_shaded_weights_map[4], L.diffuse_shaded_weights_map[5],
                     L.diffuse_shaded_weights_map[6], L.diffuse_shaded_weights_map[7], L.diffuse_shaded_weights_map[8],
@@ -170,7 +192,7 @@ if DEBUG:
 
     spatialized_variable = np.array(L.diffuse_shaded_weights_map, dtype=np.float32)
     lgd_title = 'Diffuse map'
-    plotter.add_mesh(L.sourcepoints[:,:-1],
+    plotter.add_mesh(L.sourcepoints[:,:],
                      scalars=spatialized_variable,
                      point_size=10,
                      lighting=False,
