@@ -59,7 +59,7 @@ x_sensors = np.arange(start, stop+step, step=step)
 y_sensors = np.arange(start, stop+step, step=step)
 
 for y, x in product(y_sensors, x_sensors):
-    M.add_sensor(x, y,0)
+    M.add_triangular_probe(position=(x, y, 0), normal=(0, 0, 1), area=0.01)
 
 # Initialize and run light ray casting model (direct and diffuse) with points of interest and scene
 
@@ -85,7 +85,7 @@ for MF in MFs:
     if PLOT:
         L.visualize_diffuse_light_map()
 
-    L.diffuse_shaded_weights_map = L.diffuse_shaded_weights_map.sum(axis=0)
+    L.diffuse_shaded_weights_map = L.diffuse_shaded_weights_map.sum(axis=1)
 
     print(f'{MF=}')
     if VERBOSE:
