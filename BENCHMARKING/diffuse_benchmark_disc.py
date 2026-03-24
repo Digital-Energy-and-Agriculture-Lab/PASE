@@ -99,7 +99,7 @@ for MF in MFs:
     print(f'Center point computed value = {center_computed_value}')
     print(f'Center point expected value = {analytical_f}')
     rel_error_center_value = (1 - center_computed_value / analytical_f)  # [-]
-    print(f'Relative error on center value = {rel_error_center_value:.3g} %')
+    print(f'Relative error on center value = {rel_error_center_value:.3g}')
 
     # Analyze corners
     corners_ids = [0, 2, 6, 8]
@@ -148,7 +148,7 @@ for MF in MFs:
         result = 'FAILED'
         failed_criteria = []
         if not center_ok_loose:
-            failed_criteria.append(f'center rel. error ({rel_error_center_value:.3g} %) > {TOL_LOOSE} %')
+            failed_criteria.append(f'center rel. error ({rel_error_center_value:.3g}) > {TOL_LOOSE}')
         if not corners_ok_loose:
             failed_criteria.append(f'COV corners ({cov_corners:.3g}) > {TOL_LOOSE}')
         if not midpoints_ok_loose:
