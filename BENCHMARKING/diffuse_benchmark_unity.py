@@ -13,11 +13,11 @@ import numpy as np
 import pandas as pd
 import pyvista as pyV
 
-from MODULES.user_support_tools import PASE_Logger
-from MODULES.DATA_MANAGEMENT.benchmarking import export_benchmark, sign_commit_hash
-from MODULES.ENVIRONMENT.light import Ray_casting_scene
-from MODULES.ENVIRONMENT.mesh import Mesh
-from MODULES.ENVIRONMENT.sky_model import ReinhartSky
+from pase.user_support_tools import PASE_Logger
+from pase.DATA_MANAGEMENT.benchmarking import export_benchmark, sign_commit_hash
+from pase.ENVIRONMENT.light import Ray_casting_scene
+from pase.ENVIRONMENT.mesh import Mesh
+from pase.ENVIRONMENT.sky_model import ReinhartSky
 
 PASE_Logger()
 
@@ -36,7 +36,7 @@ expected_value = 1
 M = Mesh()
 
 # Add a sensor to the scene
-M.add_sensor(0, 0,0)
+M.add_triangular_probe(position=(0, 0, 0), normal=(0, 0, 1), area=0.01)
 
 # Build dummy DataFrame for irradiance data
 DHI = 1  # W/m²
@@ -80,6 +80,7 @@ for MF in MFs:
         print('Test FAILED !')
         result = 'failed'
         some_test_failed = True
+        print(f"Expected 3600 J/m² ; got {daily_diffuse_irradiance*1e6}")
 
     result_dict.update({f'MF{MF}': result})
 
