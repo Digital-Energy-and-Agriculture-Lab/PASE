@@ -146,7 +146,7 @@ Light_instance = Light(WD.nyears_data, Sun_positions_complete, Loc_1['DiffuseSky
 # Instantiation of light ray casting model (direct and diffuse) with points of interest and scene
 # PASSING THE HORIZON OBJECT HERE
 L = Ray_casting_scene(mesh=M,
-                      geometry=PV_1_3Dconfig.PV_central_PD,
+                      geometry=PV_1_3Dconfig,
                       discrete_sky=discrete_sky,
                       horizon=horizon)
 
