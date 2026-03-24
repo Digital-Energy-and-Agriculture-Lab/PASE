@@ -76,11 +76,15 @@ class Horizon:
         """
         Compute a boolean mask for a set of points (azimuth, elevation).
         Returns True if the point is VISIBLE (above horizon), False otherwise.
-        
+
+        Convention: azimuths are measured from North (0°) clockwise to East (90°),
+        consistent with PVGIS data and the solar vectors in light.py
+        (where azimuth = arctan2(X_east, Y_north)).
+
         Parameters:
             azimuths (np.array): Array of azimuths [degrees] (0=North, 90=East)
             elevations (np.array): Array of elevations [degrees]
-            
+
         Returns:
             np.array: Boolean mask (True=Visible, False=Shaded)
         """
@@ -120,7 +124,8 @@ class Horizon:
         if self.interp_func is None:
             return None
         
-        azimuths = np.linspace(0, FULL_CIRCLE_DEG, FULL_CIRCLE_DEG + 1) # 1 degree resolution
+        # Azimuths: 0=North, 90=East (consistent with PVGIS and light.py convention)
+        azimuths = np.linspace(0, FULL_CIRCLE_DEG, FULL_CIRCLE_DEG + 1)  # 1 degree resolution
         elevations = self.interp_func(azimuths)
         
         bottom_el = -10.0
@@ -137,12 +142,6 @@ class Horizon:
         y_bot = radius * np.cos(az_rad) * np.cos(bot_rad)
         z_bot = radius * np.sin(bot_rad)
 
-        cols = len(azimuths)
-        rows = 2
-
-        points = []
-        faces = []
-        
         n_points = len(azimuths)
         
         points = np.zeros((2 * n_points, 3))
