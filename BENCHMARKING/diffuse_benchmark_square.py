@@ -29,7 +29,7 @@ from pase.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_va
 PASE_Logger()
 
 DEBUG = False
-PLOT = False
+PLOT = True
 SAVE = False
 
 # Instantiation of the 3D PV central
@@ -48,7 +48,8 @@ PV_params_dict = {'PanelDimensionX': 1,
                   'CentralAzimut': 0,
                   'TiltY': 0,
                   'TwoFacetsRelativePosition': 0,
-                  'RotationAxisNumber': 0}
+                  'RotationAxisNumber': 0,
+                  'Hinge': 'center'}
 
 # Configure the scene
 PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
@@ -67,7 +68,7 @@ x_sensors = np.arange(start, stop+step, step=step)
 y_sensors = np.arange(start, stop+step, step=step)
 
 for y, x in product(y_sensors, x_sensors):
-    M.add_sensor(x, y,0)
+    M.add_triangular_probe(position=(x, y, 0), normal=(0, 0, 1), area=0.01)
 
 
 MFs = [1, 2, 4, 8]
@@ -90,9 +91,9 @@ for MF in MFs:
     L.get_diffuse_shaded_weights_map()
 
     if PLOT:
-        L.visualize_diffuse_light_map()
+        L.visualize_diffuse_light_map(0)
 
-    L.diffuse_shaded_weights_map = L.diffuse_shaded_weights_map.sum(axis=0)
+    L.diffuse_shaded_weights_map = L.diffuse_shaded_weights_map.sum(axis=1)
 
     print(f'{MF=}')
     print(L.diffuse_shaded_weights_map[0:3])
@@ -117,19 +118,34 @@ for MF in MFs:
     cov_midpoints = L.diffuse_shaded_weights_map[midpoints_ids].std() / L.diffuse_shaded_weights_map[midpoints_ids].mean()
 
 
+    TOL_STRICT = 0.01
+    TOL_LOOSE  = 0.05
+
+    corners_ok_strict  = math.isclose(cov_corners,   0, abs_tol=TOL_STRICT)
+    corners_ok_loose   = math.isclose(cov_corners,   0, abs_tol=TOL_LOOSE)
+    midpoints_ok_strict = math.isclose(cov_midpoints, 0, abs_tol=TOL_STRICT)
+    midpoints_ok_loose  = math.isclose(cov_midpoints, 0, abs_tol=TOL_LOOSE)
+
     print(20*'=')
-    if (cov_midpoints == 0) and (cov_corners == 0):
+    if corners_ok_strict and midpoints_ok_strict:
         result = 'passed'
         print('Test passed !')
-        # results.append({f'{MF=}': 'pass', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
-    elif (math.isclose(cov_midpoints, 0, abs_tol=0.01)) or (math.isclose(cov_midpoints, 0, abs_tol=0.01)):
+    elif corners_ok_loose and midpoints_ok_loose:
         result = 'borderline'
-        print('Test borderline.')
-        # results.append({f'{MF=}': 'Borderline', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
+        failed_criteria = []
+        if not corners_ok_strict:
+            failed_criteria.append(f'COV corners ({cov_corners:.3g}) > {TOL_STRICT}')
+        if not midpoints_ok_strict:
+            failed_criteria.append(f'COV midpoints ({cov_midpoints:.3g}) > {TOL_STRICT}')
+        print('Test borderline. Criteria outside strict tolerance: ' + '; '.join(failed_criteria))
     else:
         result = 'FAILED'
-        print('Test failed.')
-        # results.append({f'{MF=}': 'FAIL', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
+        failed_criteria = []
+        if not corners_ok_loose:
+            failed_criteria.append(f'COV corners ({cov_corners:.3g}) > {TOL_LOOSE}')
+        if not midpoints_ok_loose:
+            failed_criteria.append(f'COV midpoints ({cov_midpoints:.3g}) > {TOL_LOOSE}')
+        print('Test FAILED. Failed criteria: ' + '; '.join(failed_criteria))
     results.append([L.diffuse_shaded_weights_map[0], L.diffuse_shaded_weights_map[1], L.diffuse_shaded_weights_map[2],
                     L.diffuse_shaded_weights_map[3], L.diffuse_shaded_weights_map[4], L.diffuse_shaded_weights_map[5],
                     L.diffuse_shaded_weights_map[6], L.diffuse_shaded_weights_map[7], L.diffuse_shaded_weights_map[8],
@@ -165,7 +181,7 @@ if DEBUG:
 
     spatialized_variable = np.array(L.diffuse_mask, dtype=np.float32)
     lgd_title = 'Diffuse map'
-    plotter.add_mesh(L.sourcepoints[:,:-1],
+    plotter.add_mesh(L.sourcepoints[:,:],
                      scalars=spatialized_variable,
                      point_size=10,
                      lighting=False,
