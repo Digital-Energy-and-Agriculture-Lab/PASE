@@ -16,14 +16,15 @@ import sys
 
 python_executable = sys.executable
 scripts = ['example.py',
+           'example_albedo.py',
            'example_diffusers.py',
            'example_HSATS.py',
            'example_mesh.py',
            'example_multiblock.py',
            'example_NoPanels.py',
            'example_profiling.py',
-           'example_PVTable.py',
-           'example_tracking.py']
+           'example_PVTable.py']#,
+           # 'example_tracking.py']
 
 print("Running processes sequentially...")
 for script in scripts:
@@ -43,3 +44,5 @@ for script in scripts:
         sys.exit(1)
 
 print("All sequential processes finished.")
+print("Don't forget to manually run example_tracking.py (because it needs user input, it is excluded from the automated"
+      " script.")
