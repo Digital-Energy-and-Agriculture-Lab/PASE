@@ -161,6 +161,22 @@ for MF in MFs:
                     rel_error_center_value,
                     cov_corners, cov_midpoints,
                     result])
+
+    # Absolute irradiance check — catches the /N bug and sky_integral normalization bug.
+    # For a uniform sky (type 5), an unshaded sensor recovers DHI * analytical_f.
+    # The view factor checks above only verify relative geometry; this verifies absolute calibration.
+    DHI_ref = 1.0  # W/m²
+    df_irr = pd.DataFrame({'DHI': [DHI_ref], 'azimuth': [180.0],
+                           'elevation': [45.0], 'CIE Sky Type': [5]})
+    irr_map = L.compute_daily_diff_irradiation(df_irr, n_freq=1)  # calls get_diffuse_shaded_weights_map internally
+    center_irr_Wh = float(irr_map[center_id] / 3600 * 1e6)
+    irr_rel_error = abs(center_irr_Wh / (DHI_ref * analytical_f) - 1)
+    irr_ok = math.isclose(irr_rel_error, 0, abs_tol=TOL_LOOSE)
+    print(f'Center absolute irradiance: {center_irr_Wh:.4f} W·h/m²'
+          f' (expected ≈{DHI_ref * analytical_f:.4f})')
+    print(f'Irradiance relative error: {irr_rel_error:.3g}'
+          f' (tol={TOL_LOOSE}) → {"OK" if irr_ok else "FAILED"}')
+
     print('')
 
 print('Computation is over')
