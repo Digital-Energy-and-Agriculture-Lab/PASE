@@ -987,9 +987,12 @@ class Ray_casting_scene:
                 return res
         else:
             # mask shape is (Nsourcepoints, Nskypatches)
+            norm = np.asarray(self.normalized_diffuse_weights_map, dtype=rd.dtype)
+            sky_integral = (rd * norm).sum()  # sky_integral used to normalize the resulting shaded radiance distribution
             res = np.empty_like(mask, dtype=rd.dtype)
             res[:] = rd[None, :]
             res *= mask
+            res /= sky_integral  # normalize the resulting radiance distribution
             # res shape is (Nsourcepoints, Nskypatches)
             return res
 
