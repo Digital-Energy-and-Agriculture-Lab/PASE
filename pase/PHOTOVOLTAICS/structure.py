@@ -647,13 +647,14 @@ class HSATS(PVStructure):
 
         panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
                         + self.panel_height)
-        if panel_span_x > self.rafter_length:
+        if panel_span_x > self.rafter_length + 2*self.panel_height:
             raise ValueError(
                 f"Invalid HSATS configuration: The total panel height in X "
-                f"({panel_span_x:.2f}m) exceeds the rafter length "
-                f"({self.rafter_length:.2f}m). "
+                f"({panel_span_x:.2f}m) far exceeds the rafter length "
+                f"({self.rafter_length:.2f}m) and produces invalid overhang length. "
                 f"Please change the panels configuration on X axis or increase "
-                f"the rafter length by increasing 'RafterLength'."
+                f"the rafter length by increasing 'RafterLength'. The total panel span along X must be at most equal to "
+                f"the rafter length + 2 x panel_height. "
             )
 
         panel_span_y = ((self.panels_per_block_y - 1) * self.panel_spacing_y
