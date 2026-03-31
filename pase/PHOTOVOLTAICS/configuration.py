@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import pyvista as pyv
 
+from pase.DATA_MANAGEMENT.visualization_in_3D import compute_ground_extent
 from pase.PHOTOVOLTAICS.structure import build_structure
 from pase.pase_math import (compute_panel_grid_positions,
                             compute_block_centers,
@@ -746,10 +747,11 @@ class PVConfiguration3D(MultiBlockPASE):
 
             pl.add_mesh(geom_struct, color=struct_color)
 
-        ground = np.array([[-100, 100, 0],
-                           [100, 100, 0],
-                           [-100, -100, 0],
-                           [100, -100, 0]])
+        x_min, x_max, y_min, y_max = compute_ground_extent(geom_panels)
+        ground = np.array([[x_min, y_max, 0],
+                           [x_max, y_max, 0],
+                           [x_min, y_min, 0],
+                           [x_max, y_min, 0]])
 
         ground_m = np.hstack([[3, 0, 1, 2],
                               [3, 1, 2, 3], ])
