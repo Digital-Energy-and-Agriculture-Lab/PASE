@@ -54,6 +54,7 @@ def structure_inputs():
         "TiltY": 15.0,
         "PanelOffset": 0.5,
         "DiagonalEpsilon": 0.000001,
+        "RepetitionDistanceGroupYMode": "manual",
     }
 
     def _factory(**overrides):
