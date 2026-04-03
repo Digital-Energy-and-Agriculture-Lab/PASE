@@ -251,7 +251,7 @@ class PVStructure(ABC):
         Get the characteristic dimension of a part of the structure, used to place
         parts on top of each other without clipping.
 
-        :param part_type: type of part (should be "purlin" or "rafter"
+        :param part_type: type of part (should be "purlin" or "rafter")
         :type part_type: string
         :return: radius (if the part is a cylinder), half height (if the part has a
             rectangular section), half side (if the part has a square section)
@@ -405,15 +405,20 @@ class AgrivoltaicFence(PVStructure):
         """Initialize agrivoltaic fence parameters from aggregated PV inputs."""
         super().__init__(PV_i, **kwargs)
 
-        panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
-                        + self.panel_height)
-        if panel_span_x > self.rafter_length:
+        # Derive horizontal bar positions from Height (center of panel group),
+        # analogous to how PVTable derives pole heights from tilt geometry.
+        panel_span_x = (self.panels_per_block_x - 1) * self.panel_spacing_x + self.panel_height
+        self.top_bar_height = self.base_height + panel_span_x / 2
+        # self.bottom_bar_offset = panel_span_x/2
+        self.bottom_bar_offset = panel_span_x - self.panel_height
+
+        if self.top_bar_height - panel_span_x < self.pole_ground_positioning:
             raise ValueError(
-                f"Invalid HSATS configuration: The total panel height in X "
-                f"({panel_span_x:.2f}m) exceeds the rafter length "
-                f"({self.rafter_length:.2f}m). "
-                f"Please change the panels configuration on X axis or increase "
-                f"the rafter length by increasing 'RafterLength'."
+                f"Invalid AgrivoltaicFence configuration: The panel group bottom "
+                f"({self.top_bar_height - panel_span_x:.2f} m) is at or below ground level "
+                f"({self.pole_ground_positioning:.2f} m). "
+                f"Increase 'Height' or reduce 'NumberOfPanelsX' / "
+                f"'RepetitionDistanceOfPanelsX'."
             )
 
         panel_span_y = ((self.panels_per_block_y - 1) * self.panel_spacing_y
@@ -421,7 +426,7 @@ class AgrivoltaicFence(PVStructure):
         structure_span_y = self.number_of_structure_groups * self.repetition_distance_group_Y
         if panel_span_y > structure_span_y:
             raise ValueError(
-                f"Invalid HSATS configuration: The total panel width in Y "
+                f"Invalid AgrivoltaicFence configuration: The total panel width in Y "
                 f"({panel_span_y:.2f}m) exceeds the structural span in Y "
                 f"({structure_span_y:.2f}m). "
                 f"Please change the panels configuration on Y axis or adjust "
@@ -432,14 +437,14 @@ class AgrivoltaicFence(PVStructure):
         """Create a fence group by combining one post and two horizontal bars."""
 
         pole = Pole(self.pole_shape,
-                    length=self.base_height - self.pole_ground_positioning,
+                    length=self.top_bar_height - self.pole_ground_positioning,
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
                     radius=self.pole_radius,
                     positioning=self.pole_ground_positioning)
         pole.polydata.translate((0, -self.purlin_length/2, 0), inplace=True)
-        
+
         horizontal_bar_top = HorizontalBar(self.purlin_shape,
                                            length=self.purlin_length,
                                            side=self.purlin_side,
@@ -447,18 +452,24 @@ class AgrivoltaicFence(PVStructure):
                                            height=self.purlin_height,
                                            radius=self.purlin_radius)
 
-        horizontal_bar_top.polydata.translate((0.0,
-                                               0,
-                                               self.base_height),
+        _fine_positioning_offset = self.get_characteristic_dim("purlin")  # [m] vertical offset to avoid clipping between horizontal bars and PV modules
+        horizontal_bar_top.polydata.translate((0, 0, self.top_bar_height),
                                               inplace=True)
 
         # 2nd horizontal bar is a copy of horizontal_bar_top,
-        # translated downwards
+        # translated downwards to the middle of the panel group (in the group's X axis)
         horizontal_bar_bottom = (horizontal_bar_top.polydata
                                  .copy().
-                                 translate((0, 0, -self.vertical_spacing),
+                                 translate((0, 0, -self.bottom_bar_offset),
                                            inplace=True))
-        
+
+        # Fine positioning of both horizontal bars
+        horizontal_bar_top.polydata.translate((0, 0, _fine_positioning_offset),
+                                              inplace=True)
+        horizontal_bar_bottom.translate((0, 0, _fine_positioning_offset),
+                                                 inplace=True)
+
+
         combined = (pole.polydata
                     + horizontal_bar_top.polydata
                     + horizontal_bar_bottom).triangulate()
@@ -483,7 +494,7 @@ class AgrivoltaicFence(PVStructure):
             blocks.append(g)
 
         end_pole = Pole(self.pole_shape,
-                        length=self.base_height - self.pole_ground_positioning,
+                        length=self.top_bar_height - self.pole_ground_positioning,
                         width=self.pole_width,
                         height=self.pole_height,
                         side=self.pole_side,

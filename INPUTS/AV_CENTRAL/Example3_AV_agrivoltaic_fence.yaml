@@ -11,7 +11,7 @@ NumberOfPanelsY:
    Unit: dimensionless [-]
    Definition: Number of panels on the y axis in one block of panels
 RepetitionDistanceOfPanelsX:
-   Value: 1.5
+   Value: 1.603
    Type: float
    Limit: [0, 100]
    Unit: meters [m]
