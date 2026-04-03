@@ -109,18 +109,21 @@ def test_structure_builds_without_errors(structure_cls, structure_inputs, config
     "config_overrides",
     [
         # Base: 1 panel per group, fits within RepetitionDistanceGroupY=2.0m
+        # panel_span_x = (2-1)*2.0 = 2.0, top_bar = 2.0+1.0 = 3.0, bottom = 1.0 >= 0.0 ✓
         # panel_span_y = 0*2.0 + 1.0 = 1.0 <= 2.0 ✓
-        # panel_height = 1.6 <= vertical_spacing=2.0 ✓
         {"NumberOfPanelsY": 1},
         pytest.param(
             {
-                # wider-layout: 1 panel per group, RepetitionDistanceGroupY=3.0m
+                # wider-layout: 4 panels in X, Height raised so bottom bar stays above ground
+                # panel_span_x = (4-1)*2.0 = 6.0, top_bar = 4.0+3.0 = 7.0, bottom = 1.0 >= 0.0 ✓
                 # panel_span_y = 0*2.4 + 1.0 = 1.0 <= 3.0 ✓
                 "NumberOfPanelsX": 4,
                 "NumberOfPanelsY": 1,
+                "Height": 4.0,
                 "PanelsPerGroup": 4,
                 "NumberOfStructureGroups": 2,
                 "RepetitionDistanceGroupY": 3.0,
+                "RepetitionDistanceGroupYMode": "auto",
                 "NumberOfPVBlocksX": 2,
                 "NumberOfPVBlocksY": 1,
                 "RepetitionDistanceOfPVBlocksX": 6.0,
