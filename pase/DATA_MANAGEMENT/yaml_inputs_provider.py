@@ -79,7 +79,10 @@ class YAML_Inputs_provider:
             self.inputs[key] = data['Value']
             
         self.check_limits(key, data, inputs)
-                
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data, inputs) 
+
                 
     def check_value_int(self, key, data, inputs):
         
@@ -89,7 +92,10 @@ class YAML_Inputs_provider:
         else:
             self.inputs[key] = data['Value']
             
-        self.check_limits(key, data, inputs)        
+        self.check_limits(key, data, inputs)
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data, inputs)        
 
 
     def check_value_str(self, key, data, inputs):
@@ -99,7 +105,10 @@ class YAML_Inputs_provider:
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
             self.inputs[key] = data['Value']    
-            
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data, inputs)            
+
 
     def check_value_bool(self, key, data, inputs):
             
@@ -108,12 +117,27 @@ class YAML_Inputs_provider:
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
             self.inputs[key] = data['Value'] 
-            
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data, inputs) 
+
     
     def check_value_list(self, key, data, inputs):
         
         if type(data['Value']) is not list:
             self.error_message(key, data['Type'])
+            PASE_Logger(self.msg, 'ERROR', 'value')
+        else:
+            self.inputs[key] = data['Value']
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data, inputs)
+
+
+    def check_possibilities(self, key, data, inputs):
+        if data['Value'] not in data['Possibilities']:
+            self.msg = ('Input "' + key + '" value should be one of the '
+                        'following possibilities: ' + str(data['Possibilities']))
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
             self.inputs[key] = data['Value']
