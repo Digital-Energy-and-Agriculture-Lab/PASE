@@ -6,9 +6,14 @@
 #This file is part of the PASE software, and is distributed under the MIT license.
 
 import os
+
+import logging
+import numpy as np
 import yaml
 
 from pase.user_support_tools import PASE_Logger
+
+logger = logging.getLogger(__name__)
 
 VALID_TYPES = ['float', 'integer', 'string', 'boolean', 'list']
 
@@ -223,3 +228,16 @@ class Inputs_aggregator:
             raise ValueError(
                 "Repetition distance between panels in axis Y is too short, "
                 "panels are clipping into eachother. Fix it in yaml config file.")
+
+        # Check ground clearance - must be > 0
+        spanX = ((self.aggregated_inputs["NumberOfPanelsX"] - 1) * self.aggregated_inputs["RepetitionDistanceOfPanelsX"]
+                 + self.aggregated_inputs["PanelDimensionX"])
+        ground_clearance = self.aggregated_inputs["Height"] - spanX/2 * np.sin(np.deg2rad(self.aggregated_inputs["TiltY"]))
+
+        if ground_clearance < 0:
+            msg = (f"The current combination of NumberOfPanelsX, RepetitionDistanceOfPanelsX, PanelDimensionX, TiltY "
+                   "and Height results in an invalid geometry where the panels would be partially underground.\n"
+                   f"Current ground clearance : {ground_clearance:.3f} m (this value should be > 0)."
+                   "Please revise the geometry of the central.")
+            logger.error(msg=msg)
+            raise ValueError(msg)
