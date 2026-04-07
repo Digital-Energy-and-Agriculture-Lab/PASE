@@ -25,6 +25,19 @@ from pase.user_support_tools import PASE_Logger
 
 logger = logging.getLogger(__name__)
 
+def get_sun_vector(beta, gamma):
+    #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
+    #beta : sun elevation (from -90 to 90°), negative angle means it's night
+    #gamma : azimuth from north to east
+    gamma, beta = gamma*np.pi/180, beta*np.pi/180
+    solar_vector = np.zeros((len(gamma),3))
+    solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
+    solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
+    solar_vector[:,2]=np.sin(beta)
+    #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
+    return solar_vector
+
+
 class Sun_positions:
     
     def __init__(self, lat, long, freq_deter, TZ):
@@ -56,7 +69,7 @@ class Sun_positions:
                                                   self.lat, 
                                                   self.long)
         
-        self.sun_vect_leapY = self.get_sun_vector(self.sp_leapY['elevation'], 
+        self.sun_vect_leapY = get_sun_vector(self.sp_leapY['elevation'], 
                                                   self.sp_leapY['azimuth'])
         
         self.sp_leapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_leap_year,
@@ -70,24 +83,11 @@ class Sun_positions:
                                                      self.lat, 
                                                      self.long)
         
-        self.sun_vect_nonleapY = self.get_sun_vector(self.sp_nonleapY['elevation'], 
+        self.sun_vect_nonleapY = get_sun_vector(self.sp_nonleapY['elevation'], 
                                                      self.sp_nonleapY['azimuth'])
         
         self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_com_year,
                                                                   n)
-        
-        
-    def get_sun_vector(self, beta, gamma):
-        #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
-        #beta : sun elevation (from -90 to 90°), negative angle means it's night
-        #gamma : azimuth from north to east
-        gamma, beta = gamma*np.pi/180, beta*np.pi/180
-        solar_vector = np.zeros((len(gamma),3))
-        solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
-        solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
-        solar_vector[:,2]=np.sin(beta)
-        #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
-        return solar_vector
         
     def get_top_of_atm_radiation(self, index, n):
         """
@@ -306,7 +306,7 @@ class Sun_positions_sampled:
         self.long = long
         self.loc_name = loc_name
         self.get_solar_positions_sampled(lat, long, precision_lvl, freq_deter, TZ)
-        self.get_sun_vector(self.SP['elevation'], self.SP['azimuth'])
+        self.solar_vector = get_sun_vector(self.SP['elevation'], self.SP['azimuth'])
         #self.get_sun_path_diagram()
         #self.get_PVSyst_Plot()
    
@@ -347,22 +347,6 @@ class Sun_positions_sampled:
             SP = solar_position
         #Positions when the sun elevation is below the horizon are discarded to save computation ressources    
         self.SP = SP.loc[SP['elevation']>=0]
-        
-                
-   
-            
-               
-         
-    def get_sun_vector(self, beta, gamma):
-        #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
-        #beta : sun elevation (from -90 to 90°), negative angle means it's night
-        #gamma : azimuth from north to east
-        gamma, beta = gamma*np.pi/180, beta*np.pi/180
-        self.solar_vector = np.zeros((len(gamma),3))
-        self.solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
-        self.solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
-        self.solar_vector[:,2]=np.sin(beta)
-        #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
         
     def get_sun_path_diagram(self):
         
