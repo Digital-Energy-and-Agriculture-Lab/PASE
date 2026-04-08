@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
-import pyvista as pyv
+import logging
 import math
 import numpy as np
+import pyvista as pyv
 
 pyv.global_theme.allow_empty_mesh = True
+
+logger = logging.getLogger(__name__)
 
 def build_structure(config_dict):
     """
