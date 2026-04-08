@@ -207,37 +207,78 @@ class Inputs_aggregator:
 
         self.inputs_sanity_check()  # check validity of input parameters
 
-
     def aggregate_inputs(self, inputs):
 
         for input in inputs:
             self.aggregated_inputs.update(input)
 
-
     def inputs_sanity_check(self):
+        self._check_panel_spacing()
+        self._check_panel_ground_clearance()
+        self._check_structure_ground_clearance()
 
-        # check if RepetitionDistanceOfPanelsX >= PanelDimensionX
+    def _check_panel_spacing(self):
+        """Check that panel repetition distances are not shorter than panel dimensions."""
         if self.aggregated_inputs['RepetitionDistanceOfPanelsX'] < \
                 self.aggregated_inputs['PanelDimensionX']:
             raise ValueError(
                 "Repetition distance between panels in axis X is too short, "
-                "panels are clipping into eachother. Fix it in yaml config file.")
+                "panels are clipping into each other. Fix it in yaml config file.")
 
         if self.aggregated_inputs['RepetitionDistanceOfPanelsY'] < \
                 self.aggregated_inputs['PanelDimensionY']:
             raise ValueError(
                 "Repetition distance between panels in axis Y is too short, "
-                "panels are clipping into eachother. Fix it in yaml config file.")
+                "panels are clipping into each other. Fix it in yaml config file.")
 
-        # Check ground clearance - must be > 0
-        spanX = ((self.aggregated_inputs["NumberOfPanelsX"] - 1) * self.aggregated_inputs["RepetitionDistanceOfPanelsX"]
-                 + self.aggregated_inputs["PanelDimensionX"])
-        ground_clearance = self.aggregated_inputs["Height"] - spanX/2 * np.sin(np.deg2rad(self.aggregated_inputs["TiltY"]))
+    def _check_panel_ground_clearance(self):
+        """Check that the lowest panel edge clears the ground (strictly positive clearance)."""
+        span_x = ((self.aggregated_inputs["NumberOfPanelsX"] - 1) * self.aggregated_inputs["RepetitionDistanceOfPanelsX"]
+                  + self.aggregated_inputs["PanelDimensionX"])
+        ground_clearance = (self.aggregated_inputs["Height"]
+                            - span_x / 2 * np.sin(np.deg2rad(self.aggregated_inputs["TiltY"])))
 
-        if ground_clearance < 0:
+        if ground_clearance <= 0:
             msg = (f"The current combination of NumberOfPanelsX, RepetitionDistanceOfPanelsX, PanelDimensionX, TiltY "
                    "and Height results in an invalid geometry where the panels would be partially underground.\n"
-                   f"Current ground clearance : {ground_clearance:.3f} m (this value should be > 0)."
+                   f"Current ground clearance: {ground_clearance:.3f} m (must be > 0). "
                    "Please revise the geometry of the central.")
-            logger.error(msg=msg)
+            logger.error(msg)
+            raise ValueError(msg)
+
+    def _check_structure_ground_clearance(self):
+        """Check that the lowest point of the PV structure clears the ground (strictly positive clearance).
+
+        The lowest point is the tip of the lower rafter edge, reduced by the half-thickness of the
+        purlin profile sitting beneath the rafter. The purlin characteristic dimension is computed
+        following the same logic as PVStructure.get_characteristic_dim (pase/PHOTOVOLTAICS/structure.py).
+
+        This check is skipped when no structure inputs are present or in the case of Agrivoltaic fence, since there
+        is no upper part of the structure that could collide with the ground (as opposed to HSATS or PV table).
+        """
+        if 'RafterLength' not in self.aggregated_inputs:
+            return
+
+        # Characteristic half-dimension of the purlin cross-section
+        # (mirrors PVStructure.get_characteristic_dim logic)
+        purlin_shape = self.aggregated_inputs['PurlinShape'].lower()
+        if purlin_shape == 'cylinder':
+            purlin_dim = self.aggregated_inputs['PurlinRadius']
+        elif purlin_shape == 'rectangle':
+            purlin_dim = self.aggregated_inputs['PurlinHeight'] / 2
+        elif purlin_shape == 'square':
+            purlin_dim = self.aggregated_inputs['PurlinSide'] / 2
+        else:
+            purlin_dim = 0.0
+
+        ground_clearance = (self.aggregated_inputs["Height"]
+                            - self.aggregated_inputs["RafterLength"] / 2 * np.sin(np.deg2rad(self.aggregated_inputs["TiltY"]))
+                            - purlin_dim)
+
+        if ground_clearance <= 0:
+            msg = (f"The current combination of RafterLength, TiltY, Height and PurlinShape results in "
+                   "an invalid geometry where the structure would be partially underground.\n"
+                   f"Current structure ground clearance: {ground_clearance:.3f} m (must be > 0). "
+                   "Please revise the structure geometry.")
+            logger.error(msg)
             raise ValueError(msg)
