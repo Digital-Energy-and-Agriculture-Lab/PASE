@@ -612,7 +612,7 @@ class PVTable(PVStructure):
 
         panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
                         + self.panel_height)
-        if panel_span_x > self.rafter_length:
+        if panel_span_x > self.rafter_length + 2 * self.panel_height:
             raise ValueError(
                 f"Invalid PVTable configuration: The total panel height in X "
                 f"({panel_span_x:.2f}m) exceeds the rafter length "
