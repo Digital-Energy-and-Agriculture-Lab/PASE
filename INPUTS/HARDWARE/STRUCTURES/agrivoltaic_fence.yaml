@@ -144,11 +144,6 @@ RafterRadius:
   Limit: [0.01, 50.0]
   Unit: meters [m]
   Definition: rafter radius (used in cylindrical rafter)
-NumberOfRafters:
-  Value: 5
-  Type: integer
-  Limit: [1, 10]
-  Definition: Number of Rafters for one group
 DiagonalShape:
   Value: Cylinder
   Type: string
