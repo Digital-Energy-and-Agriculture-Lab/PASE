@@ -34,12 +34,6 @@ TiltY:
    Limit: [-80, 80]
    Unit: degree [°]
    Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation
-PanelOffset:
-   Value: 0.2
-   Type: float
-   Limit: [0.0, 0.5]
-   Unit: meters [m]
-   Definition: Spacing between the center of the panel and the height of the base through the normal of the panel
 Height:
    Value: 4.3
    Type: float

@@ -14,7 +14,7 @@ import pandas as pd
 import pyvista as pyv
 
 from pase.DATA_MANAGEMENT.visualization_in_3D import compute_ground_extent
-from pase.PHOTOVOLTAICS.structure import build_structure
+from pase.PHOTOVOLTAICS.structure import build_structure, compute_flush_panel_offset
 from pase.pase_math import (compute_panel_grid_positions,
                             compute_block_centers,
                             rotate_about_z)
@@ -870,7 +870,6 @@ class PVConfiguration3D(MultiBlockPASE):
         config.setdefault("MeshConfig", False)
         config.setdefault("RotationAxisNumber", 0)
         config.setdefault("CentralAzimut",0)
-        config.setdefault("PanelOffset", 0.0)
         return config
 
     # ---- Panel primitives ----
@@ -998,9 +997,9 @@ class PVConfiguration3D(MultiBlockPASE):
         base_height = float(config["Height"])
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
-        struct_type = (config.get('StructureType'))
-        hinge_style = "top" if (struct_type or '').lower() == 'agrivoltaic fence' else "center"
-        panel_offset = float(config["PanelOffset"])
+        struct_type = (config.get('StructureType') or '')
+        hinge_style = "top" if struct_type.lower() == 'agrivoltaic fence' else "center"
+        panel_offset = compute_flush_panel_offset(config, thickness)
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             msg = ('Some parameters on number of panels/blocks of panels are '
@@ -1373,9 +1372,9 @@ class PV_Configuration_3D(PVConfiguration3D):
         base_height = float(config["Height"])
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
-        struct_type = (config.get('StructureType'))
-        hinge_style = "top" if (struct_type or '').lower() == 'agrivoltaic fence' else "center"
-        panel_offset = float(config["PanelOffset"])
+        struct_type = (config.get('StructureType') or '')
+        hinge_style = "top" if struct_type.lower() == 'agrivoltaic fence' else "center"
+        panel_offset = compute_flush_panel_offset(config, thickness)
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             raise ValueError("All count parameters must be >= 1")

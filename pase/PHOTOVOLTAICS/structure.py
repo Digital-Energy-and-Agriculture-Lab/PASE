@@ -29,6 +29,52 @@ def build_structure(config_dict):
     raise ValueError(f"Unsupported StructureType '{struct_type}'")
 
 
+def compute_flush_panel_offset(config: dict, thickness: float) -> float:
+    """Compute the panel z-offset that places the panel back face flush on the purlin.
+
+    For center-hinge structures (PV Table, HSATS), the panel must be offset by the
+    rafter characteristic half-dimension, the full purlin dimension (two half-thicknesses
+    spanning the purlin cross-section), and half the panel thickness so the back face
+    is coincident with the purlin top face:
+
+        panel_offset = dim_rafter + 2 * dim_purlin + thickness / 2
+
+    Each dimension is determined by the cross-section shape, following the same
+    logic as ``PVStructure.get_characteristic_dim``.
+
+    Returns 0.0 when no structure type is defined or for Agrivoltaic Fence, where
+    panel positioning uses a top-hinge style and the formula does not apply.
+
+    Parameters
+    ----------
+    config : dict
+        Aggregated input parameters, including ``StructureType``, ``RafterShape``,
+        ``PurlinShape`` and their associated dimension keys.
+    thickness : float
+        Panel thickness in meters (0.0 for 2D panels).
+
+    Returns
+    -------
+    float
+        Panel offset in meters along the panel normal.
+    """
+    struct_type = (config.get('StructureType') or '').lower()
+    if struct_type in ('', 'agrivoltaic fence'):
+        return 0.0
+
+    def _char_dim(part: str) -> float:
+        shape = (config.get(f'{part}Shape') or '').lower()
+        if shape == 'cylinder':
+            return float(config.get(f'{part}Radius', 0.0))
+        elif shape == 'rectangle':
+            return float(config.get(f'{part}Height', 0.0)) / 2.0
+        elif shape == 'square':
+            return float(config.get(f'{part}Side', 0.0)) / 2.0
+        return 0.0
+
+    return _char_dim('Rafter') + 2.0 * _char_dim('Purlin') + thickness / 2.0
+
+
 def load_params(data: dict, required: list, optional: dict = None) -> dict:
     """Validate required keys and merge optional defaults into data.
 
@@ -201,7 +247,7 @@ _BASE_REQUIRED: list = [
     'NumberOfPanelsX', 'NumberOfPanelsY',
     'RepetitionDistanceOfPVBlocksX', 'RepetitionDistanceOfPVBlocksY',
     'NumberOfPVBlocksX', 'NumberOfPVBlocksY',
-    'Height', 'PanelOffset',
+    'Height',
 ]
 
 
@@ -260,7 +306,6 @@ class PVStructure(ABC):
         self.base_height      = float(params['Height'])
         self.pole_spacing     = float(params['PoleSpacingX'])
         self.tilt             = float(params['TiltY'])
-        self.panel_offset     = float(params['PanelOffset'])
         self.diagonal_epsilon = float(params['DiagonalEpsilon'])
 
         self.repetition_distance_group_Y_mode = params['RepetitionDistanceGroupYMode']
