@@ -26,6 +26,34 @@ def build_structure(config_dict):
     raise ValueError(f"Unsupported StructureType '{struct_type}'")
 
 
+def load_params(data: dict, required: list, optional: dict = None) -> dict:
+    """Validate required keys and merge optional defaults into data.
+
+    Parameters
+    ----------
+    data : dict
+        Raw parameter dictionary (e.g. from YAML inputs).
+    required : list[str]
+        Keys that must be present in *data*. Raises ``ValueError`` if any
+        are missing.
+    optional : dict, optional
+        Mapping of key → default value for parameters that may be absent
+        from *data*.  Defaults in *optional* are overridden by values
+        present in *data*.
+
+    Returns
+    -------
+    dict
+        Merged dictionary with all optional defaults filled in.
+    """
+    if optional is None:
+        optional = {}
+    missing = [k for k in required if k not in data]
+    if missing:
+        raise ValueError(f"Missing required structure parameters: {missing}")
+    return {**optional, **data}
+
+
 class PVStructurePart(ABC):
     """Abstract interface for PV structures (panels, poles, trackers, etc.)."""
 
@@ -158,78 +186,96 @@ class Diagonal(PVStructurePart):
 
         self.orientation = 'horizontal_x'
 
-# --- Structures --- 
+# --- Structures ---
+
+_BASE_REQUIRED: list = [
+    'NumberOfStructureGroups', 'RepetitionDistanceGroupYMode',
+    'PoleShape', 'PoleRadius', 'PoleGroundPositioning',
+    'PurlinShape', 'PurlinRadius',
+    'Material',
+    'PanelDimensionX', 'PanelDimensionY',
+    'RepetitionDistanceOfPanelsX', 'RepetitionDistanceOfPanelsY',
+    'NumberOfPanelsX', 'NumberOfPanelsY',
+    'RepetitionDistanceOfPVBlocksX', 'RepetitionDistanceOfPVBlocksY',
+    'NumberOfPVBlocksX', 'NumberOfPVBlocksY',
+    'Height', 'PanelOffset',
+]
+
 
 class PVStructure(ABC):
     """Abstract interface describing the common parameters of PV structures."""
     def __init__(self, PV_i):
         """Load common geometric, spacing, and material parameters for the PV layout."""
-        
-        self.number_of_structure_groups  = PV_i['NumberOfStructureGroups']
-        self.vertical_spacing = PV_i['RepetitionDistanceOfPanelsX']
+        params = load_params(PV_i, self.REQUIRED, self.OPTIONAL)
 
-        self.pole_shape = PV_i['PoleShape']
-        self.pole_width = PV_i['PoleWidth']
-        self.pole_height = PV_i['PoleHeight']
-        self.pole_side = PV_i['PoleSide']
-        self.pole_radius = PV_i['PoleRadius']
-        self.pole_ground_positioning = PV_i['PoleGroundPositioning']
+        self.number_of_structure_groups = params['NumberOfStructureGroups']
+        self.vertical_spacing           = params['RepetitionDistanceOfPanelsX']
 
-        self.purlin_shape = PV_i['PurlinShape']
-        self.purlin_width = PV_i['PurlinWidth']
-        self.purlin_height = PV_i['PurlinHeight']
-        self.purlin_side = PV_i['PurlinSide']
-        self.purlin_radius = PV_i['PurlinRadius']
-        self.numbers_of_purlin = PV_i['NumberOfPurlins']
+        self.pole_shape              = params['PoleShape']
+        self.pole_width              = params['PoleWidth']
+        self.pole_height             = params['PoleHeight']
+        self.pole_side               = params['PoleSide']
+        self.pole_radius             = params['PoleRadius']
+        self.pole_ground_positioning = params['PoleGroundPositioning']
 
-        self.rafter_shape = PV_i['RafterShape']
-        self.rafter_width = PV_i['RafterWidth']
-        self.rafter_height = PV_i['RafterHeight']
-        self.rafter_side = PV_i['RafterSide']
-        self.rafter_length = PV_i['RafterLength']
-        self.rafter_radius = PV_i['RafterRadius']
-        self.numbers_of_rafter = PV_i['NumberOfRafters']
-        
-        self.diagonal_shape = PV_i['DiagonalShape']
-        self.diagonal_width = PV_i['DiagonalWidth']
-        self.diagonal_height = PV_i['DiagonalHeight']
-        self.diagonal_side = PV_i['DiagonalSide']
-        self.diagonal_radius = PV_i['DiagonalRadius']
-        
-        self.material = PV_i['Material']
+        self.purlin_shape      = params['PurlinShape']
+        self.purlin_width      = params['PurlinWidth']
+        self.purlin_height     = params['PurlinHeight']
+        self.purlin_side       = params['PurlinSide']
+        self.purlin_radius     = params['PurlinRadius']
+        self.numbers_of_purlin = params['NumberOfPurlins']
 
-        self.panel_height = float(PV_i["PanelDimensionX"])  # X
-        self.panel_width = float(PV_i["PanelDimensionY"])  # Y
+        self.rafter_shape      = params['RafterShape']
+        self.rafter_width      = params['RafterWidth']
+        self.rafter_height     = params['RafterHeight']
+        self.rafter_side       = params['RafterSide']
+        self.rafter_length     = params['RafterLength']
+        self.rafter_radius     = params['RafterRadius']
+        self.numbers_of_rafter = params['NumberOfRafters']
 
-        self.panel_spacing_x = float(
-            PV_i["RepetitionDistanceOfPanelsX"])  # pitch X
-        self.panel_spacing_y = float(
-            PV_i["RepetitionDistanceOfPanelsY"])  # pitch Y
-        self.panels_per_block_x = int(PV_i["NumberOfPanelsX"])  # per block
-        self.panels_per_block_y = int(PV_i["NumberOfPanelsY"])  # per block
+        self.diagonal_shape  = params['DiagonalShape']
+        self.diagonal_width  = params['DiagonalWidth']
+        self.diagonal_height = params['DiagonalHeight']
+        self.diagonal_side   = params['DiagonalSide']
+        self.diagonal_radius = params['DiagonalRadius']
 
-        self.block_spacing_x = float(
-            PV_i["RepetitionDistanceOfPVBlocksX"])  # block pitch X
-        self.block_spacing_y = float(
-            PV_i["RepetitionDistanceOfPVBlocksY"])  # block pitch Y
-        self.num_blocks_x = int(PV_i["NumberOfPVBlocksX"])  # blocks
-        self.num_blocks_y = int(PV_i["NumberOfPVBlocksY"])  # blocks
+        self.material = params['Material']
 
-        self.base_height = float(PV_i["Height"])  # elevation
-        self.pole_spacing = float(PV_i["PoleSpacingX"])
-        self.tilt = float(PV_i["TiltY"])
-        self.panel_offset = float(PV_i["PanelOffset"])
-        self.diagonal_epsilon = float(PV_i["DiagonalEpsilon"])
+        self.panel_height = float(params['PanelDimensionX'])  # X
+        self.panel_width  = float(params['PanelDimensionY'])  # Y
 
-        self.repetition_distance_group_Y_mode = PV_i["RepetitionDistanceGroupYMode"]
+        self.panel_spacing_x    = float(params['RepetitionDistanceOfPanelsX'])  # pitch X
+        self.panel_spacing_y    = float(params['RepetitionDistanceOfPanelsY'])  # pitch Y
+        self.panels_per_block_x = int(params['NumberOfPanelsX'])   # per block
+        self.panels_per_block_y = int(params['NumberOfPanelsY'])   # per block
 
-        if self.repetition_distance_group_Y_mode.lower() == "auto":
+        self.block_spacing_x = float(params['RepetitionDistanceOfPVBlocksX'])  # block pitch X
+        self.block_spacing_y = float(params['RepetitionDistanceOfPVBlocksY'])  # block pitch Y
+        self.num_blocks_x    = int(params['NumberOfPVBlocksX'])  # blocks
+        self.num_blocks_y    = int(params['NumberOfPVBlocksY'])  # blocks
+
+        self.base_height      = float(params['Height'])
+        self.pole_spacing     = float(params['PoleSpacingX'])
+        self.tilt             = float(params['TiltY'])
+        self.panel_offset     = float(params['PanelOffset'])
+        self.diagonal_epsilon = float(params['DiagonalEpsilon'])
+
+        self.repetition_distance_group_Y_mode = params['RepetitionDistanceGroupYMode']
+
+        if self.repetition_distance_group_Y_mode.lower() == 'auto':
             # Auto compute repetition_distance_group_Y based on panel layout
             self.repetition_distance_group_Y = (
-                    self.panels_per_block_y*self.panel_spacing_y/self.number_of_structure_groups)
-        elif self.repetition_distance_group_Y_mode.lower() == "manual":
+                self.panels_per_block_y * self.panel_spacing_y
+                / self.number_of_structure_groups
+            )
+        elif self.repetition_distance_group_Y_mode.lower() == 'manual':
+            if params['RepetitionDistanceGroupY'] is None:
+                raise ValueError(
+                    "RepetitionDistanceGroupY is required when "
+                    "RepetitionDistanceGroupYMode is 'manual'."
+                )
             # Read repetition_distance_group_Y as a parameter
-            self.repetition_distance_group_Y = PV_i['RepetitionDistanceGroupY']
+            self.repetition_distance_group_Y = params['RepetitionDistanceGroupY']
 
         self.purlin_length = self.repetition_distance_group_Y
 
@@ -401,6 +447,24 @@ class PVStructure(ABC):
 class AgrivoltaicFence(PVStructure):
     """Agrivoltaic fence structure composed of posts and horizontal bars."""
 
+    REQUIRED: list = _BASE_REQUIRED
+    OPTIONAL: dict = {
+        'PoleWidth': 0.0, 'PoleHeight': 0.0, 'PoleSide': 0.0,
+        'PurlinWidth': 0.0, 'PurlinHeight': 0.0, 'PurlinSide': 0.0,
+        'NumberOfPurlins': 0,
+        # Rafter params unused by fences
+        'RafterShape': 'cylinder',
+        'RafterWidth': 0.0, 'RafterHeight': 0.0, 'RafterSide': 0.0,
+        'RafterLength': 0.0, 'RafterRadius': 0.0, 'NumberOfRafters': 0,
+        # Diagonal params unused by fences
+        'DiagonalShape': 'cylinder',
+        'DiagonalWidth': 0.0, 'DiagonalHeight': 0.0, 'DiagonalSide': 0.0,
+        'DiagonalRadius': 0.0, 'DiagonalEpsilon': 1e-6,
+        # Tilt / span not relevant for vertical fence
+        'PoleSpacingX': 0.0, 'TiltY': 0.0,
+        'RepetitionDistanceGroupY': None,
+    }
+
     def __init__(self, PV_i, **kwargs):
         """Initialize agrivoltaic fence parameters from aggregated PV inputs."""
         super().__init__(PV_i, **kwargs)
@@ -515,6 +579,20 @@ class PVTable(PVStructure):
     """
     Fixed tilted table with posts, rafters, and diagonal bracing.
     """
+
+    REQUIRED: list = _BASE_REQUIRED + ['PoleSpacingX', 'TiltY', 'DiagonalEpsilon']
+    OPTIONAL: dict = {
+        'PoleWidth': 0.0, 'PoleHeight': 0.0, 'PoleSide': 0.0,
+        'PurlinWidth': 0.0, 'PurlinHeight': 0.0, 'PurlinSide': 0.0,
+        'NumberOfPurlins': 2,
+        'RafterShape': 'cylinder',
+        'RafterWidth': 0.0, 'RafterHeight': 0.0, 'RafterSide': 0.0,
+        'RafterLength': 0.0, 'RafterRadius': 0.0, 'NumberOfRafters': 0,
+        'DiagonalShape': 'cylinder',
+        'DiagonalWidth': 0.0, 'DiagonalHeight': 0.0, 'DiagonalSide': 0.0,
+        'DiagonalRadius': 0.0,
+        'RepetitionDistanceGroupY': None,
+    }
 
     def __init__(self, PV_i, **kwargs):
         """
@@ -651,6 +729,21 @@ class HSATS(PVStructure):
     """
     HSATS: horizontal single-axis tracker managing purlins and tilted rafters.
     """
+
+    REQUIRED: list = _BASE_REQUIRED + ['PoleSpacingX', 'TiltY', 'NumberOfRafters']
+    OPTIONAL: dict = {
+        'PoleWidth': 0.0, 'PoleHeight': 0.0, 'PoleSide': 0.0,
+        'PurlinWidth': 0.0, 'PurlinHeight': 0.0, 'PurlinSide': 0.0,
+        'NumberOfPurlins': 2,
+        'RafterShape': 'cylinder',
+        'RafterWidth': 0.0, 'RafterHeight': 0.0, 'RafterSide': 0.0,
+        'RafterLength': 0.0, 'RafterRadius': 0.0,
+        # Diagonal not used by trackers
+        'DiagonalShape': 'cylinder',
+        'DiagonalWidth': 0.0, 'DiagonalHeight': 0.0, 'DiagonalSide': 0.0,
+        'DiagonalRadius': 0.0, 'DiagonalEpsilon': 1e-6,
+        'RepetitionDistanceGroupY': None,
+    }
 
     def __init__(self, PV_i, **kwargs):
         """Initialize HSATS with common PV inputs."""

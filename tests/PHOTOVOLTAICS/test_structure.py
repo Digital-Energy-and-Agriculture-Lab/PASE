@@ -150,3 +150,22 @@ def test_agrivoltaic_fence_builds_without_errors(structure_inputs, config_overri
 
     assert isinstance(built, pyv.DataSet)
     assert built.n_cells > 0
+
+def test_agrivoltaic_fence_accepts_minimal_config(structure_inputs):
+    """AgrivoltaicFence should build without rafter, diagonal, tilt, or span params."""
+    keys_to_drop = [
+        'NumberOfRafters', 'RafterShape', 'RafterWidth', 'RafterHeight',
+        'RafterSide', 'RafterLength', 'RafterRadius',
+        'DiagonalShape', 'DiagonalWidth', 'DiagonalHeight',
+        'DiagonalSide', 'DiagonalRadius', 'DiagonalEpsilon',
+        'TiltY', 'PoleSpacingX',
+    ]
+    cfg = structure_inputs(NumberOfPanelsY=1)
+    for key in keys_to_drop:
+        cfg.pop(key, None)
+
+    built = AgrivoltaicFence(cfg).build_structure()
+    assert isinstance(built, pyv.DataSet)
+    assert built.n_cells > 0
+
+
