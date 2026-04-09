@@ -11,7 +11,7 @@ NumberOfPanelsY:
    Unit: dimensionless [-]
    Definition: Number of panels on the y axis in one block of panels
 RepetitionDistanceOfPanelsX:
-   Value: 1.75
+   Value: 1.31
    Type: float
    Limit: [0, 100]
    Unit: meters [m]
@@ -29,7 +29,7 @@ RotationAxisNumber:
    Unit: dimensionless [-]
    Definition: Number of rotation axis that drive the block of panels
 TiltY:
-   Value: 45
+   Value: 35
    Type: float
    Limit: [-80, 80]
    Unit: degree [°]

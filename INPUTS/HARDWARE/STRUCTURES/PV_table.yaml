@@ -61,7 +61,7 @@ PoleRadius:
   Unit: meters [m]
   Definition: Pole radius (used in cylindrical pole)
 PoleGroundPositioning:
-  Value: 0.0
+  Value: -0.50
   Type: float
   Limit: [-10, 0]
   Unit: meters [m]
@@ -132,7 +132,7 @@ RafterSide:
   Unit: meters [m]
   Definition: Pole side length (used in square rafter)
 RafterLength:
-  Value: 3.8
+  Value: 2.50
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
