@@ -874,7 +874,8 @@ if __name__ == "__main__":
 
     struct_type = "pv_table"  # "HSATS" or "pv_table" or "agrivoltaic_fence"
     panel_orientation = "landscape"  # "landscape" or "portrait"
-    display_style = "lean"  # "lean", "nice" or "technical"
+    display_style = "nice"  # "lean", "nice" or "technical"
+    with_axes = True
 
     if struct_type == "HSATS":
         av_file = "Example4_HSATS.yaml"
@@ -950,4 +951,8 @@ if __name__ == "__main__":
                           position=(10, 10, 10))
         # light.set_direction_angle(30, 45)
         pl.add_light(light)
+
+    if display_style != "technical" and with_axes:
+        pl.show_axes()
+
     pl.show()
