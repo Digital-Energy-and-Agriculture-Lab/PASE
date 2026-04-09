@@ -4,6 +4,9 @@
 Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
 Author : Arnaud Bouvry (<abouvry@uliege.be>)
 This file is part of the PASE software, and is distributed under the MIT license.
+
+Run all example scripts to make sure they all run smooth.
+
 Source: https://tutorialreference.com/python/examples/faq/python-how-to-run-multiple
 -python-files-concurrently-or-sequentially
 """
@@ -13,6 +16,7 @@ import sys
 
 python_executable = sys.executable
 scripts = ['example.py',
+           'example_diffusers.py',
            'example_HSATS.py',
            'example_mesh.py',
            'example_multiblock.py',

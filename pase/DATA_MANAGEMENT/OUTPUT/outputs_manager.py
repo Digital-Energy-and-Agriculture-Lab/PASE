@@ -1,7 +1,42 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+Author : Arnaud Bouvry <abouvry@uliege.be>
+This file is part of the PASE software, and is distributed under the MIT license.
+
+Simulation output and data management utilities for PASE.
+
+This module provides the OutputsManager class, which centralizes the
+creation, organization, and persistence of simulation outputs. Each
+simulation run is associated with a deterministic *variant* directory
+whose identity is derived from a hash of the simulation inputs. This
+mechanism enables automatic reuse of existing runs, reproducible
+experiment tracking, and systematic comparison between variants.
+
+The manager also records simulation metadata (including configuration
+parameters and Git commit hashes), maintains a project-level registry
+of variants, supports caching of external data sources (e.g. PVGIS
+weather data), and provides helper methods for standardized file
+persistence within the simulation output structure.
+
+Typical directory structure:
+
+    OUTPUTS/<project>/
+        variant_01/
+            1-inputs/
+            2-data/
+            3-interm_results/
+            4-results/
+
+This module is designed to ensure reproducibility, traceability, and
+efficient data reuse across simulation workflows.
+"""
+
 import datetime
 import hashlib
 import json
-import logging
 from pathlib import Path
 from typing import Any, Optional
 
