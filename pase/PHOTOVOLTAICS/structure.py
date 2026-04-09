@@ -384,7 +384,8 @@ class PVStructure(ABC):
             # Instantiate and place each purlin and translate it with offset value.
             purlin_group = []
             for offx in offsets_x:
-                p = Purlin(self.purlin_shape, length=self.purlin_length,
+                p = Purlin(self.purlin_shape,
+                           length=self.purlin_length,
                            panel_tilt_y=0,
                            side=self.purlin_side,
                            radius=self.purlin_radius,
@@ -393,7 +394,10 @@ class PVStructure(ABC):
                            positioning=self.pole_ground_positioning)
 
                 dim_purlin = self.get_characteristic_dim("purlin")
-                dim_rafter = self.get_characteristic_dim("rafter")
+                if self.rafter_length == 0:
+                    dim_rafter = 0
+                else:
+                    dim_rafter = self.get_characteristic_dim("rafter")
                 p.polydata.translate((offx,
                                       0,
                                       self.base_height + dim_purlin + dim_rafter),
@@ -700,7 +704,7 @@ class PVTable(PVStructure):
             PR is for Pole and rafter
         """
         pole = Pole(self.pole_shape,
-                    length=(self.base_height + self.height_offset),
+                    length=(self.base_height + self.height_offset - self.pole_ground_positioning),
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
@@ -712,7 +716,7 @@ class PVTable(PVStructure):
                                 inplace=True)
 
         pole_2 = Pole(self.pole_shape,
-                      length=(self.base_height - self.height_offset),
+                      length=(self.base_height - self.height_offset - self.pole_ground_positioning),
                       width=self.pole_width,
                       height=self.pole_height,
                       side=self.pole_side,
@@ -827,7 +831,7 @@ class HSATS(PVStructure):
         """
 
         pole = Pole(self.pole_shape,
-                    length=self.base_height,
+                    length=self.base_height - self.pole_ground_positioning,
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
