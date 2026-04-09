@@ -13,7 +13,8 @@ import numpy as np
 import pandas as pd
 import pyvista as pyv
 
-from pase.PHOTOVOLTAICS.structure import build_structure
+from pase.DATA_MANAGEMENT.visualization_in_3D import compute_ground_extent
+from pase.PHOTOVOLTAICS.structure import build_structure, compute_flush_panel_offset
 from pase.pase_math import (compute_panel_grid_positions,
                             compute_block_centers,
                             rotate_about_z)
@@ -747,13 +748,14 @@ class PVConfiguration3D(MultiBlockPASE):
 
             pl.add_mesh(geom_struct, color=struct_color)
 
+        x_min, x_max, y_min, y_max = compute_ground_extent(geom_panels)
+        ground = np.array([[x_min, y_max, 0],
+                           [x_max, y_max, 0],
+                           [x_min, y_min, 0],
+                           [x_max, y_min, 0]])
+
         if geom_diffus.n_cells > 0:
             pl.add_mesh(geom_diffus, color='skyblue')
-
-        ground = np.array([[-100, 100, 0],
-                           [100, 100, 0],
-                           [-100, -100, 0],
-                           [100, -100, 0]])
 
         ground_m = np.hstack([[3, 0, 1, 2],
                               [3, 1, 2, 3], ])
@@ -872,7 +874,6 @@ class PVConfiguration3D(MultiBlockPASE):
         config.setdefault("MeshConfig", False)
         config.setdefault("RotationAxisNumber", 0)
         config.setdefault("CentralAzimut",0)
-        config.setdefault("PanelOffset", 0.0)
         return config
 
     # ---- Panel primitives ----
@@ -975,7 +976,7 @@ class PVConfiguration3D(MultiBlockPASE):
             "NumberOfPanelsX", "NumberOfPanelsY",
             "RepetitionDistanceOfPVBlocksX", "RepetitionDistanceOfPVBlocksY",
             "NumberOfPVBlocksX", "NumberOfPVBlocksY",
-            "Height", "CentralAzimut", "TiltY", 'Hinge',
+            "Height", "CentralAzimut", "TiltY",
         ]
         missing = [k for k in required if k not in config]
         if missing:
@@ -999,8 +1000,9 @@ class PVConfiguration3D(MultiBlockPASE):
         base_height = float(config["Height"])
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
-        hinge_style = config['Hinge']
-        panel_offset = float(config["PanelOffset"])
+        struct_type = (config.get('StructureType') or '')
+        hinge_style = "top" if struct_type.lower() == 'agrivoltaic fence' else "center"
+        panel_offset = compute_flush_panel_offset(config, thickness)
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             msg = ('Some parameters on number of panels/blocks of panels are '
@@ -1232,7 +1234,7 @@ class PVConfiguration3D(MultiBlockPASE):
                 # copy and translate the base structure
                 struct = (base_struct.copy()
                           .translate([block_centers[block_counter, 0],
-                                      block_centers[block_counter, 1] - block_centers[0, 1],
+                                      block_centers[block_counter, 1],
                                       0])
                           .rotate_z(-config['CentralAzimut'], point=(0.0, 0.0, 0.0))
                           )
@@ -1450,8 +1452,9 @@ class PV_Configuration_3D(PVConfiguration3D):
         base_height = float(config["Height"])
         azimuth_deg = float(config["CentralAzimut"])  # degrees
         tilt_deg = float(config["TiltY"])            # degrees
-        hinge_style = config['Hinge']
-        panel_offset = float(config["PanelOffset"])
+        struct_type = (config.get('StructureType') or '')
+        hinge_style = "top" if struct_type.lower() == 'agrivoltaic fence' else "center"
+        panel_offset = compute_flush_panel_offset(config, thickness)
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             raise ValueError("All count parameters must be >= 1")

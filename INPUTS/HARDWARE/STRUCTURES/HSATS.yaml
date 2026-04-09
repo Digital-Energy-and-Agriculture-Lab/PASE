@@ -10,14 +10,29 @@ Material:
   Definition: used to apply texture to the structure ;
     Metal -> grey structure
     Wood -> brown structure
-PanelsPerGroup:
-  Value: 2
+NumberOfStructureGroups:
+  Value: 3
   Type: integer
   Limit: [1, 100]
   Unit: dimensionless [-]
-  Definition: Number of panels per pole in the structure
+  Definition: Number of structure groups in one PV block
+RepetitionDistanceGroupYMode:
+  Value: auto
+  Type: string
+  Choices: [ auto, manual ]
+  Definition: Choose how the repetition distance of structure groups along Y axis is
+    handled.
+    - auto means the software adjusts the structure layout to the panels layout
+    - manual requires the RepetitionDistanceGroupY to be provided by the user
+RepetitionDistanceGroupY:
+  Value: 6.2
+  Type: float
+  Limit: [ 0.0, 50.0 ]
+  Unit: meters [m]
+  Definition: spacing of structure groups along Y. Only used when
+    RepetitionDistanceGroupYMode is set to manual.
 PoleShape:
-  Value: Cylinder
+  Value: Rectangle
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the pole profile
@@ -26,33 +41,27 @@ PoleWidth:
   Type: float
   Limit: [0.01, 10.0]
   Unit: meters [m]
-  Definition: Pole size along x (used in case of square or rectangular pole)
+  Definition: Pole size along x (used in rectangular pole)
 PoleHeight:
   Value: 0.2
   Type: float
   Limit: [0.05, 10.0]
   Unit: meters [m]
-  Definition: Pole size along y (used in case of square or rectangular pole)
+  Definition: Pole size along y (used in rectangular pole)
 PoleSide:
   Value: 0.1
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: Pole side length (used in case of square pole)
+  Definition: Pole side length (used in square pole)
 PoleRadius:
   Value: 0.1
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: Pole radius (used in case of cylindrical pole)
-PoleLength:
-  Value: 3.8
-  Type: float
-  Limit: [0.01, 50.0]
-  Unit: meters [m]
-  Definition: Pole size along z
+  Definition: Pole radius (used in cylindrical pole)
 PoleGroundPositioning:
-  Value: 0.0
+  Value: -0.50
   Type: float
   Limit: [-10, 0]
   Unit: meters [m]
@@ -60,53 +69,52 @@ PoleGroundPositioning:
     0 is flush with the ground, negative values mean the pole base is below
     ground level.
 PoleSpacingX:
-  Value: 1.0
+  Value: 2.0
   Type: float
   Limit: [0.2,4.0]
   Unit: meters [m]
-  Definition: the distance of a pole from the center of the structure (e.g if you want 2 meters between 2 poles set this to 1)
+  Definition: the distance between the two poles on x axis
 PurlinShape:
   Value: Cylinder
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the purlin profile
 PurlinWidth:
-  Value: 0.2
+  Value: 0.05
   Type: float
   Limit: [0.01, 10.0]
   Unit: meters [m]
-  Definition: purlin size along x (used in case of square or rectangular purlin)
+  Definition: purlin size along x (used in rectangular purlin)
 PurlinHeight:
-  Value: 0.2
+  Value: 0.08
   Type: float
-  Limit: [0.05, 10.0]
+  Limit: [0.01, 10.0]
   Unit: meters [m]
-  Definition: purlin size along y (used in case of square or rectangular purlin)
+  Definition: purlin size along y (used in rectangular purlin)
 PurlinSide:
   Value: 0.1
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: Pole side length (used in case of square purlin)
+  Definition: Pole side length (used in square purlin)
 PurlinRadius:
   Value: 0.05
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: Purlin radius (used in case of cylindrical purlin)
+  Definition: Purlin radius (used in cylindrical purlin)
 NumberOfPurlins:
-  Value: 5
+  Value: 2
   Type: integer
   Limit: [1, 10]
   Definition: Number of Purlin for one group
-
 RafterShape:
-  Value: Cylinder
+  Value: Square
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the rafter profile
 RafterWidth:
-  Value: 0.2
+  Value: 0.1
   Type: float
   Limit: [0.01, 10.0]
   Unit: meters [m]
@@ -114,7 +122,7 @@ RafterWidth:
 RafterHeight:
   Value: 0.2
   Type: float
-  Limit: [0.05, 10.0]
+  Limit: [0.01, 10.0]
   Unit: meters [m]
   Definition: rafter size along y (used in case of square or rectangular rafter)
 RafterSide:
@@ -124,68 +132,19 @@ RafterSide:
   Unit: meters [m]
   Definition: Pole side length (used in case of square rafter)
 RafterLength:
-  Value: 1.8
+  Value: 0
   Type: float
-  Limit: [0.01, 50.0]
+  Limit: [0.0, 50.0]
   Unit: meters [m]
-  Definition: Pole size along z
+  Definition: rafter length
 RafterRadius:
   Value: 0.05
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: rafter radius (used in case of cylindrical rafter)
+  Definition: rafter radius (used cylindrical rafter)
 NumberOfRafters:
-  Value: 3
+  Value: 5
   Type: integer
   Limit: [1, 10]
-  Definition: Number of Rafter for one group
-
-DiagonalShape:
-  Value: Cylinder
-  Type: string
-  Choices: [Square, Rectangle, Cylinder]
-  Definition: shape of the diagonal profile
-DiagonalWidth:
-  Value: 0.2
-  Type: float
-  Limit: [0.01, 10.0]
-  Unit: meters [m]
-  Definition: diagonal size along x (used in case of square or rectangular diagonal)
-DiagonalHeight:
-  Value: 0.2
-  Type: float
-  Limit: [0.05, 10.0]
-  Unit: meters [m]
-  Definition: diagonal size along y (used in case of square or rectangular diagonal)
-DiagonalSide:
-  Value: 0.1
-  Type: float
-  Limit: [0.01, 50.0]
-  Unit: meters [m]
-  Definition: Pole side length (used in case of square diagonal)
-DiagonalRadius:
-  Value: 0.05
-  Type: float
-  Limit: [0.01, 50.0]
-  Unit: meters [m]
-  Definition: diagonal radius (used in case of cylindrical diagonal)
-DiagonalEpsilon:
-  Value: 0.000001
-  Type: float
-  Limit: [0.000001, 0.000002]
-  Unit: dimensionless [-]
-  Definition: diagonal epsilon (used in case of cylindrical diagonal)
-
-StructureSpacingY:
-  Value: 2.0
-  Type: float
-  Limit: [0.0, 50.0]
-  Unit: meters [m]
-  Definition: Spacing along Y
-StructureHeight:
-  Value: 0.0
-  Type: float
-  Limit: [0.0, 50.0]
-  Unit: meters [m]
-  Definition: Structure height
+  Definition: Number of Rafters for one group
