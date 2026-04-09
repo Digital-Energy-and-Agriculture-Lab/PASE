@@ -62,11 +62,12 @@ before_script:
       except Exception as e: 
         print(p,'IMPORT FAILED:',e,file=sys.stderr); sys.exit(2)"
   - export PYTHONPATH="$CI_PROJECT_DIR:$PYTHONPATH"
+  - pip install -e .
 
 pytest:
   stage: test
   script:
-    - python -m pytest -vv --junitxml=junit.xml
+    - pytest -vv --junitxml=junit.xml
   artifacts:
     when: always
     reports:
