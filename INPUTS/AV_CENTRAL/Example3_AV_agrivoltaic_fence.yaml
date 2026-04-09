@@ -35,7 +35,7 @@ TiltY:
    Unit: degree [°]
    Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation
 Height:
-   Value: 2.7
+   Value: 2.
    Type: float
    Limit: [0.1, 20]
    Unit: meters [m]
@@ -53,7 +53,7 @@ NumberOfPVBlocksY:
    Unit: dimensionless [-]
    Definition: Number of blocks on the y axis of the photovoltaic central (y axis being the potential main rotation axis of the block of panels)
 RepetitionDistanceOfPVBlocksX:
-   Value: 9.8
+   Value: 20
    Type: float
    Limit: [NumberOfPanelsX*RepetitionDistanceOfPanelsX,1000]
    Unit: meters [m]
