@@ -52,7 +52,7 @@ Loc_1 = YAML_Inputs_provider(file='Example1_loc.yaml', subpath='SCENARIOS').inpu
 AV_1 = YAML_Inputs_provider(file='Example1_AV.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='Example1_PV_Module.yaml',
                                    subpath=os.path.join('HARDWARE', 'PV_MODULES')).inputs
-Structure = YAML_Inputs_provider(file='Example1_PV_structure.yaml',
+Structure = YAML_Inputs_provider(file='agrivoltaic_fence.yaml',
                                  subpath=os.path.join('HARDWARE', 'STRUCTURES')).inputs
 crop_config = YAML_Inputs_provider(file='simple_example.yml',
                                    subpath=os.path.join('CROPS', 'config')).inputs
