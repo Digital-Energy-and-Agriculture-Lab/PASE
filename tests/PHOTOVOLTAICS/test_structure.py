@@ -42,6 +42,7 @@ def structure_inputs():
         "DiagonalHeight": 1.0,
         "DiagonalSide": 0.05,
         "DiagonalRadius": 0.05,
+        "DiagonalGroundGuard": 0.1,
         "Material": "steel",
         "PanelDimensionX": 1.6,
         "PanelDimensionY": 1.0,

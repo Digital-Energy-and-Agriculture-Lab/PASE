@@ -178,3 +178,11 @@ DiagonalEpsilon:
   Limit: [0.000001, 0.000002]
   Unit: dimensionless [-]
   Definition: diagonal epsilon (used in cylindrical diagonal)
+DiagonalGroundGuard:
+  Value: 0.0
+  Type: float
+  Limit: [0.0, 10.0]
+  Unit: meters [m]
+  Definition: minimum height above ground of the diagonal lower endpoint.
+    0 means the diagonal bottom sits at ground level; positive values raise it
+    by the specified distance above the ground.

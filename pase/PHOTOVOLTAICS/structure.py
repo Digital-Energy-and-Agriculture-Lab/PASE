@@ -306,7 +306,8 @@ class PVStructure(ABC):
         self.base_height      = float(params['Height'])
         self.pole_spacing     = float(params['PoleSpacingX'])
         self.tilt             = float(params['TiltY'])
-        self.diagonal_epsilon = float(params['DiagonalEpsilon'])
+        self.diagonal_epsilon           = float(params['DiagonalEpsilon'])
+        self.diagonal_ground_guard  = float(params['DiagonalGroundGuard'])
 
         self.repetition_distance_group_Y_mode = params['RepetitionDistanceGroupYMode']
 
@@ -455,9 +456,8 @@ class PVStructure(ABC):
         Build a diagonal brace connecting the two poles with the correct slope.
         """
 
-        ground_offset = self.pole_ground_positioning
-        left_pole_height = self.base_height + self.height_offset + ground_offset
-        right_pole_height = self.base_height - self.height_offset + ground_offset
+        left_pole_height = self.base_height + self.height_offset
+        right_pole_height = self.base_height - self.height_offset
 
         if left_pole_height <= right_pole_height:
             high_x = -self.half_span
@@ -468,7 +468,7 @@ class PVStructure(ABC):
             high_z = right_pole_height
             low_x = -self.half_span
 
-        low_z = min(self.diagonal_height + ground_offset, high_z - self.diagonal_epsilon)
+        low_z = min(self.diagonal_ground_guard, high_z - self.diagonal_epsilon)
 
         vertical_span = high_z - low_z
         horizontal_span = abs(high_x - low_x)
@@ -511,7 +511,7 @@ class AgrivoltaicFence(PVStructure):
         # Diagonal params unused by fences
         'DiagonalShape': 'cylinder',
         'DiagonalWidth': 0.0, 'DiagonalHeight': 0.0, 'DiagonalSide': 0.0,
-        'DiagonalRadius': 0.0, 'DiagonalEpsilon': 1e-6,
+        'DiagonalRadius': 0.0, 'DiagonalEpsilon': 1e-6, 'DiagonalGroundGuard': 0.0,
         # Tilt / span not relevant for vertical fence
         'PoleSpacingX': 0.0, 'TiltY': 0.0,
         'RepetitionDistanceGroupY': None,
@@ -632,7 +632,7 @@ class PVTable(PVStructure):
     Fixed tilted table with posts, rafters, and diagonal bracing.
     """
 
-    REQUIRED: list = _BASE_REQUIRED + ['PoleSpacingX', 'TiltY', 'DiagonalEpsilon']
+    REQUIRED: list = _BASE_REQUIRED + ['PoleSpacingX', 'TiltY', 'DiagonalEpsilon', 'DiagonalGroundGuard']
     OPTIONAL: dict = {
         'PoleWidth': 0.0, 'PoleHeight': 0.0, 'PoleSide': 0.0,
         'PurlinWidth': 0.0, 'PurlinHeight': 0.0, 'PurlinSide': 0.0,
@@ -793,7 +793,7 @@ class HSATS(PVStructure):
         # Diagonal not used by trackers
         'DiagonalShape': 'cylinder',
         'DiagonalWidth': 0.0, 'DiagonalHeight': 0.0, 'DiagonalSide': 0.0,
-        'DiagonalRadius': 0.0, 'DiagonalEpsilon': 1e-6,
+        'DiagonalRadius': 0.0, 'DiagonalEpsilon': 1e-6, 'DiagonalGroundGuard': 0.0,
         'RepetitionDistanceGroupY': None,
     }
 
