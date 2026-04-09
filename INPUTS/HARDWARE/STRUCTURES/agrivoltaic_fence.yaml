@@ -68,13 +68,6 @@ PoleGroundPositioning:
   Definition: vertical positioning of the pole relative to the ground ;
     0 is flush with the ground, negative values mean the pole base is below
     ground level.
-PoleSpacingX:
-  Value: 2.0
-  Type: float
-  Limit: [0.2,4.0]
-  Unit: meters [m]
-  Definition: the distance between the two poles on x axis
-
 PurlinShape:
   Value: cylinder
   Type: string
@@ -104,78 +97,3 @@ PurlinRadius:
   Limit: [0.01, 50.0]
   Unit: meters [m]
   Definition: Purlin radius (used in cylindrical purlin)
-NumberOfPurlins:
-  Value: 5
-  Type: integer
-  Limit: [1, 10]
-  Definition: Number of Purlin for one group
-RafterShape:
-  Value: cylinder
-  Type: string
-  Choices: [Square, Rectangle, Cylinder]
-  Definition: shape of the rafter profile
-RafterWidth:
-  Value: 0.2
-  Type: float
-  Limit: [0.01, 10.0]
-  Unit: meters [m]
-  Definition: rafter size along x (used in rectangular rafter)
-RafterHeight:
-  Value: 0.2
-  Type: float
-  Limit: [0.05, 10.0]
-  Unit: meters [m]
-  Definition: rafter size along y (used in rectangular rafter)
-RafterSide:
-  Value: 0.1
-  Type: float
-  Limit: [0.01, 50.0]
-  Unit: meters [m]
-  Definition: Pole side length (used in square rafter)
-RafterLength:
-  Value: 3.8
-  Type: float
-  Limit: [0.01, 50.0]
-  Unit: meters [m]
-  Definition: rafter length
-RafterRadius:
-  Value: 0.05
-  Type: float
-  Limit: [0.01, 50.0]
-  Unit: meters [m]
-  Definition: rafter radius (used in cylindrical rafter)
-DiagonalShape:
-  Value: Cylinder
-  Type: string
-  Choices: [Square, Rectangle, Cylinder]
-  Definition: shape of the diagonal profile
-DiagonalWidth:
-  Value: 0.2
-  Type: float
-  Limit: [0.01, 10.0]
-  Unit: meters [m]
-  Definition: diagonal size along x (used in rectangular diagonal)
-DiagonalHeight:
-  Value: 0.2
-  Type: float
-  Limit: [0.05, 10.0]
-  Unit: meters [m]
-  Definition: diagonal size along y (used in rectangular diagonal)
-DiagonalSide:
-  Value: 0.1
-  Type: float
-  Limit: [0.01, 50.0]
-  Unit: meters [m]
-  Definition: Pole side length (used in square diagonal)
-DiagonalRadius:
-  Value: 0.05
-  Type: float
-  Limit: [0.01, 50.0]
-  Unit: meters [m]
-  Definition: diagonal radius (used in cylindrical diagonal)
-DiagonalEpsilon:
-  Value: 0.000001
-  Type: float
-  Limit: [0.000001, 0.000002]
-  Unit: dimensionless [-]
-  Definition: diagonal epsilon (used in cylindrical diagonal)
