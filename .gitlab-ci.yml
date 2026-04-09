@@ -66,7 +66,7 @@ before_script:
 pytest:
   stage: test
   script:
-    - pytest -vv --junitxml=junit.xml
+    - python -m pytest -vv --junitxml=junit.xml
   artifacts:
     when: always
     reports:
