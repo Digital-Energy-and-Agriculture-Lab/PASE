@@ -8,7 +8,7 @@ from pase.PHOTOVOLTAICS.configuration import (
     PVConfiguration3D,
     MultiBlockPASE,
 )
-from .poly_compare import compare_polydata
+from poly_compare import compare_polydata
 
 
 def _merge_multiblock_to_poly(mb: MultiBlockPASE) -> pv.PolyData:
