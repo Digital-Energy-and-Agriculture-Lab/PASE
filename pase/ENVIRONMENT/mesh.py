@@ -126,6 +126,7 @@ class Mesh:
         azimuth_deg: Optional[float] = None,
         flag: str = "ground",
         zcoord: float = 0.0,
+        ground=None,
     ) -> int:
         """Créer une surface rectangulaire au sol orientée par un azimut.
 
@@ -133,13 +134,28 @@ class Mesh:
         n'est fourni, on utilise l'orientation par défaut définie pour la zone
         d'intérêt. Les paramètres ``X_increment`` et ``Y_increment`` sont
         convertis en une densité minimale pour générer le maillage.
+
+        Parameters
+        ----------
+        ground : Ground, optional
+            Ground object used to derive center elevation and surface normal.
+            When provided, ``zcoord`` is ignored and the mesh is oriented to
+            match the ground plane at the mesh center.
         """
 
         azimuth_to_use = self.default_azimut if azimuth_deg is None else azimuth_deg
 
         width = X_max - X_min
         height = Y_max - Y_min
-        center = ((X_min + X_max) / 2.0, (Y_min + Y_max) / 2.0, zcoord)
+        cx = (X_min + X_max) / 2.0
+        cy = (Y_min + Y_max) / 2.0
+
+        if ground is not None:
+            center = (cx, cy, float(ground.elevation(cx, cy)))
+            normal = tuple(float(v) for v in ground.normal(cx, cy))
+        else:
+            center = (cx, cy, zcoord)
+            normal = (0.0, 0.0, 1.0)
 
         density = min(X_increment, Y_increment)
         reference_direction = _direction_from_azimuth(azimuth_to_use)
@@ -150,7 +166,7 @@ class Mesh:
             density=density,
             name=flag,
             center=center,
-            normal=(0.0, 0.0, 1.0),
+            normal=normal,
             reference_direction=reference_direction,
             face_type="triangle",
         )
