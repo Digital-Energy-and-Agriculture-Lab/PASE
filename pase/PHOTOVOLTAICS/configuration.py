@@ -18,6 +18,8 @@ from pase.PHOTOVOLTAICS.structure import build_structure, compute_flush_panel_of
 from pase.pase_math import (compute_panel_grid_positions,
                             compute_block_centers,
                             rotate_about_z)
+from pase.ENVIRONMENT.ground import Ground, SlopedGround
+import math as _math
 
 pyv.global_theme.allow_empty_mesh = True
 
@@ -428,12 +430,15 @@ class PVConfiguration3D(MultiBlockPASE):
             raise TypeError(f"PanelThickness must be bool or float, got {type(panel_thickness).__name__}") from e
         return 0.0 if t < 0 else t
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, ground=None, **kwargs: Any):
         """
         Initialize an empty PV configuration.
 
         Parameters
         ----------
+        ground : Ground, optional
+            Ground object that provides elevation and normal at any (x, y).
+            Defaults to a flat ``Ground()`` (z = 0 everywhere).
         **kwargs : Any
             Forwarded to ``MultiBlockPASE`` constructor.
 
@@ -449,6 +454,7 @@ class PVConfiguration3D(MultiBlockPASE):
             Metadata table indexed by ``ObjectID`` (created in ``_init_dataframe``).
         """
         super().__init__(**kwargs)
+        self.ground = ground if ground is not None else Ground()
         self.object_id: int = 0
         self.central_id: int = 0
         self._name_to_pos: Dict[str, int] = {}
@@ -749,18 +755,11 @@ class PVConfiguration3D(MultiBlockPASE):
             pl.add_mesh(geom_struct, color=struct_color)
 
         x_min, x_max, y_min, y_max = compute_ground_extent(geom_panels)
-        ground = np.array([[x_min, y_max, 0],
-                           [x_max, y_max, 0],
-                           [x_min, y_min, 0],
-                           [x_max, y_min, 0]])
 
         if geom_diffus.n_cells > 0:
             pl.add_mesh(geom_diffus, color='skyblue')
 
-        ground_m = np.hstack([[3, 0, 1, 2],
-                              [3, 1, 2, 3], ])
-
-        grnd = pyv.PolyData(ground, ground_m)
+        grnd = self.ground.to_polydata((x_min, x_max), (y_min, y_max), resolution=1.0)
         pl.add_mesh(grnd, color='green', opacity=0.5)
 
         labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)',
@@ -873,7 +872,9 @@ class PVConfiguration3D(MultiBlockPASE):
         config.setdefault("PanelThickness", DEFAULT_PANEL_THICKNESS)
         config.setdefault("MeshConfig", False)
         config.setdefault("RotationAxisNumber", 0)
-        config.setdefault("CentralAzimut",0)
+        config.setdefault("CentralAzimut", 0)
+        config.setdefault("TerrainNormalAzimuth", 0.0)
+        config.setdefault("TerrainNormalElevation", 90.0)
         return config
 
     # ---- Panel primitives ----
@@ -1037,10 +1038,29 @@ class PVConfiguration3D(MultiBlockPASE):
         df_rows: Dict[int, Dict[str, Any]] = {}
         N = positions.shape[0]
 
+        # Pre-compute the rotation applied later via rotate_z(-azimuth_deg, point=(0,0,0)):
+        #   x_world =  x·cos(az) + y·sin(az)
+        #   y_world = −x·sin(az) + y·cos(az)
+        # Ground elevation must be evaluated at post-rotation world positions so that
+        # blocks which end up at different (x,y) after rotation get the correct z.
+        import math as _math
+        _az = _math.radians(azimuth_deg)
+        _cos_az, _sin_az = _math.cos(_az), _math.sin(_az)
+
         for idx in range(N):
             bx, by, mx, my = map(int, grid_indices[idx])
             offx, offy, offz = map(float, positions[idx])
             cx, cy, cz = map(float, block_centers[idx])
+
+            # Lift the entire block as a rigid body: all panels in the same block
+            # use the block-center elevation so relative positions are preserved
+            # after rotate_y(tilt, point=(cx, cy, cz)).
+            cz_terrain = float(self.ground.elevation(
+                cx * _cos_az + cy * _sin_az,
+                -cx * _sin_az + cy * _cos_az,
+            ))
+            offz += cz_terrain
+            cz   += cz_terrain
 
             if hinge_style.lower() == 'center':
                 panel = (
@@ -1172,10 +1192,20 @@ class PVConfiguration3D(MultiBlockPASE):
         base_area = diff_dimX*diff_dimY
         N = positions.shape[0] # number of diffusers in the central
 
+        _az_d = _math.radians(azimuth_deg)
+        _cos_az_d, _sin_az_d = _math.cos(_az_d), _math.sin(_az_d)
+
         for idx in range(N):
             bx, by, mx, my = map(int, grid_indices[idx])
             offx, offy, offz = map(float, positions[idx])
             cx, cy, cz = map(float, block_centers[idx])
+
+            cz_terrain = float(self.ground.elevation(
+                cx * _cos_az_d + cy * _sin_az_d,
+                -cx * _sin_az_d + cy * _cos_az_d,
+            ))
+            offz += cz_terrain
+            cz   += cz_terrain
 
             diffuser = (
                 base_panel.copy()
@@ -1214,41 +1244,35 @@ class PVConfiguration3D(MultiBlockPASE):
             self.add_custom_polydata(diffuser, info, name)
 
     def add_structure(self, config, block_centers):
-
-        # Instantiate the base block (based on structure type)
-        base_struct = build_structure(config)
-        if base_struct is None:
+        struct_type = (config.get('StructureType') or config.get('Structype'))
+        if not struct_type:
             logger.info('No StructureType defined; skipping structure geometry for central %s',
                         self.central_id)
             return
 
-        # How many blocks ?
-        num_blocks = len(block_centers)
         num_blocks_x = config['NumberOfPVBlocksX']
         num_blocks_y = config['NumberOfPVBlocksY']
 
-        # Loop over blocks
+        # Build one structure per block so that each group's z can be resolved
+        # against the ground at the correct world position.
         block_counter = 0
         for i in range(num_blocks_x):
             for j in range(num_blocks_y):
-                # copy and translate the base structure
-                struct = (base_struct.copy()
-                          .translate([block_centers[block_counter, 0],
-                                      block_centers[block_counter, 1],
-                                      0])
-                          .rotate_z(-config['CentralAzimut'], point=(0.0, 0.0, 0.0))
-                          )
+                cx = float(block_centers[block_counter, 0])
+                cy = float(block_centers[block_counter, 1])
+                struct = build_structure(config, ground=self.ground,
+                                         x_center=cx, y_center=cy,
+                                         azimuth_deg=config.get('CentralAzimut', 0.0))
+                struct = (struct
+                          .translate([cx, cy, 0])
+                          .rotate_z(-config['CentralAzimut'], point=(0.0, 0.0, 0.0)))
                 info_dict = {'Type': 'Structure block',
                              'Central': self.central_id,
                              'Block_X': i,
                              'Block_Y': j,
                              'Azimuth_deg': config['CentralAzimut'],
                              }
-
-                # add to the multiblock instance
-                self.add_custom_polydata(geometry=struct,
-                                         info=info_dict)
-
+                self.add_custom_polydata(geometry=struct, info=info_dict)
                 block_counter += 1
 
     # ---- Query helpers ----
@@ -1351,8 +1375,14 @@ class PV_Configuration_3D(PVConfiguration3D):
                   visualization: bool = False,
                   **kwargs: Any) -> None:
 
-        super().__init__(**kwargs)
-        params_dict = self._apply_defaults(params_dict)
+        if params_dict is not None:
+            params_dict = self._apply_defaults(params_dict)
+            az = float(params_dict.get('TerrainNormalAzimuth', 0.0))
+            el = float(params_dict.get('TerrainNormalElevation', 90.0))
+            ground = SlopedGround(az, el) if el < 90.0 - 1e-6 else Ground()
+        else:
+            ground = Ground()
+        super().__init__(ground=ground, **kwargs)
 
         if params_dict is not None:
             if params_dict["RotationAxisNumber"] == 1:
@@ -1482,6 +1512,9 @@ class PV_Configuration_3D(PVConfiguration3D):
         # Precompute area (constant per panel primitive)
         base_area = float(panel_width * panel_height)
 
+        _az_t = _math_t.radians(azimuth_deg)
+        _cos_az_t, _sin_az_t = _math_t.cos(_az_t), _math_t.sin(_az_t)
+
         # ---- Creation loop (vectorized positions + single loop) ----
         pieces: List[Tuple[int, pyv.PolyData]] = []
         df_rows: Dict[int, Dict[str, Any]] = {}
@@ -1491,6 +1524,13 @@ class PV_Configuration_3D(PVConfiguration3D):
             bx, by, mx, my = map(int, grid_indices[idx])
             offx, offy, offz = map(float, positions[idx])
             cx, cy, cz = map(float, block_centers[idx])
+
+            cz_terrain = float(self.ground.elevation(
+                cx * _cos_az_t + cy * _sin_az_t,
+                -cx * _sin_az_t + cy * _cos_az_t,
+            ))
+            offz += cz_terrain
+            cz   += cz_terrain
 
             if hinge_style.lower() == 'center':
                 panel = (
