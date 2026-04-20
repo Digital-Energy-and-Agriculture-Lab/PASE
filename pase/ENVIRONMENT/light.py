@@ -69,7 +69,7 @@ class Sun_positions:
                                                   self.lat, 
                                                   self.long)
         
-        self.sun_vect_leapY = get_sun_vector(self.sp_leapY['elevation'], 
+        self.sun_vect_leapY = get_sun_vector(self.sp_leapY['elevation'],
                                                   self.sp_leapY['azimuth'])
         
         self.sp_leapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_leap_year,
@@ -83,7 +83,7 @@ class Sun_positions:
                                                      self.lat, 
                                                      self.long)
         
-        self.sun_vect_nonleapY = get_sun_vector(self.sp_nonleapY['elevation'], 
+        self.sun_vect_nonleapY = get_sun_vector(self.sp_nonleapY['elevation'],
                                                      self.sp_nonleapY['azimuth'])
         
         self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_com_year,
@@ -127,7 +127,7 @@ class Sun_positions:
     
 class Light:
     def __init__(self, WD, SP, sky_type_source='uniform', ghi_multiplier=1):
-        
+
         self.data = {}
         sky_type_lut_path = os.path.join('INPUTS', 'Igawa-5_sky_types_lut.csv')
         self.sky_type_lut = pd.read_csv(sky_type_lut_path, sep=';')
@@ -144,7 +144,7 @@ class Light:
                 rad_top_atm = SP.sp_nonleapY['Top_atm_radiation'].to_numpy()
                 apparent_sun_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
                 sun_elevation = SP.sp_nonleapY['elevation'].to_numpy()
-            
+
             n_timesteps = len(sun_elevation)
             kt = self.get_clearness_sky_index(rad_top_atm, GHI)    
             DHI = self.get_diffuse_horizontal_radiation(kt, GHI)
@@ -457,7 +457,7 @@ class Ray_casting_scene:
             self.diffuse_mask = np.zeros((len(self.sourcepoints),
                                           len(sun_P[:, 0]),
                                           len(self.discrete_sky)))
-            
+
             for time in range(len(sun_P[:,0])):
                 print(time)
                 geometry = self.geometry[time]
@@ -620,7 +620,7 @@ class Ray_casting_scene:
         
         #Creation of the target points array (Nx3) with N = len(Source) * len(n_sky_elements)
         TargetPoints = np.tile(pTarget,[self.n_sourcepoints,1])
-        
+
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
         try:
@@ -639,7 +639,7 @@ class Ray_casting_scene:
                 first_point=False,
                 retry=False)
 
-        
+
         id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
 
         diffuse_mask = np.ones(self.n_sourcepoints*n_sky_elements, bool)
@@ -679,7 +679,7 @@ class Ray_casting_scene:
 
         Index = self.mesh.get_source_points_index(Flags)
         return self.dir_mask[Index, :]
-    
+
     def get_diffuse_map_by_flag(self,Flags):
         """
         Public method, filter the computed Diffuse_Map based on flags
@@ -806,7 +806,7 @@ class Ray_casting_scene:
         self.daily_dir_irr_spat = {}
         self.daily_diff_irr_spat = {}
         self.daily_diffuser_irr_spat = {}
-        
+
         #initialisation des différents dataframes utilisés
         #df1 contient les données lié aux positions du soleil utilisé pour les cartes d'ombrage
         #df2 et df3 contiennent les données météos

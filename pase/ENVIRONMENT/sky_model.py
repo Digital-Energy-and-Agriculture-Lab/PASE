@@ -29,6 +29,7 @@ else:
 
 from pase.conversion_functions import sph_to_cart
 
+logger = logging.getLogger(__name__)
 _CIE_STANDARD_SKIES = None
 
 
