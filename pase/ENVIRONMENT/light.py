@@ -297,6 +297,7 @@ class Light:
 
         return temp_list
 
+# TODO: Add a daily average-rounding to the nearest integer methodology for the skytype.
 
 class Sun_positions_sampled:
     
