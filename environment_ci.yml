@@ -1,0 +1,23 @@
+name: pase
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - conda==23.3.1
+  - conda-libmamba-solver==23.3.0
+  - pip
+  - numpy
+  - matplotlib-base
+  - pandas
+  - vtk
+  - trimesh
+  - rtree
+  - windrose
+  - pvlib
+  - pyembree
+  - pyvista==0.44.1
+  - pyyaml
+  - seaborn
+  - yaml
+  - pytest==9.0.2
+  - pytest-cov

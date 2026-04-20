@@ -5,9 +5,13 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
+import logging
 import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
+import os
+
+logger = logging.getLogger(__name__)
 
 class PV_Production:
     
@@ -22,6 +26,7 @@ class PV_Production:
         self.n_panels = (inputs['NumberOfPanelsX']*inputs['NumberOfPanelsY']*
                          inputs['NumberOfPVBlocksX']*inputs['NumberOfPVBlocksY'])
         
+        
         self.n_rot_axis = inputs['RotationAxisNumber']
         self.tiltY = inputs['TiltY']
         
@@ -32,16 +37,34 @@ class PV_Production:
                             -inputs['RepetitionDistanceOfPanelsX']
                             +inputs['PanelDimensionX'])
         
+        self.NumberOfPanelsX=inputs['NumberOfPanelsX']
+        self.RepetitionDistanceOfPanelsX=inputs['RepetitionDistanceOfPanelsX']
+        
         self.block_space_x = inputs['RepetitionDistanceOfPVBlocksX']
         
         self.GCR_x = (inputs['PanelDimensionX']*inputs['NumberOfPanelsX']/
                       self.block_space_x)
-            
-    
-    def get_several_years_of_electricity_production(self, SP, light, WD):
-        
+
+    def get_several_years_of_electricity_production(self, SP, light, WD,
+                                                    albedo_file=None,
+                                                    albedo_option=1,
+                                                    albedo_default_value=0.2):
+
         self.production = {}
-        
+
+        albedo = albedo_default_value  # Default constant value
+
+        starting_year = min(light.keys())
+        ending_year = max(light.keys())
+        freq = SP.sp_leapY.index.freq
+        albedo_nyears = 0
+        if albedo_option == 2:  # Albedo time series
+            albedo_nyears = self.get_n_years_albedo_from_csvfile(albedo_file,
+                                                                 starting_year,
+                                                                 ending_year,
+                                                                 freq,
+                                                                 albedo_default_value)
+
         for year in light.keys():
             
             if int(year)%4 == 0:
@@ -51,14 +74,18 @@ class PV_Production:
             else:
                 sun_vect = SP.sun_vect_nonleapY
                 app_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
-            
+
+            if albedo_option == 2:  # Albedo time series
+                albedo = albedo_nyears[year].Albedo.values
+
             tiltY, sv_CC = self.get_tiltY_along_time(sun_vect)
-            SF_front, SF_rear = self.get_shading_factor(sv_CC, tiltY)
-            
-            #Temporary lines !!!!!!!
-            GHI_reaching_ground = light[year]['GHI'].to_numpy()*0.5
-            albedo = 0.25  #should be a vector with the albedo of the crop evolving on the year
-            
+            SF_front = self.get_shading_factor_front(sv_CC, tiltY)
+            SF_rear =self.get_shading_factor_rear(sv_CC, tiltY)
+
+            # Improved ground-transmitted GHI based on ground coverage ratio
+            ground_coverage_ratio = self.get_ground_coverage_ratio(tiltY)
+            GHI_reaching_ground = light[year]['GHI'].to_numpy() * (1.0 - ground_coverage_ratio)
+
             GTI_front, GTI_rear = self.get_GTI(sun_vect, app_zenith, 
                                                light[year], GHI_reaching_ground,
                                                albedo, SF_front, SF_rear, tiltY)
@@ -84,7 +111,6 @@ class PV_Production:
             
             self.production[year] = df 
 
-            
     def get_power_production(self, panels_T, GTI_front, GTI_rear, alpha=-0.4, T_std=25):
         
         one = np.ones((len(panels_T)))
@@ -103,7 +129,6 @@ class PV_Production:
         
         return front_power_panel, rear_power_panel, power_central
             
-                
     def get_GTI(self, sun_vect, app_zenith, light, GHI_reaching_ground,
                 albedo, SF_f, SF_r, tiltY):
         
@@ -146,7 +171,6 @@ class PV_Production:
             
         return GTI_front, GTI_rear
             
-            
     def compute_global_tilted_irradiance(self, Rb, GHI_ground, albedo, BHI,
                                          DHI, Ai, f, SF, tiltY):
         """
@@ -181,7 +205,6 @@ class PV_Production:
         
         return GTI
     
-             
     def get_cos_angle_btw_light_and_panels_normal(self, sun_vect, 
                                                   init_panel_normal,
                                                   tiltY):    
@@ -218,7 +241,6 @@ class PV_Production:
         
         return Rb
 
-        
     def get_panels_temperature(self, WS, T, tot_GTI):
         
         #Source : Thermal lost in PVsyst (https://www.pvsyst.com/help/thermal_loss.htm)
@@ -231,7 +253,6 @@ class PV_Production:
         panels_temp = T + 1/U*(alpha*tot_GTI*(1-self.panel_efficiency))
         
         return panels_temp
-    
     
     def get_tiltY_along_time(self, sun_vect):
         
@@ -251,7 +272,14 @@ class PV_Production:
             tiltY = tiltY_limited*180/np.pi
             
         return tiltY, sun_vect_central_coord
-            
+    def get_ground_coverage_ratio(self, tiltY_deg):
+
+        #Ground coverage ratio (fraction of ground covered by the projection of PV panels), computed at each instant.
+        tilt_rad = np.deg2rad(tiltY_deg)
+        # Projection effect along X (rotation around Y): projected length scales with cos(tilt)
+        coverage = self.GCR_x * np.cos(tilt_rad)
+
+        return coverage
     
     def get_sun_vect_in_central_coord(self, sun_vect):
         # Do not take into account the slope of the area and the slope of the 
@@ -267,7 +295,6 @@ class PV_Production:
         sun_vect_CC[:,2] = sun_vect[:,2]
         
         return sun_vect_CC
-    
     
     def get_true_tracking_angle(self, sun_v_central_coord):
                     
@@ -306,49 +333,185 @@ class PV_Production:
                
         return tiltY
 
-    def get_shading_factor(self, sun_vect_cc, tiltY):
+    def get_shading_factor_front(self, sun_vect_cc, tiltY):
         
-        # Teta_r is the sun elevation in the plane perpendicular to the 
-        # rotation axis of the blocks of panels
+        tiltY = tiltY*np.pi/180            
+        teta_r_front = np.arctan2(sun_vect_cc[:,2],sun_vect_cc[:,0])           # np.arctan2(y, x) manages angles in the correct quadrants 
+        teta_r_front[sun_vect_cc[:,2]<0] = np.nan                              # conversion degree-radian
         
-        # Don't take into account the possibility to have an area with a slope 
-        # perpendicular to the rotation axis or a slope of the rotation axis
+        N = tiltY.shape[0]
+        SF_front = np.empty(N, dtype=float)
+
+        pos = tiltY>0 
+        neg = tiltY<0 
+        zero = tiltY == 0
         
-        teta_r_front = np.arctan(sun_vect_cc[:,2]/sun_vect_cc[:,0])
-        teta_r_front[sun_vect_cc[:,2]<0] = 'NaN'
-        teta_r_front[sun_vect_cc[:,0]<0] = 'NaN'
-        
-        teta_r_rear = - np.arctan(sun_vect_cc[:,2]/sun_vect_cc[:,0])
-        teta_r_rear[sun_vect_cc[:,2]<0] = 'NaN'
-        teta_r_rear[sun_vect_cc[:,0]>0] = 'NaN'
-                       
-        one = np.ones((len(tiltY)))
+        if np.any(pos) :                                                        # Isolating the moments when the tiltY is positive to compute the shading factor in the correct way
             
-        delta_H_h_l = (np.sin(tiltY)*self.block_dim_x)                    # Height difference between highest point of one panel and the lowest point of the panel just next to it
-        delta_L_h_l_front = (self.block_space_x*one)-(np.cos(tiltY)*
-                                                      self.block_dim_x)        # Distance between the highest point of one panel and the lowest point of the panel just next to it
-        delta_L_h_l_rear = (self.block_space_x*one)+(np.cos(tiltY)*
-                                                      self.block_dim_x)
-        
-        sun_elev_treshold_front = np.arctan(delta_H_h_l/delta_L_h_l_front)     # Sun elevation at which shade factor reaches 0, which is the min value of shade factor
-        sun_elev_treshold_rear = np.arctan(delta_H_h_l/delta_L_h_l_rear)
-            
-        shade_factor_max = one                                                 # Max value of the shade factor
-            
-        m_front = -shade_factor_max/sun_elev_treshold_front                    # Angular coefficient of the linear equation
-        m_rear = -shade_factor_max/sun_elev_treshold_rear
-            
-        p = shade_factor_max                                                   # y-intercept
-            
-        SF_front = m_front*teta_r_front + p                               # Linear equation
-        SF_rear = m_rear*teta_r_rear + p
+            ty=tiltY[pos]      
+            tr=teta_r_front[pos]            
+            one = np.ones((len(ty)))
+                                           
+            delta_H_h_l = (np.sin(ty)*self.block_dim_x)                         # Height difference between highest point of one panel and the lowest point of the panel just next to it
+            delta_L_h_l_front = (self.block_space_x*one)-(np.cos(ty)*
+                                                          self.block_dim_x)     # Distance between the highest point of one panel and the lowest point of the panel just next to it
+
+            sun_elev_treshold_front = np.arctan2(delta_H_h_l,delta_L_h_l_front) # Sun elevation at which shade factor reaches 0, which is the min value of shade factor
                 
-        SF_front[np.isnan(teta_r_front)] = 1                              # When sun elevation is < 0 or the sun on the other side of the panel face ==> SF = 1
-        SF_rear[np.isnan(teta_r_rear)] = 1
+            shade_factor_max = 0                                                # y_max for linear equation
+            shade_factor_min = one                                              # y_min for linear equation
+            
+            theta_max = sun_elev_treshold_front                                 # x_max for linear equation
+            theta_min = 0                                                       # x_min for linear equation
+                                
+            sf = self._linear_equation(shade_factor_max,shade_factor_min,theta_max,theta_min,tr)  #get the linear equation to find sf value
+           
+            
+            sf = np.where(tr > sun_elev_treshold_front, 0.0, sf)                # When sun elevation is > treshold, then the SF is nul
+            sf = np.where(tr > (np.pi - ty), 1.0, sf)                           # When sun elevation is > pi-tilt, then the SF is one
+            
+            SF_front[pos] = sf
+            
+        if np.any(neg) :                                                         # Isolating the moments when the tiltY is negative to compute the shading factor in the correct way
+            
+            ty=tiltY[neg]      
+            tr=teta_r_front[neg]            
+            one = np.ones((len(ty)))
+            
+            delta_H_h_l = (np.sin(-ty)*self.block_dim_x)                         # Height difference between highest point of one panel and the lowest point of the panel just next to it
+            delta_L_h_l_front = (self.block_space_x*one)-(np.cos(ty)*
+                                                          self.block_dim_x)      # Distance between the highest point of one panel and the lowest point of the panel just next to it
+
+            sun_elev_treshold_front = np.arctan2(delta_H_h_l,-delta_L_h_l_front) # Sun elevation at which shade factor reaches 0, which is the min value of shade factor
+                
+            shade_factor_max = one
+            shade_factor_min = 0                                                # Max value of the shade factor
+               
+            theta_max = np.pi
+            theta_min = sun_elev_treshold_front
+            
+            sf = self._linear_equation(shade_factor_max,shade_factor_min,theta_max,theta_min,tr)
+            
+            sf = np.where(tr < sun_elev_treshold_front, 0.0, sf)
+            sf = np.where(tr < (-ty), 1.0, sf)        
+            
+            SF_front[neg] = sf
+            
+        if np.any(zero):
+
+            SF_front[zero] = np.where(sun_vect_cc[zero, 2] > 0.0, 0.0, 1.0)
+                
+        return SF_front
+    
+    def get_shading_factor_rear(self, sun_vect_cc, tiltY):
         
-        SF_front[np.where(teta_r_front>sun_elev_treshold_front)] = 0      # When sun elevation is > treshold, then the SF is nul
-        SF_rear[np.where(teta_r_rear>sun_elev_treshold_rear)] = 0  
+        tiltY = tiltY*np.pi/180            
+        teta_r_rear = np.arctan2(sun_vect_cc[:,2],sun_vect_cc[:,0])           # np.arctan2(y, x) gère les angles dans les bons gradiants 
+        teta_r_rear[sun_vect_cc[:,2]<0] = np.nan                                           # conversion degré-radian
         
-        return SF_front, SF_rear
+        N = tiltY.shape[0]
+        SF_rear = np.empty(N, dtype=float)
+        
+        pos= tiltY>0 
+        neg = tiltY<0 
+        zero = tiltY == 0
+        
+        if np.any(pos) :
+            
+            ty=tiltY[pos]      
+            tr=teta_r_rear[pos]            
+            one = np.ones((len(ty)))
+                                           
+            delta_H_h_l = (np.sin(ty)*self.block_dim_x)                         # Height difference between highest point of one panel and the lowest point of the panel just next to it
+            delta_L_h_l_rear = (self.block_space_x*one)+(np.cos(ty)*
+                                                          self.block_dim_x)        # Distance between the highest point of one panel and the lowest point of the panel just next to it
+        
+            sun_elev_treshold_rear = np.arctan2(delta_H_h_l,-delta_L_h_l_rear)     # Sun elevation at which shade factor reaches 0, which is the min value of shade factor
+                
+            shade_factor_max = one                                                 # Max value of the shade factor
+            shade_factor_min = 0   
+            
+            theta_max = np.pi
+            theta_min = sun_elev_treshold_rear
+                                
+            sf = self._linear_equation(shade_factor_max,shade_factor_min,theta_max,theta_min,tr)
+           
+            
+            sf = np.where(tr < sun_elev_treshold_rear, 0.0, sf)                # When sun elevation is > treshold, then the SF is nul
+            sf = np.where(tr < (np.pi - ty), 1.0, sf) 
+            
+            SF_rear[pos] = sf
+            
+        if np.any(neg) :
+            
+            ty=tiltY[neg]      
+            tr=teta_r_rear[neg]            
+            one = np.ones((len(ty)))
+            
+            delta_H_h_l = (np.sin(-ty)*self.block_dim_x)                      # Height difference between highest point of one panel and the lowest point of the panel just next to it
+            delta_L_h_l_rear = (self.block_space_x*one)+(np.cos(ty)*
+                                                          self.block_dim_x)   # Distance between the highest point of one panel and the lowest point of the panel just next to it
+        
+            sun_elev_treshold_rear = np.arctan2(delta_H_h_l,delta_L_h_l_rear) # Sun elevation at which shade factor reaches 0, which is the min value of shade factor
+                
+            shade_factor_max = 0
+            shade_factor_min = one                                            
+               
+            theta_max = np.pi
+            theta_min = sun_elev_treshold_rear
+            
+            sf = self._linear_equation(shade_factor_max,shade_factor_min,theta_max,theta_min,tr)
+            
+            sf = np.where(tr > sun_elev_treshold_rear, 0.0, sf)
+            sf = np.where(tr > (-ty), 1.0, sf)        
+            
+            SF_rear[neg] = sf
+            
+        if np.any(zero):
+        
+            SF_rear[zero] = 1
          
+        return SF_rear
         
+    def _linear_equation (self,y_max,y_min,x_max,x_min,theta):
+      
+        m=(y_max-y_min)/(x_max-x_min)                                          # Determine m from the equation y = m*x + p
+        p = np.where(m<0,1,-m*x_min)                                           # Determine p according to m profile where y=0 -> p=-m*x
+        
+        SF = theta*m+p
+        SF[np.isnan(theta)] = 1.0                                              # SF = 1 when sun elevation is under horizon 
+        
+        return SF
+
+    def get_n_years_albedo_from_csvfile(self, file: str, starting_year: str,
+                                        ending_year: str, freq: str,
+                                        albedo_default_value:float):
+
+        albedo = pd.read_csv(
+            os.path.join('INPUTS', 'CROPS', file + '.csv'),
+            delimiter=',|;',
+            engine='python')
+
+        albedo.index = pd.to_datetime(albedo.date, dayfirst=True)
+
+        # Modify datetime index to adapt to sun_vect and to light.
+
+        new_index = pd.date_range("01-01-" + str(starting_year)
+                                  + " 00:00:00",
+                                  "31-12-" + str(ending_year)
+                                  + " 23:59:59",
+                                  freq=freq)
+
+        albedo = albedo[['Albedo']].reindex(new_index).ffill()
+
+        if albedo.dropna().empty:
+            logger.warning("Please check that albedo file dates are consistent "
+                           "with input Starting Year and Ending Year. "
+                           "Default value used")
+            albedo = albedo.fillna(albedo_default_value)
+        nyears_albedo = {}
+
+        for year in range(int(starting_year), int(ending_year)+1):
+            one_year_df = albedo[albedo.index.year == year]
+            nyears_albedo[str(year)] = one_year_df
+        return nyears_albedo

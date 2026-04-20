@@ -9,6 +9,26 @@ import pyvista as pyV
 import numpy as np
 
 
+def compute_ground_extent(scene, margin: float = 10.0):
+    """
+    Compute a visually sensible ground extent from the scene geometry bounds.
+
+    Parameters
+    ----------
+    scene : pyvista.PolyData or pyvista.MultiBlock
+        Scene geometry (PV panels, structures, …).
+    margin : float
+        Extra padding around the bounding box, in meters. Default: 10.0.
+
+    Returns
+    -------
+    x_min, x_max, y_min, y_max : float
+        Ground rectangle corners.
+    """
+    xmin, xmax, ymin, ymax, _, _ = scene.bounds
+    return xmin - margin, xmax + margin, ymin - margin, ymax + margin
+
+
 def open_pyvista_3D_visualization(interest_points, spatialized_variable, scene, lgd_title):
     """
     
@@ -35,11 +55,28 @@ def open_pyvista_3D_visualization(interest_points, spatialized_variable, scene, 
     
     plotter = pyV.Plotter()
 
-    plotter.add_mesh(scene, color='black')
-    ground = np.array([[-200, 200, 0],
-                       [200, 200, 0],
-                       [-200, -200, 0],
-                       [200, -200, 0]])
+    try:
+        geom_panels = scene.polydata_by_property({'Type': ['PV']},
+                                                extract_surface=True)
+        geom_struct = scene.polydata_by_property({'Type': ['Structure block']},
+                                                extract_surface=True)
+        plotter.add_mesh(geom_panels, color='black')
+
+        if geom_struct.user_dict['Material'].lower() == 'metal':
+            struct_color = 'grey'
+        elif geom_struct.user_dict['Material'].lower() == 'wood':
+            struct_color = 'brown'
+        plotter.add_mesh(geom_struct, color=struct_color)
+    except Exception as _e:
+        print(f'No structure found: {_e}')
+        plotter.add_mesh(scene, color='black')
+
+
+    x_min, x_max, y_min, y_max = compute_ground_extent(scene)
+    ground = np.array([[x_min, y_max, 0],
+                       [x_max, y_max, 0],
+                       [x_min, y_min, 0],
+                       [x_max, y_min, 0]])
 
     ground_m = np.hstack([[3, 0, 1, 2],    
                           [3, 1, 2, 3],])

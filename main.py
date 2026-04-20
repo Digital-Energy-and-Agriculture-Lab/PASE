@@ -5,21 +5,26 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-from datetime import datetime
-import numpy as np
 import os
-import pickle
 
 from pase.user_support_tools import PASE_Logger
-from pase.DATA_MANAGEMENT.yaml_inputs_provider import YAML_Inputs_provider, Inputs_aggregator
-from pase.DATA_MANAGEMENT.weather_data_provider import Weather_data
-from pase.DATA_MANAGEMENT.output.save_csv import save_csv
-from pase.PHOTOVOLTAICS.configuration import PV_Configuration_3D
+from pase.DATA_MANAGEMENT.yaml_inputs_provider import (YAML_Inputs_provider,
+                                                       Inputs_aggregator)
+from pase.DATA_MANAGEMENT.input_checker import InputsEvaluator
+from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
+from pase.DATA_MANAGEMENT.OUTPUT.save_csv import save_mean_to_csv
+from pase.DATA_MANAGEMENT.weather_data_provider import (fetch_weather_from_pvgis,
+                                                        get_cache_key,
+                                                        Weather_data)
+from pase.PHOTOVOLTAICS.configuration import (PV_Configuration_3D,
+                                              PVConfiguration3D)
 from pase.ENVIRONMENT.light import Sun_positions_sampled, Sun_positions, Light
 from pase.ENVIRONMENT.light import Ray_casting_scene
 from pase.ENVIRONMENT.mesh import Mesh
+from pase.ENVIRONMENT.sky_model import ReinhartSky
 from pase.PHOTOVOLTAICS.production import PV_Production
-from pase.CROPS.run_crop_simulations import run_crop_simu, visualize_map_of_a_variable
+from pase.CROPS.run_crop_simulations import (run_crop_simu,
+                                             visualize_map_of_a_variable)
 
 PASE_Logger()
 # Import of general parameters
@@ -27,17 +32,57 @@ Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inpu
 # Import PV system and PV modules parameters
 AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
+Structure = dict()  # no structure here yet
 crop_config = YAML_Inputs_provider(file='pystics_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
+
+# Using Sky Types characterization while simulating an AV central with solar
+# tracking is very computer intensive ; InputChecker asks the user to reconsider
+input_checker = InputsEvaluator(Loc_1, AV_1)
+
 PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
 
-# Import of weather data and computation of daily weather data
+om = OutputsManager(Loc_1['LocationName'],
+                    Loc_1['SimulationStartingYear'],
+                    Loc_1['SimulationEndingYear'])
+
+variant_dir = om.setup_variant(loc=Loc_1,
+                               av=AV_1,
+                               pv_module=PV_module_1,
+                               structure=Structure,
+                               crop_config=crop_config,
+                               source=__file__)
+
+cache_key = get_cache_key(Loc_1['Latitude'],
+                          Loc_1['Longitude'],
+                          Loc_1['SimulationStartingYear'],
+                          Loc_1['SimulationEndingYear'])
+
+##################
+# Pre-processing #
+##################
+# Import weather data and compute daily weather data
+lat = Loc_1['Latitude']
+lon = Loc_1['Longitude']
+start_year = Loc_1['SimulationStartingYear']
+end_year = Loc_1['SimulationEndingYear']
+
+if Loc_1['WeatherDataOption'] == 1:
+    raw_weather = om.load_or_fetch_weather(
+        key=cache_key,
+        fetch_fn=lambda: fetch_weather_from_pvgis(lat, lon, start_year, end_year)
+    )
+else:  # Weather data from csv file
+    raw_weather=None
+
 WD = Weather_data(Loc_1['Latitude'],
                   Loc_1['Longitude'],
                   Loc_1['SimulationStartingYear'],
                   Loc_1['SimulationEndingYear'],
                   Loc_1['WeatherDataOption'],
+                  raw_weather,
                   Loc_1['WeatherFileName'],
-                  Loc_1['DailyWeatherFileName'])
+                  Loc_1['DailyWeatherFileName']
+                  )
 
 # Import sun positions, complete for the HDKR model and sampled for the direct light model
 Sun_positions_samp = Sun_positions_sampled(Loc_1['Latitude'],
@@ -54,6 +99,16 @@ Sun_positions_complete = Sun_positions(Loc_1['Latitude'],
 PV_1_3Dconfig = PV_Configuration_3D(PV_params_dict,
                                     Sun_positions_samp.solar_vector,
                                     visualization=True)  # !!!! Problem with rotation angle that are negative
+# #  Add custom polydata, for example a cube (not yet compatible with the tracking)
+# cube = pyv.Cube(center=(0, 0, 1.0), x_length=1.0, y_length=1.0, z_length=1.0)
+# info_cube = {
+#     "Type": "Obstacle",         # <- required
+#     "Central": 0
+# }
+#
+# # Add the cube
+# oid_cube = PV_1_3Dconfig.add_custom_polydata(cube, info_cube, name="Custom")
+# PV_1_3Dconfig.polydata_all_centrals().plot()
 
 # Initiation of the object containing points of interest to compute light
 M = Mesh()
@@ -78,35 +133,47 @@ M.Add_PV_Mesh(PV_1_3DconfigMeshBot.PV_central, flag = "BotPV", radius = 0.5)
 #print("The Bottom of the PV have the FlagID = " + str(FlagIdTop))
 """
 
+# Interest Zone Orientation Mode
+M.set_interest_zone_orientation(Loc_1, AV_1)
+
 # Add of the points of interests on the ground for crop models
-M.add_plane_ground_regular_meshes(Loc_1['Xmin_InterestZone'],
-                                  Loc_1['Xmax_InterestZone'],
-                                  Loc_1['Ymin_InterestZone'],
-                                  Loc_1['Ymax_InterestZone'],
-                                  Loc_1['dX_InterestZone'],
-                                  Loc_1['dY_InterestZone'],
-                                  flag="crop")
+M.add_oriented_plane_ground_mesh(
+    Loc_1['Xmin_InterestZone'],
+    Loc_1['Xmax_InterestZone'],
+    Loc_1['Ymin_InterestZone'],
+    Loc_1['Ymax_InterestZone'],
+    Loc_1['dX_InterestZone'],
+    Loc_1['dY_InterestZone'],
+    flag="crop"
+)
 
 #Activation of the ray castinf from a PV module of the central (this functionnalities is under construction)
 #M.add_PV_mesh(PV_1_3Dconfig.PV_central_MB[3]) #(This will not work if you are with a PV system with a rotation axis)
 
+# Discrete sky model
+discrete_sky = ReinhartSky(MF=Loc_1['MF']).reinhart_patches
 
 # Computation of sun and light data
-Light_instance = Light(WD.nyears_data, Sun_positions_complete)
-# Iniation and run of light ray casting model (direct and diffuse) with points of interest and scene
-L = Ray_casting_scene(mesh=M, geometry=PV_1_3Dconfig.PV_central_PD)
+Light_instance = Light(WD.nyears_data, Sun_positions_complete, Loc_1['DiffuseSkyType'])
+
+# Instantiation of light ray casting model (direct and diffuse) with points of interest and scene
+L = Ray_casting_scene(mesh=M,
+                      geometry=PV_1_3Dconfig.PV_central_PD,
+                      discrete_sky=discrete_sky)
+
+# Run light ray casting model (direct and diffuse) with points of interest and scene
 L.get_light_maps(Sun_positions_samp.solar_vector,
-                 scheme=Loc_1['SkyDiscretizationScheme'],
-                 MF=Loc_1['MF'],
-                 n_small_suns=Loc_1['FibonacciSamples'],
                  visualization=False,
                  Sun_P_map_to_visualize=3)
+
 # Integration of irradiation along days
 L.get_daily_irradiation_map(Sun_positions_samp.SP,
-                            Light_instance.data)
+                            Light_instance.data,
+                            visualization=True,
+                            year=Loc_1['SimulationStartingYear'], julian_day=5)
 
 L.visualize_direct_light_map(1)
-L.visualize_diffuse_light_map()
+L.visualize_diffuse_light_map(10)
 L.visualize_daily_irrad_map(2005, 150)
 
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
@@ -217,16 +284,15 @@ agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
 
 if crop_config['CropModel'] == 'simple':
     visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
-                                PV_1_3Dconfig.PV_central_PD, M, 2008, 
+                                PV_1_3Dconfig.PV_central_PD, M, Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='g/m²')
-    save_csv('mean_data.csv', agro_results, ['Dry_yield', 'Biomass'])
-    
+    save_mean_to_csv('mean_data.csv', agro_results, ['Dry_yield', 'Biomass'])
 elif crop_config['CropModel'] == 'grassim':
     visualize_map_of_a_variable(crop_config, agro_results,'BM',
-                                PV_1_3Dconfig.PV_central_PD, M, 2008,
+                                PV_1_3Dconfig.PV_central_PD, M, Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='t/ha')
-    save_csv('mean_data.csv', agro_results, ['BM'])
-    
+    save_mean_to_csv('mean_data.csv', agro_results, ['BM'])
+
 else:
     visualize_map_of_a_variable(crop_config, agro_results,'Dry_yield',
                                 PV_1_3Dconfig.PV_central_PD, M, 2006,

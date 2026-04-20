@@ -71,6 +71,14 @@ FibonacciSamples:
    Type: integer
    Limit: [1,100000]
    Definition: Samples in the Fibonacci sky subdivision scheme.
+DiffuseSkyType:
+   Value: From weather data
+   Type: string
+   Possibilities: [From weather data, Uniform]
+   Definition: Determine how to compute sky diffuse radiance distribution. 
+               "From weather data" uses a simplified implementation of Igawa (2014) 
+               to derive the sky type from weather data.
+               "Uniform" assumes uniform radiance distribution (faster but less accurate).
 Xmin_InterestZone:
    Value: -4
    Type: float
@@ -84,7 +92,7 @@ Xmax_InterestZone:
    Unit: meters [m]
    Definition: Maximal x coordinates of the zone of interest for the light and crop modelling
 dX_InterestZone:
-   Value: 4
+   Value: 0.5
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
@@ -102,8 +110,23 @@ Ymax_InterestZone:
    Unit: meters [m]
    Definition: Maximal y coordinates of the zone of interest for the light and crop modelling
 dY_InterestZone:
-   Value: 4
+   Value: 0.5
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Increment in the y coordinates of the zone of interest for the light and crop modelling
+InterestZoneOrientationMode:
+  Value: custom
+  Type: string
+  Possibilities: [default, auto, custom]
+  Definition: Orientation mode for the interest zone.
+    - default  aligned to North (0°)
+    - auto aligned with PV azimuth
+    - custom use InterestZoneCustomAngle
+InterestZoneCustomAngle:
+  Value: 60
+  Type: float
+  Limit: [0, 360]
+  Unit: degrees [°]
+  Definition: Custom orientation angle for the interest zone. Starting from the north in a clockwise direction
+    (used only if InterestZoneOrientationMode = "custom")

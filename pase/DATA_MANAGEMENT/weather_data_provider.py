@@ -14,39 +14,87 @@ import time
 import math
 import numpy as np
 import os
+from pathlib import Path
 
 from pase.user_support_tools import PASE_Logger
 from pase.ENVIRONMENT.aerodynamics import get_wind_speed_specific_height
+from pase.DATA_MANAGEMENT.helpers import (aggregate_lat_lon, unpack_latlon,
+                                          parse_date_range, get_sampling_period)
+
+CACHE_DIR = Path(__file__).parents[2] / 'OUTPUTS' / '_cache'
+
+
+def get_cache_key(latitude, longitude, sim_starting_year, sim_ending_year):
+    return f'{latitude}_{longitude}_{sim_starting_year}-{sim_ending_year}'
+
+def fetch_weather_from_pvgis(latitude, longitude, start_year, end_year):
+    nyears = {}
+
+    for year in range(start_year, end_year + 1):
+        pvgis = PvGis()
+        pvgis.latitude = latitude
+        pvgis.longitude = longitude
+        pvgis.start_date = datetime(year, 1, 1, 0, 0, 0)
+        pvgis.end_date   = datetime(year, 12, 31, 23, 59, 59)
+        pvgis.rad_Database = 'PVGIS-SARAH3'
+
+        pvgis.request_hourly_time_series()
+        df = pvgis.pandas_data_frame()
+
+        # Give the dataframe a serializable form
+        # nyears[str(year)] = {
+        #     "index": df.index.astype(str).tolist(),
+        #     "columns": df.columns.tolist(),
+        #     "values": df.values.tolist()
+        # }
+        df['DateTime'] = df['DateTime'].astype(str)
+        nyears[year] = df.to_dict(orient='records')
+
+    return nyears
 
 
 class Weather_data:
-    
+
     def __init__(self, latitude, longitude, sim_starting_year, sim_ending_year, 
-                 WD_option, file=None, daily_file=None):
-        
-        if WD_option == 2:
-            self.get_n_years_WD_from_csvfile(sim_starting_year,
-                                             sim_ending_year,
-                                             file)
+                 WD_option, raw_weather: dict, file=None, daily_file=None):
+
+        self.latitude = latitude
+        self.longitude = longitude
+        self.sim_starting_year = sim_starting_year
+        self.sim_ending_year = sim_ending_year
+
+        self.nyears_data = {}
+
+        if WD_option == 2:  # Read weather data file
+            self.get_n_years_WD_from_csvfile(file)
             self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]))
-            
-        else:
-            self.get_n_years_hourly_WD_PVGis(latitude, longitude,
-                                             sim_starting_year, sim_ending_year)
+
+        else:  # Data from PVGIS ; digest raw_weather that is passed as a dict to the constructor
+            # Convert dict back into pandas DataFrame
+            for year, serialized_df in raw_weather.items():  # year, serialized_df is key, value pair
+                df = pd.DataFrame.from_records(serialized_df)
+                df['DateTime'] = pd.to_datetime(df['DateTime'])
+                new_index = pd.date_range(
+                    f"01-01-{year} 00:10:00",
+                    f"31-12-{year} 23:10:00",
+                    freq='1H')
+                df = df.set_index(new_index)
+                rename_df = {'GHI': 'G(h)', 'DNI': 'Gb(n)', 'DHI': 'Gd(h)',
+                             "TAmb": "T2m", "Ws": 'WS10m'}
+                df = df.rename(columns=rename_df)
+
+                self.nyears_data[str(year)] = df
+
             self.get_n_years_daily_WD(len(self.nyears_data[str(sim_starting_year)]),
                                       daily_file)
-            
-        
-            
-    def get_n_years_hourly_WD_PVGis(self, lat, long, start_year, end_year):
-        
-        self.nyears_data = {}
-    
-        for year in range(start_year, end_year+1):
+
+    def get_n_years_hourly_WD_PVGis(self):
+
+        for year in range(self.sim_starting_year, self.sim_ending_year+1):
             msg = 'Get hourly weather data for year '+str(year)+' from PvGis'
             PASE_Logger(msg, 'INFO')
             pvgis = PvGis()
-            pvgis.latitude, pvgis.longitude = lat, long
+            pvgis.latitude, pvgis.longitude = self.latitude, self.longitude
             pvgis.start_date = datetime(year, 1, 1, 00, 00, 00)
             pvgis.end_date = datetime(year, 12, 31, 23, 59, 59)
             pvgis.rad_Database = 'PVGIS-SARAH3'
@@ -60,49 +108,39 @@ class Weather_data:
             one_year_dataframe = one_year_dataframe.rename(columns=rename_df)
             
             self.nyears_data[str(year)] = one_year_dataframe
-            
-            
-    def get_n_years_WD_from_csvfile(self, start_year, end_year, file):
+
+    def get_n_years_WD_from_csvfile(self, file):
         
-        self.nyears_data = {}
-        WD = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', file + '.csv'), delimiter = ',')
-        new_index = pd.date_range("01-01-"+str(start_year)+" 00:00:00",
-                                  "31-12-"+str(end_year)+" 23:45:00",
-                                  freq='15Min')
+        WD = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', file + '.csv'),
+                         delimiter=',|;', engine='python')
+
+        # Get the sampling period as str to use below in pd.date_range
+        sampling_period = get_sampling_period(WD['date'])
+
+        new_index = pd.date_range("01-01-" + str(self.sim_starting_year)
+                                  + " 00:00:00",
+                                  "31-12-" + str(self.sim_ending_year)
+                                  + " 23:59:59",
+                                  freq=sampling_period)
+
         WD = WD.set_index(new_index)
-        #WD['date'] = pd.to_datetime(WD['date'])
-        #WD['date'] = pd.to_datetime(WD['date'], format='%m-%d-%Y %H:%M:%S')
-        #WD = WD.set_index(WD['date'])        
-        
-        for year in range(start_year, end_year+1):
-        #    msg = 'Get hourly or finer resolution weather data for year '+str(year)
-        #    PASE_Logger(msg, 'INFO')
-                      
-        #    mask = ((WD['date']>='01-01-'+str(year)+' 00:00:00') & 
-        #           (WD['date']<'01-01-'+str(year+1)+' 00:00:00'))            
-        #    one_year_df = WD[mask]
+
+        for year in range(self.sim_starting_year, self.sim_ending_year+1):
             one_year_df = WD
             self.nyears_data[str(year)] = one_year_df
-            
-            
             
     def get_n_years_daily_WD(self, freq_deter, csv_file=None):
         
         self.nyears_daily_data = {}
         
         if csv_file is not None:
-            daily_csv = pd.read_csv(os.path.join('INPUTS', 'WEATHER_FILES', csv_file + '.csv'))
-
-            new_index2 = pd.date_range("01-01-"+str(2005)+" 00:00:00",
-                                       "31-12-"+str(2015)+" 00:00:00",
-                                       freq='D')
-            rain_vap_pressure = daily_csv.drop(['id','DAY'], axis=1).set_index(new_index2)
+            rain_vap_pressure = self.parse_agri4cast_weather_file(csv_file)
                    
-        if (freq_deter == 8760 or freq_deter == 8784):
+        if freq_deter == 8760 or freq_deter == 8784:
             n = 1
-        elif (freq_deter == 35040 or freq_deter == 35136):
+        elif freq_deter == 35040 or freq_deter == 35136:
             n = 4
-        elif (freq_deter == 52560 or freq_deter == 52704):
+        elif freq_deter == 52560 or freq_deter == 52704:
             n = 6
 
         for year in self.nyears_data.keys():
@@ -111,15 +149,22 @@ class Weather_data:
             PASE_Logger(msg, 'INFO')
             
             if csv_file is not None:
-                mask = ((new_index2>='01-01-'+year+' 00:00:00') & 
-                       (new_index2<'01-01-'+str(int(year)+1)+' 00:00:00'))
+                mask = ((rain_vap_pressure.index >= '01-01-'+year+' 00:00:00') &
+                       (rain_vap_pressure.index < '01-01-'+str(int(year)+1)+' 00:00:00'))
                 
                 daily_rain = rain_vap_pressure['PRECIPITATION'][mask].tolist()
-                vap_press = rain_vap_pressure['VAPOR_PRESSURE'][mask].tolist()
+                try:
+                    vap_press = rain_vap_pressure['VAPOR_PRESSURE'][mask].tolist()
+                except KeyError as e:
+                    vap_press = rain_vap_pressure['VAPOURPRESSURE'][
+                        mask].tolist()
+
             
             data_to_resample = self.nyears_data[year]
             
-            new_index = pd.date_range("01-01-"+year+" 00:00:00","31-12-"+year+" 00:00:00", freq='D')
+            new_index = pd.date_range("01-01-"+year+" 00:00:00",
+                                      "31-12-"+year+" 00:00:00",
+                                      freq='D')
            
             daily_rad = ((data_to_resample['G(h)'].resample('D').sum())
                          *60*(60/n)*10**-6).tolist()                          # W/m² to MJ/m²            
@@ -134,19 +179,96 @@ class Weather_data:
                 vap_press = data_to_resample['VAPOR_PRESSURE'].resample('D').mean().tolist()
                 daily_rain = data_to_resample['PRECIP'].resample('D').sum()
             
-            daily_weather = pd.DataFrame({'Daily_rad':daily_rad,
-                                          'Avg_temp':mean_temp,
-                                          'Min_temp':min_temp,
-                                          'Max_temp':max_temp,
-                                          'CO2':mean_CO2,
-                                          'Rain':daily_rain,
-                                          'Avg_WS_2m':WS_crop_2m,
-                                          'Vap_press':vap_press},
-                                         index=new_index)
+            try:
+                daily_weather = pd.DataFrame({'Daily_rad': daily_rad,
+                                              'Avg_temp': mean_temp,
+                                              'Min_temp': min_temp,
+                                              'Max_temp': max_temp,
+                                              'CO2': mean_CO2,
+                                              'Rain': daily_rain,
+                                              'Avg_WS_2m': WS_crop_2m,
+                                              'Vap_press': vap_press},
+                                             index=new_index)
+            except ValueError as e:
+                msg = (f'There is an error in the date range of the daily'
+                       f' weather data ; mismatch with the simulation period.'
+                       f'\nCheck that the daily weather data file covers the '
+                       f'same years as SimulationStartingYear and '
+                       f'SimulationEndingYear.')
+                PASE_Logger(msg=msg,
+                            level='ERROR')
+                raise ValueError(msg)
 
             self.nyears_daily_data[year] = daily_weather
            
-            
+    def parse_agri4cast_weather_file(self, fname):
+        # File as downloaded from Agri4Cast
+        daily_csv = pd.read_csv(os.path.join('INPUTS',
+                                             'WEATHER_FILES',
+                                             fname + '.csv'),
+                                sep=',|;', engine='python')
+
+        try:
+            # Filter the df to find the closest weather station
+            local_weather = self.filter_closest_station(daily_csv)
+        except KeyError as e:
+            # In the old suggested file format, there is no column "LATITUDE"
+            # or "LONGITUDE" (because the user was supposed to prepare the file
+            # by hand), which raises a KeyError. This except block handles
+            # retrocompatibility with this old format.
+            local_weather = daily_csv
+
+        date_range = parse_date_range(local_weather)
+
+        rain_vap_pressure = local_weather.set_index(date_range)
+
+        return rain_vap_pressure
+
+    def filter_closest_station(self, df):
+        """
+        Filter the Agri4Cast dataframe to extract only the data relevant to the
+        simulation site. If there is only one weather station, return the full
+        dataframe.
+
+        :param df: Agri4Cast data Dataframe.
+        :return:
+            filt_df: a dataframe that only contains the rows corresponding to
+                the weather station closest to the simulation location.
+        """
+        # Concat latitude and longitude
+        df['LATLON'] = aggregate_lat_lon(df['LATITUDE'], df['LONGITUDE'])
+
+        # Find unique lat-lon couples
+        latlon_uniques, latlon_ind, latlon_inv, latlon_counts = np.unique(
+            df['LATLON'],
+            return_index=True,
+            return_inverse=True,
+            return_counts=True)
+
+        if len(latlon_uniques) > 1:
+            # If there are several stations, filter to find the closest one to
+            # the site
+            lat_uniques, lon_uniques = unpack_latlon(latlon_uniques)
+
+            # Compute the distance between the site (self) and the stations
+            dists = np.sqrt((lat_uniques - self.latitude) ** 2
+                            + (lon_uniques - self.longitude) ** 2)
+
+            # Find the minimum distance
+            min_dist, id_min_dist = np.min(dists), np.argmin(dists)
+            closest_lat, closest_lon = lat_uniques[id_min_dist], lon_uniques[
+                id_min_dist]
+
+            # Create a logical mask on the closest lat-lon couple
+            mask_lat_lon = df['LATLON'].values == aggregate_lat_lon(
+                closest_lat, closest_lon)
+
+            filt_df = df[mask_lat_lon].sort_values(['DAY'])
+
+            return filt_df
+        else:
+            return df.sort_values(['DAY'])
+
              
 class PvGis:
 # Source : https://github.com/MechatronicsBlog/Weather_data_Python_PVGIS/blob/master/PvGis.py    
@@ -326,7 +448,18 @@ class PvGis:
         if self._verbose:
             print("Request send")
 
-        res = requests.get(self.API_HOURLY_TIME_SERIES, params=payload)
+        try:
+            res = requests.get(self.API_HOURLY_TIME_SERIES, params=payload)
+        except requests.exceptions.ConnectionError as e:
+            msg = (f'{e} \nThe connection to the PVGIS server is down. '
+                   f'Either the PVGIS server is having issues, or you do not '
+                   f'have an internet connection. If you keep seeing this '
+                   f'message, run simulations with WeatherDataOption: 2 and '
+                   'provide a weather data csv file or wait for the PVGIS '
+                   'situation to be resolved.')
+            PASE_Logger(msg=msg,
+                        level='ERROR')
+            raise ConnectionError(msg)
 
         if self._verbose:
             print('Request:', res.url)

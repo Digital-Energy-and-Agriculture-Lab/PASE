@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pase"
+version = "1.2.0"
+description = "Python Agrivoltaic Simulation Environment"
+readme = "README.md"
+requires-python = ">=3.10.15"
+dependencies = []
+
+[project.optional-dependencies]
+dev = []  # intentionally empty, dependencies in environment.yml
+
+[tool.project-metadata]
+environment-file = "environment.yml"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--cov=pase --cov-report=term-missing --cov-report=html"
+
+[tool.setuptools.packages.find]
+include = ["pase*"]
+
+[tool.coverage.run]
+branch = true
+source = ["pase"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true

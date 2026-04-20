@@ -4,39 +4,38 @@
 #Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
 #Authors : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com) and Nicolas De Cock (nicolas.decock1@gmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
-
+from matplotlib.patches import Polygon
+from scipy.spatial import cKDTree
+from calendar import isleap
 import logging
 import numpy as np
 import pandas as pd
 import pyvista as pyV
 import pvlib.solarposition as pvlibSP
+from pvlib.atmosphere import get_relative_airmass
+from pvlib.irradiance import get_extra_radiation
 import matplotlib.pyplot as plt
 import os
 
 import pase.conversion_functions as cf
 from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
-from pase.ENVIRONMENT.sky_model import ReinhartSky
+from pase.ENVIRONMENT.sky_model import ReinhartSky, fibonacci_half_sphere
+from pase.ENVIRONMENT.sky_model import CIEStandardSky
+from pase.user_support_tools import PASE_Logger
 
 logger = logging.getLogger(__name__)
 
-def fibonacci_half_sphere(samples=18):
-    """
-    Function computing a number of direction sampling a virtual upper half sphere with a center at 0,0,0
-    
-    Parameters:
-        samples (int): Number of directions
-
-    Returns:
-       Directions (np.array): Matrix (samples x 3) providing the direction
-    """
-    phi = np.pi * (3. - np.sqrt(5.))
-    i = np.linspace(0,samples-1,num=samples)
-    yp = (1 - i/float(samples-1))
-    radius = np.sqrt(1-yp**2) 
-    theta = phi * i 
-    xp = np.cos(theta) * radius
-    zp = np.sin(theta) * radius
-    return np.column_stack([xp,zp,yp])
+def get_sun_vector(beta, gamma):
+    #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
+    #beta : sun elevation (from -90 to 90°), negative angle means it's night
+    #gamma : azimuth from north to east
+    gamma, beta = gamma*np.pi/180, beta*np.pi/180
+    solar_vector = np.zeros((len(gamma),3))
+    solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
+    solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
+    solar_vector[:,2]=np.sin(beta)
+    #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
+    return solar_vector
 
 
 class Sun_positions:
@@ -70,7 +69,7 @@ class Sun_positions:
                                                   self.lat, 
                                                   self.long)
         
-        self.sun_vect_leapY = self.get_sun_vector(self.sp_leapY['elevation'], 
+        self.sun_vect_leapY = get_sun_vector(self.sp_leapY['elevation'],
                                                   self.sp_leapY['azimuth'])
         
         self.sp_leapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_leap_year,
@@ -84,27 +83,19 @@ class Sun_positions:
                                                      self.lat, 
                                                      self.long)
         
-        self.sun_vect_nonleapY = self.get_sun_vector(self.sp_nonleapY['elevation'], 
+        self.sun_vect_nonleapY = get_sun_vector(self.sp_nonleapY['elevation'],
                                                      self.sp_nonleapY['azimuth'])
         
         self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_com_year,
                                                                   n)
         
-        
-    def get_sun_vector(self, beta, gamma):
-        #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
-        #beta : sun elevation (from -90 to 90°), negative angle means it's night
-        #gamma : azimuth from north to east
-        gamma, beta = gamma*np.pi/180, beta*np.pi/180
-        solar_vector = np.zeros((len(gamma),3))
-        solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
-        solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
-        solar_vector[:,2]=np.sin(beta)
-        #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
-        return solar_vector
-        
     def get_top_of_atm_radiation(self, index, n):
-        
+        """
+
+        :param index: datetime index
+        :param n: seems unused ?
+        :return: irradiance at top of atmosphere on a horizontal surface [W/m²]
+        """
         day_of_year = np.array(index.dayofyear)
         n_days_in_year = day_of_year[len(index)-1]
         solar_declination = self.get_solar_declination(day_of_year)
@@ -135,34 +126,68 @@ class Sun_positions:
     
     
 class Light:
-    def __init__(self, WD, SP, ghi_multiplier=1):
-        
+    def __init__(self, WD, SP, sky_type_source='uniform', ghi_multiplier=1):
+
         self.data = {}
-       
+        sky_type_lut_path = os.path.join('INPUTS', 'Igawa-5_sky_types_lut.csv')
+        self.sky_type_lut = pd.read_csv(sky_type_lut_path, sep=';')
+
         for year in WD.keys():
             
             GHI = WD[year]['G(h)'].to_numpy() * ghi_multiplier
             
-            if int(year)%4 == 0:                
+            if isleap(int(year)):
                 rad_top_atm = SP.sp_leapY['Top_atm_radiation'].to_numpy()
+                apparent_sun_zenith = SP.sp_leapY['apparent_zenith'].to_numpy()
+                sun_elevation = SP.sp_leapY['elevation'].to_numpy()
             else:
                 rad_top_atm = SP.sp_nonleapY['Top_atm_radiation'].to_numpy()
-                
+                apparent_sun_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
+                sun_elevation = SP.sp_nonleapY['elevation'].to_numpy()
+
+            n_timesteps = len(sun_elevation)
             kt = self.get_clearness_sky_index(rad_top_atm, GHI)    
             DHI = self.get_diffuse_horizontal_radiation(kt, GHI)
             BHI = self.get_beam_horizontal_radiation(GHI, DHI)
             Ai = self.get_anisotropy_index(rad_top_atm, BHI)
             f = self.get_modulating_factor(GHI, BHI)
+
+            if sky_type_source == 'uniform':
+                cie_sky_type = [5]*n_timesteps  # Uniform sky (type 5) * n hourly timesteps in the year
+
+                df = pd.DataFrame({'GHI': GHI.tolist(),
+                                   'BHI': BHI.tolist(),
+                                   'DHI': DHI.tolist(),
+                                   'rad_top_atm': rad_top_atm.tolist(),
+                                   'kt': kt.tolist(),
+                                   'Ai': Ai.tolist(),
+                                   'f': f.tolist(),
+                                   'CIE Sky Type': cie_sky_type},
+                                  index=WD[year].index)
+            else:
+                # Compute from weather data
+                # Extraterrestrial Normal Irradiance (used for the Kc and Cle below)
+                ENI = get_extra_radiation(WD[year].index.dayofyear.values)
+
+                # Meteorological indices Clear Sky Index (Kc) and Cloudless index
+                # (Cle) from Igawa (2014)
+                Kc = self.get_clear_sky_index(ENI, GHI, apparent_sun_zenith)
+                Cle = self.get_cloudless_index(DHI, GHI, sun_elevation)
+                cie_sky_type = self.get_sky_type(Kc, Cle)
+
+                df = pd.DataFrame({'GHI': GHI.tolist(),
+                                   'BHI': BHI.tolist(),
+                                   'DHI': DHI.tolist(),
+                                   'rad_top_atm': rad_top_atm.tolist(),
+                                   'kt': kt.tolist(),
+                                   'Ai': Ai.tolist(),
+                                   'f': f.tolist(),
+                                   'Kc': Kc.tolist(),
+                                   'Cle': Cle.tolist(),
+                                   'CIE Sky Type': cie_sky_type},
+                                  index=WD[year].index)
             
-            df = pd.DataFrame({'GHI': GHI.tolist(),
-                               'BHI': BHI.tolist(),
-                               'DHI': DHI.tolist(),
-                               'rad_top_atm': rad_top_atm.tolist(),
-                               'kt': kt.tolist(),
-                               'Ai': Ai.tolist(),
-                               'f': f.tolist()}, index=WD[year].index)
-            
-            self.data[year] = df            
+            self.data[year] = df
                     
     def get_clearness_sky_index(self, rad_top_atm, GHI):
             
@@ -215,8 +240,64 @@ class Light:
         f[GHI>0] = np.sqrt(BHI[GHI>0]/GHI[GHI>0])
         
         return f
-    
-        
+
+    def get_clear_sky_index(self, ENI, GHI, apparent_sun_zenith):
+
+        # Get relative airmass from pvlib method
+        # (takes apparent zenith angle in [deg] for Kasten and Young 1989 model)
+        m = get_relative_airmass(apparent_sun_zenith, model='kastenyoung1989')
+
+        GHI_non_zero = GHI != 0
+
+        Kc = np.empty(len(GHI))
+        Kc[:] = np.nan
+
+        Kc = np.divide(GHI, 0.84 * ENI / m * np.exp(-0.054 * m),
+                       out=Kc, where=GHI_non_zero)
+
+        return Kc
+
+    def get_cloudless_index(self, DHI, GHI, sun_elevation):
+
+        sun_elevation_rad = np.deg2rad(sun_elevation)
+        GHI_non_zero = GHI != 0
+
+        # Cloud ratio [-]
+        Ce = self.get_cloud_ratio(DHI, GHI, GHI_non_zero)
+
+        # Standard cloud ratio [-]
+        Ces = (0.08302
+               + 0.5358 * np.exp(-17.3 * sun_elevation_rad)
+               + 0.3818 * np.exp(-3.2899 * sun_elevation_rad))
+
+        Cle = np.zeros(len(GHI))
+        Cle = np.divide((1 - Ce), (1 - Ces), out=Cle, where=GHI_non_zero)
+
+        return Cle
+
+    def get_cloud_ratio(self, DHI, GHI, GHI_non_zero):
+
+        Ce = np.zeros((len(GHI),))
+
+        Ce = np.divide(DHI, GHI, out=Ce, where=GHI_non_zero)
+
+        return Ce
+
+    def get_sky_type(self, Kc_target, Cle_target):
+
+        mydf = pd.DataFrame({'Kc': Kc_target, 'Cle': Cle_target})
+        temp_list = []
+        for k, v in mydf.iterrows():
+            if np.isnan(v['Kc']):
+                temp_list.append(np.nan)
+            else:
+                dist = np.sqrt((self.sky_type_lut['Kc']-v['Kc'])**2 + (self.sky_type_lut['Cle']-v['Cle'])**2)
+                i = np.argmin(dist)
+                temp_list.append(int(self.sky_type_lut['CIE Sky Type'].iloc[i]))
+
+        return temp_list
+
+
 class Sun_positions_sampled:
     
     def __init__(self, lat, long, precision_lvl, loc_name, freq_deter, TZ):
@@ -225,7 +306,7 @@ class Sun_positions_sampled:
         self.long = long
         self.loc_name = loc_name
         self.get_solar_positions_sampled(lat, long, precision_lvl, freq_deter, TZ)
-        self.get_sun_vector(self.SP['elevation'], self.SP['azimuth'])
+        self.solar_vector = get_sun_vector(self.SP['elevation'], self.SP['azimuth'])
         #self.get_sun_path_diagram()
         #self.get_PVSyst_Plot()
    
@@ -266,22 +347,6 @@ class Sun_positions_sampled:
             SP = solar_position
         #Positions when the sun elevation is below the horizon are discarded to save computation ressources    
         self.SP = SP.loc[SP['elevation']>=0]
-        
-                
-   
-            
-               
-         
-    def get_sun_vector(self, beta, gamma):
-        #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
-        #beta : sun elevation (from -90 to 90°), negative angle means it's night
-        #gamma : azimuth from north to east
-        gamma, beta = gamma*np.pi/180, beta*np.pi/180
-        self.solar_vector = np.zeros((len(gamma),3))
-        self.solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
-        self.solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
-        self.solar_vector[:,2]=np.sin(beta)
-        #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
         
     def get_sun_path_diagram(self):
         
@@ -372,48 +437,49 @@ class Ray_casting_scene:
     The class is initiate with a mesh containing the source points and a geometry
     '''
     #The class light shade scene init with a geometry (pyvista.polydata) and a mesh instance
-    def __init__(self,mesh,geometry):
+    def __init__(self, mesh, geometry, discrete_sky, diffusers=None):
         self.mesh = mesh
-        self.sourcepoints = self.mesh.get_sourcepoints()
+        self.sourcepoints = self.mesh.sourcepoints #center of each cell contained in the mesh
+
         self.geometry = geometry
         self.n_sourcepoints = self.sourcepoints.shape[0]
-        self.sources_flag_dict = mesh.get_sources_flag_dict()
-        
-        
-    def get_light_maps(self, sun_P, scheme='Reinhart', MF=1, n_small_suns=180, visualization=False, Sun_P_map_to_visualize=None):
-    
+        #self.sources_flag_dict = mesh.get_sources_flag_dict()
+        self.diffusers=diffusers
+
+        self.discrete_sky = discrete_sky
+        self.get_diffuse_weights_map()
+
+    def get_light_maps(self, sun_P, visualization=False, Sun_P_map_to_visualize=None):
+
         if type(self.geometry) == list:
             sv = np.zeros((1,3))
-            self.dir_map = np.zeros((len(self.sourcepoints),len(sun_P[:,0])))
-            self.diff_map = np.zeros((len(self.sourcepoints),len(sun_P[:,0])))
-            
+            self.dir_mask = np.zeros((len(self.sourcepoints), len(sun_P[:, 0])))
+            self.diffuse_mask = np.zeros((len(self.sourcepoints),
+                                          len(sun_P[:, 0]),
+                                          len(self.discrete_sky)))
+
             for time in range(len(sun_P[:,0])):
                 print(time)
                 geometry = self.geometry[time]
-                difff_map = self.diffuse_map(geometry,
-                                             scheme=scheme,
-                                             MF=MF,
-                                             n_small_suns=n_small_suns)
+                difff_map = self.get_diffuse_mask(geometry)
                 sv[0,:] = sun_P[time,:]
-                dirrr_map = self.direct_map(sv, geometry)
-                self.dir_map[:,time] = dirrr_map 
-                self.diff_map[:,time] = difff_map
-        else:
-            self.diff_map = self.diffuse_map(self.geometry,
-                                             scheme=scheme,
-                                             MF=MF,
-                                             n_small_suns=n_small_suns)
-            self.dir_map = self.direct_map(sun_P, self.geometry)
-            
-            
-        if visualization == True:
+                dirrr_map = self.get_direct_mask(sv, geometry)
+                self.dir_mask[:, time] = dirrr_map
+                self.diffuse_mask[:, time, :] = difff_map
+        else:  # no sun tracking
+            self.masks = self.get_mask_from_sky_dir(self.geometry)
+            self.diffuse_mask = self.masks['Diffuse']
+            self.dir_mask = self.get_direct_mask(sun_P, self.geometry)
+            if self.diffusers is not None:
+                self.compute_diffuser_map(sun_P)
+
+        if visualization is True:
             self.visualize_direct_light_map(Sun_P_map_to_visualize)
             self.visualize_diffuse_light_map(Sun_P_map_to_visualize)
         else:
             pass
-        
 
-    def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped,tol = 0.01):
+    def self_intercept(self,SourcePoints,intercept_points,id_rays_stopped, id_cells = None,tol = 0.01):
         """
         Private method, used to discard auto-intercept of rays. This can happend when a mesh has been
         done on a geometry (e.g. on a top of a PV). The ray can be intercept nearly at his starting position
@@ -428,96 +494,176 @@ class Ray_casting_scene:
         Returns:
            cleaned id_rays_stopped list where the auto-interception have been removed
         """
-        
+        if id_cells is None:id_cells=np.zeros(id_rays_stopped.shape)
         delta = np.linalg.norm(intercept_points - SourcePoints[id_rays_stopped,:], axis=1)
-        return np.unique(id_rays_stopped[delta>tol])
-        
- 
-    def diffuse_map(self, geometry, scheme='Reinhart', MF=1, n_small_suns=180):
-        """
-        Public method, compute the diffuse light at the point sources defined in the input mesh using
-         the approximation of a isotropic half sphere sky. 
-         The method uses the mesh and the geometry set at the initialization of the instance
-        
-        Parameters:
-            n_small_suns (int): number of sources consider in the sky for the diffuse light computation
-            higher number will provide a better accuracy but heavier computation
+        id_rays_filt, indices = np.unique(id_rays_stopped[delta>tol], return_index=True)
+        return id_rays_filt, id_cells[delta>tol][indices]
 
-        Returns:
-           Diffu (np.array 1 x n):  Providing a vector with the fraction ([0-1]) of diffuse light 
-                                   for each of the "n" source points defined in the mesh
+    def get_mask_from_sky_dir(self, geometry):
         """
-      
-    
+        Create the visualisation matrices for all the different element type in the geometry. One matrix is created per
+         type plus one matrix for the diffuse sky (called 'diffuse')
+
+        Parameters:
+             geometry: geometry set at the initialization of the instance
+        Returns:
+              masks[dict]: dictionary containing the  different visualisation matrices.
+              The keys correspond to the different element types in the geometry (i.e. 'Diffuse', 'PV', 'Diffuser', etc.)
+        """
+        masks = {}
+        try:
+            if geometry.number_of_cells == 0:
+                print("Geometry is empty. Returning full diffuse illumination.")
+                masks['Diffuse'] = np.ones(self.n_sourcepoints, dtype=np.float16)
+                return masks
+        except AttributeError:
+            if geometry.polydata_all_centrals().number_of_cells == 0:
+                print("Geometry is empty. Returning full diffuse illumination.")
+                masks['Diffuse'] = np.ones(self.n_sourcepoints, dtype=np.float16)
+                return masks
+        # Get direction of ray to reach the small suns and compute the sky view of each point
+        pTarget = np.column_stack([self.discrete_sky.x,
+                                   self.discrete_sky.y,
+                                   self.discrete_sky.z])
+        n_sky_elements = len(self.discrete_sky)
+
+        # Creation of the source points array (Nx3) with N = len(Source) * len(n_sky_elements)
+        SourcePoints = np.repeat(np.column_stack((
+            self.sourcepoints[:, 0],
+            self.sourcepoints[:, 1],
+            self.sourcepoints[:, 2]
+        )),
+            n_sky_elements,
+            axis=0)
+
+        # Creation of the target points array (Nx3) with N = len(Source) * len(n_sky_elements)
+        TargetPoints = np.tile(pTarget, [self.n_sourcepoints, 1])
+
+        # Computation of the ray interception of the N rays
+        # id_rays_stopped provided the index of the ray which has been intercepted
+        try:
+            intercept_points, id_rays_stopped, id_intercept_cell = (geometry
+                                                                    .polydata_all_centrals()
+                                                                    .multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False))
+            id_rays_stopped_filtred, id_intercept_cell_filtered = self.self_intercept(SourcePoints, intercept_points,
+                                                                                      id_rays_stopped,
+                                                                                      id_intercept_cell, tol=0.01)
+            hit_object = geometry.polydata_all_centrals().cell_data['Type'][id_intercept_cell_filtered]
+            ind_diffuse = np.where(hit_object != 'Diffuser')
+            masks['Diffuse'] = np.ones(self.n_sourcepoints * n_sky_elements, bool)
+            masks['Diffuse'][id_rays_stopped_filtred[ind_diffuse]] = 0
+            masks['Diffuse'] = masks['Diffuse'].reshape(self.n_sourcepoints, n_sky_elements)
+
+            # Loop over types of objects it in the ray casting stage, e.g. "Diffuser"
+            # and "PV"
+            for object_type in np.unique(hit_object):
+                ind = np.where(hit_object == object_type)
+                masks[object_type] = np.zeros(self.n_sourcepoints * n_sky_elements, bool)
+                masks[object_type][id_rays_stopped_filtred[ind]] = 1
+                masks[object_type] = masks[object_type].reshape(self.n_sourcepoints, n_sky_elements)
+
+        except AttributeError:
+            intercept_points, id_rays_stopped, id_intercept_cell = geometry.multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False)
+
+            id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints, intercept_points, id_rays_stopped, tol=0.01)
+
+            masks['Diffuse'] = np.ones(self.n_sourcepoints * n_sky_elements, bool)
+            masks['Diffuse'][id_rays_stopped_filtred] = 0
+
+            masks['Diffuse'] = masks['Diffuse'].reshape(self.n_sourcepoints, n_sky_elements)
+
+        return masks
+
+    def get_diffuse_mask(self, geometry):
+        """
+        Public method, compute the diffuse light at the point sources defined
+        in the input mesh (see this class' constructor) under a
+        discrete_sky sky model.
+
+        :param geometry: geometry set at the initialization of the instance
+        :return: diffuse_mask: diffuse map binary mask for each source point and discrete_sky element. Shape: (n_sky_patches, n_source_points)
+
+        """
+
+        # Handle empty geometry: return full diffuse light
+        try:
+            if geometry.polydata_all_centrals().number_of_cells == 0:
+                logger.info("Geometry is empty. Returning full diffuse illumination.")
+                return np.ones(self.n_sourcepoints, dtype=np.float16)
+        except AttributeError:
+            if geometry.number_of_cells == 0:
+                logger.info("Geometry is empty. Returning full diffuse illumination.")
+                return np.ones(self.n_sourcepoints, dtype=np.float16)
+
         #Get direction of ray to reach the small suns and compute the sky view of each point
-        if scheme.lower() == 'reinhart':
-            sky = ReinhartSky(MF=MF)
-            pTarget = np.column_stack([sky.reinhart_patches.x,
-                                       sky.reinhart_patches.y,
-                                       sky.reinhart_patches.z])
-            n_small_suns = len(sky.reinhart_patches)
-        elif scheme.lower() == 'fibonacci':
-            pTarget = fibonacci_half_sphere(n_small_suns)
-        else:
-            raise NotImplementedError('Unrecognized sky discretization scheme')
-        
-        
-        #Creation of the source points array (Nx3) with N = len(Source) * len(n_small_suns)
+        pTarget = np.column_stack([self.discrete_sky.x,
+                                   self.discrete_sky.y,
+                                   self.discrete_sky.z])
+        n_sky_elements = len(self.discrete_sky)
+
+        #Creation of the source points array (Nx3) with N = len(Source) * len(n_sky_elements)
         SourcePoints = np.repeat(np.column_stack((
                                                   self.sourcepoints[:,0],
                                                   self.sourcepoints[:,1],
                                                   self.sourcepoints[:,2]
                                                  )),
-                                      n_small_suns,
+                                      n_sky_elements,
                                       axis=0)
         
-        #Creation of the target points array (Nx3) with N = len(Source) * len(n_small_suns)
+        #Creation of the target points array (Nx3) with N = len(Source) * len(n_sky_elements)
         TargetPoints = np.tile(pTarget,[self.n_sourcepoints,1])
-        
+
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
-                                                         TargetPoints,
-                                                         first_point=False,
-                                                         retry=False)
-        
-        id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
-        
-        
-        #Creation of a vector providing the sourceID from which each ray has been shooted
-        
-        SourceID = np.repeat(np.linspace(0,
-                                         self.n_sourcepoints-1,
-                                         self.n_sourcepoints),
-                             n_small_suns,
-                             axis=0)
-        
-        #Touched provide a list with the sourceID of the intercept ray
-        #Then the number of time a ray from a position has been intercepted is counted
-        # and given in the counts variable
-        Touched = SourceID[id_rays_stopped_filtred]
-        unique, counts = np.unique(Touched, return_counts=True)
+        try:
+            intercept_points, id_rays_stopped, _ = (geometry
+                                                    .polydata_all_centrals()
+                                                    .multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False))
 
-        # Compute the cos(zenith angle) of all the small suns for the normalization
-        _, _zenith_angle_all = cf.get_zenith_angle_from_cart(TargetPoints)
-        _cos_zenith_angle_all = np.cos(_zenith_angle_all).reshape(self.n_sourcepoints, n_small_suns)
+        except AttributeError as e:
+            intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False)
 
-        # Compute the cos(zenith angle) of the small suns that do NOT contribute to the diffuse map
-        # (i.e. rays that were intercepted)
 
-        _mask = np.ones(_cos_zenith_angle_all.size, bool)
-        _mask[id_rays_stopped_filtred] = 0
-        _cos_zenith_angle_blocked = _cos_zenith_angle_all.copy()
-        _mask = _mask.reshape(self.n_sourcepoints, n_small_suns)
-        _cos_zenith_angle_blocked[_mask] = 0
+        id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
 
-        #Creation of the empty matrix of sky view
-        Diffu = np.ones(self.n_sourcepoints, dtype=np.float16)
+        diffuse_mask = np.ones(self.n_sourcepoints*n_sky_elements, bool)
+        diffuse_mask[id_rays_stopped_filtred] = 0
 
-        #Computation of the sky view by removing the fraction of intercepted ray at each location
-        Diffu[unique.astype("int")] = 1 - np.sum(_cos_zenith_angle_blocked[unique.astype("int"), :], axis=1)/np.sum(_cos_zenith_angle_all[unique.astype("int"), :], axis=1)
+        diffuse_mask = diffuse_mask.reshape(self.n_sourcepoints, n_sky_elements)
 
-        return Diffu
+        return diffuse_mask
+
+    def compute_diffuser_map(self, sun_P):
+        """
+        Compute the map (i.e., the normalized energy reaching the source points)  of the diffusers.
+        pTarget (nPatch, 3): the direction of the sky patches
+        _cos_elev_patch (nPatch): the cosine of the zenith angle of each patch
+        weight (nSolPos, nPatch): weight of each patch for the rays transmitted by the diffusers
+        Output:
+            diffuser_map (nSolPos, nsourcepoints): the normalized energy reaching the source points from the diffusers
+        """
+        pTarget = np.column_stack([self.discrete_sky.x,
+                                   self.discrete_sky.y,
+                                   self.discrete_sky.z])
+        _cos_elev_patch = self.discrete_sky['cos(z)']
+        weight = self.diffusers.get_light_direction(sun_P, pTarget, self.discrete_sky['Normalized surf area'], np.sqrt(np.min(self.discrete_sky['solid_angle_sr'])))
+        self.diffuser_map = np.einsum('ij, j, kj->ik', weight, _cos_elev_patch, self.masks['Diffuser'])
 
     def get_direct_map_by_flag(self,Flags):
         """
@@ -532,8 +678,8 @@ class Ray_casting_scene:
         """
 
         Index = self.mesh.get_source_points_index(Flags)
-        return self.dir_map[Index,:]
-    
+        return self.dir_mask[Index, :]
+
     def get_diffuse_map_by_flag(self,Flags):
         """
         Public method, filter the computed Diffuse_Map based on flags
@@ -548,9 +694,8 @@ class Ray_casting_scene:
         """
         
         Index = self.mesh.get_source_points_index(Flags)
-        return self.diff_map[Index]
-    
-    
+        return self.diffuse_mask[Index]
+
     def get_irradiation_map_by_flag(self,Flags):
         """
         Public method, filter the computed Diffuse_Map based on flags
@@ -567,7 +712,7 @@ class Ray_casting_scene:
         Index = self.mesh.get_source_points_index(Flags)
         return {y:self.daily_irr_spat[y][:,Index] for y in self.daily_irr_spat}
     
-    def direct_map(self, sun_P, geometry):
+    def get_direct_mask(self, sun_P, geometry):
         """
         Public method, compute the direct light at the point sources defined in the input mesh for
          the positions provide in the sun_P input.
@@ -575,12 +720,25 @@ class Ray_casting_scene:
         
         
         Parameters:
-            sun_P (int): sun positions
+            sun_P (int): sun positions  # TODO the type (int) seems wrong here
 
         Returns:
            direct_ID_t_map (np.array n x t):  Providing a matrix of boolean (0/1) for each source points (n) and each
                                            sun positions (t). If the point does not directly see the sun a value of 0 is given.
         """
+
+        # Handle empty geometry: return full direct light
+        try:
+            if geometry.polydata_all_centrals().number_of_cells == 0 :
+                n_sun_positions = sun_P.shape[0]
+                logger.info("Geometry is empty. Returning full direct illumination.")
+                return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
+        except:
+            if geometry.number_of_cells == 0:
+                n_sun_positions = sun_P.shape[0]
+                logger.info("Geometry is empty. Returning full direct illumination.")
+                return np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
+
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
         SourcePoints = np.repeat(np.column_stack((
                                                   self.sourcepoints[:,0],
@@ -595,24 +753,28 @@ class Ray_casting_scene:
         
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
-        intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(SourcePoints,
+        try:
+            intercept_points, id_rays_stopped, _ = geometry.polydata_all_centrals().multi_ray_trace(SourcePoints,
                                                          TargetPoints,
                                                          first_point=False,
                                                          retry=False)
-        
+        except AttributeError as e:
+            intercept_points, id_rays_stopped, _ = geometry.multi_ray_trace(
+                SourcePoints,
+                TargetPoints,
+                first_point=False,
+                retry=False)
+
         #Creation of the initial direct map based on the shape of sun_Positions
         direct_1D_map = np.ones(len(TargetPoints[:,0]), dtype=np.uint16)
         
         if len(intercept_points)==0:
             pass
         else:
-            id_rays_stopped_filtred = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
+            id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
             #Computation of the shade by setting at 0 the locations where rays were intercepted
             direct_1D_map[id_rays_stopped_filtred] = 0
-        
-        
-    
-        
+
         if type(self.geometry) != list:
         #Reshape of direct map to get a ID,t map
             direct_ID_t_map =  direct_1D_map.reshape(self.n_sourcepoints,
@@ -621,10 +783,10 @@ class Ray_casting_scene:
             direct_ID_t_map = direct_1D_map
     
         return direct_ID_t_map
-    
-       
-    
-    def get_daily_irradiation_map(self, SP_sampled, light_data, visualization=False, year=None, julian_day=None):
+
+    def get_daily_irradiation_map(self, SP_sampled, light_data,
+                                  visualization=False,
+                                  year=None, julian_day=None):
         """
         Public method, compute the daily diffuse direct and total irradiation for each location of the input mesh.
         The results are written as an attribute of the class instance
@@ -643,8 +805,8 @@ class Ray_casting_scene:
         self.daily_irr_spat = {}
         self.daily_dir_irr_spat = {}
         self.daily_diff_irr_spat = {}
-        
-        
+        self.daily_diffuser_irr_spat = {}
+
         #initialisation des différents dataframes utilisés
         #df1 contient les données lié aux positions du soleil utilisé pour les cartes d'ombrage
         #df2 et df3 contiennent les données météos
@@ -653,26 +815,25 @@ class Ray_casting_scene:
         dfShade = SP_sampled.tz_localize(None).reset_index()
         dfShade['doy'] = dfShade['index'].dt.dayofyear
         dfShade['RefDate'] = pd.to_datetime(dfShade['index'].dt.date)
- #       dfShade['hour'] = dfShade['index'].dt.hour
+        # dfShade['hour'] = dfShade['index'].dt.hour
         dfShade['second'] = pd.to_timedelta(dfShade['index'].dt.time.astype(str)).dt.total_seconds()
- #       dfShade['RefHour'] = dfShade['hour'] 
-        dfShade['RefSecond'] = dfShade['second'] 
+        # dfShade['RefHour'] = dfShade['hour']
+        dfShade['RefSecond'] = dfShade['second']
+        dfShade['SolPosInd'] = np.arange(len(dfShade))
 
-        for year in light_data: 
+        for year in light_data:
             
             freq_deter = len(light_data[year]['GHI'])
             if (freq_deter == 8760 or freq_deter == 8784):
-                n = 1
+                n = 1  # n is the number of samples per hour : [h^-1]
             elif (freq_deter == 35040 or freq_deter == 35136):
                 n = 4
             elif (freq_deter == 52560 or freq_deter == 52704):
                 n = 6
                 
-  
-            #dfWeather = light_data[year].tz_localize('Etc/GMT+0').reset_index()
+
             dfWeather = light_data[year].tz_localize(None).reset_index()
             dfWeather['doy'] = dfWeather['index'].dt.dayofyear
-     #       dfWeather['hour'] = dfWeather['index'].dt.hour
             dfWeather['second'] = pd.to_timedelta(dfWeather['index'].dt.time.astype(str)).dt.total_seconds()
 
             # Jointure entre les données météos et les données d'ombrage en vue de déterminée la date/index liée aux données d'ombrage
@@ -680,44 +841,202 @@ class Ray_casting_scene:
             dfWeatherMerged = pd.merge_asof(dfWeather,dfShade[['RefDate','doy']],on=['doy'],direction='nearest',suffixes=('_x','_y')).sort_values('second')
             irradianceMap_direct = {}
             irradianceMap_diffus = {}
-            
-            # Boucle sur les n jours de l'annee afin de calculer l'irradiation journaliere
+            irradianceMap_diffuser = {}
+
+            # Loop over days of year (doy) to compute daily irradiance.
             doy = dfWeatherMerged['index'].dt.dayofyear.unique()
-            doy.sort()
+            doy.sort()  # doy = [1, 2, 3, ..., 365]
+            if type(self.geometry)==list:
+                temp_list = []
             for day in doy:
                 
-                #Creation de sous dataframe comprenant les donnees du jour numero "doy"
+                #Create sub-dataframe of day number "day"'s data
                 sublight_df = dfWeatherMerged.loc[dfWeatherMerged['index'].dt.dayofyear==day,:]
                 df_subShade = dfShade.loc[sublight_df['RefDate'].unique()[0]==dfShade['RefDate']]
                 df_subShade_merged = df_subShade.join(sublight_df[['second','BHI','GHI','DHI']].set_index('second'),on='second',how='left',rsuffix='_',lsuffix="__")
                 
                 #df_subShade_merged = df_subShade.join(sublight_df[['hour','BHI','GHI','DHI']].set_index('hour'),on='hour',how='left',rsuffix='_',lsuffix="__")
-                #Jointure sur l'instant de la journee la plus proche sur base des secondes écoulées depuis le debut de la journee
-                df_subShade_merged = pd.merge_asof(df_subShade,sublight_df[['second','BHI','GHI','DHI','doy']].set_index('second'),on=['second'],direction='nearest',suffixes=('_x','_y')).sort_values('second')
+                #Join on closest instant of the day based on seconds elapsed since start of day
+                df_subShade_merged = pd.merge_asof(df_subShade,sublight_df[['second','BHI','GHI','DHI','doy', 'CIE Sky Type']].set_index('second'),on=['second'],direction='nearest',suffixes=('_x','_y')).sort_values('second')
 
-                #Calcul de l'irradiation directe et diffuse dans ce jour et injection de la donnee dans le dictionnaire lie
-                irradianceMap_direct[day] = np.sum(self.dir_map[:,list(df_subShade.index)] * df_subShade_merged['BHI'].to_numpy(),axis=1)*10**-6*60*60/n
-                if type(self.geometry) != list:
-                    irradianceMap_diffus[day] = np.sum(df_subShade_merged['DHI'].to_numpy())*self.diff_map*10**-6*60*60/n
-                else:
-                    print('day')
-                    irradianceMap_diffus[day] = np.sum(df_subShade_merged['DHI'].to_numpy()*self.diff_map[:,list(df_subShade.index)], axis=1)*10**-6*60*60/n
-            
-            #Conversion des dictionnaires en matrice numpy et ajout dans l attribut ad-hoc
-            self.daily_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()    + pd.DataFrame.from_dict(irradianceMap_direct).to_numpy() 
+                # Compute direct and diffuse irradiance on that day and store in the dict
+                irradianceMap_direct[day] = np.sum(self.dir_mask[:, list(df_subShade.index)] * df_subShade_merged['BHI'].to_numpy(), axis=1) * 10 ** -6 * 60 * 60 / n
+                if type(self.geometry) != list:  # no sun tracking
+                    irradianceMap_diffus[day] = self.compute_daily_diff_irradiation(df_subShade_merged.dropna(), n)
+                    indices = np.where(dfWeatherMerged['index'].dt.dayofyear == day)[0]
+                    if self.diffusers is not None:
+                        irradianceMap_diffuser[day] = self.compute_daily_diffuser_irradiation(df_subShade_merged.dropna(), n)
+                    else:
+                        irradianceMap_diffuser[day] = np.zeros(irradianceMap_diffus[day].shape)
+                else:  # sun tracking -> in this case, the mask changes at each time step
+                    PASE_Logger(f'{day=}', level='DEBUG')
+                    PASE_Logger(f'{df_subShade.index=}', level='DEBUG')
+                    # irradianceMap_diffus[day] = np.sum(df_subShade_merged['DHI'].to_numpy()
+                    #                                    * self.diffuse_mask[:, list(df_subShade.index)], axis=1) * 10 ** -6 * 60 * 60 / n
+
+                    # The following takes too long, as the loop advances the irradianceMap_diffus
+                    # grows and slows down execution
+                    # irradianceMap_diffus[
+                    #     day] = self.compute_daily_diff_irradiation(
+                    #     df_subShade_merged.dropna(), n)
+
+                    # The "rows_to_keep" is used to keep only rows with
+                    # non-zero DHI values in the df_subShade.index, used in
+                    # self.compute_daily_diff_irradiation() below.
+                    rows_to_keep = ~ df_subShade_merged['CIE Sky Type'].isna().values
+
+                    # TODO check this new syntax : is it more efficient ?
+                    temp_list.append(self.compute_daily_diff_irradiation(
+                        df_subShade_merged.dropna(), n, df_subShade.index[rows_to_keep]))
+
+            if type(self.geometry) == list:
+                irradianceMap_diffus = dict(zip(doy, temp_list))
+
+                if self.diffusers is None:
+                    irradianceMap_diffuser[day] = np.zeros(
+                        irradianceMap_diffus[day].shape)
+
+            # Convert dictionaries to Numpy arrays and add to the ad-hoc attribute
+            self.daily_irr_spat[year] = (pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()
+                                         + pd.DataFrame.from_dict(irradianceMap_direct).to_numpy()
+                                         + pd.DataFrame.from_dict(irradianceMap_diffuser).to_numpy())
             self.daily_dir_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_direct).to_numpy()    
             self.daily_diff_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffus).to_numpy()
-            
-            
+            self.daily_diffuser_irr_spat[year] = pd.DataFrame.from_dict(irradianceMap_diffuser).to_numpy()
+
         if visualization == True:
             self.visualize_daily_irrad_map(year, julian_day)
         else:
             pass
-            
+
+    def get_diffuse_weights_map(self):
+        """
+        Build a diffuse weighting map by :
+        - sky patch area
+        - cos(z)
+        """
+        diffuse_weights_map = self.discrete_sky['cos(z)'].values * self.discrete_sky['Normalized surf area'].values
+        self.normalized_diffuse_weights_map = diffuse_weights_map/diffuse_weights_map.sum()
+
+    def get_diffuse_shaded_weights_map(self):
+        mask = self.diffuse_mask
+        norm = np.asarray(self.normalized_diffuse_weights_map, dtype=np.float64)
+        ndim = mask.ndim
+
+        if ndim == 1:  # Obsolete - binary mask (does not account for cos(z) or sky patch area)
+            self.diffuse_shaded_weights_map = mask
+            return
+
+        if ndim == 2:
+            self.diffuse_shaded_weights_map = norm * mask
+            return
+
+        # ndim == 3, mask (Nsourcepoints, Ntimesteps, Nskypatches)
+        self.diffuse_shaded_weights_map = norm * mask
+
+    def get_shaded_radiance_contrib(self, az, el, sky_type):
+        radiance_distr = CIEStandardSky(self.discrete_sky,
+                                             az,
+                                             el,
+                                             sky_type).rel_radiance_distribution
+
+        self.get_diffuse_shaded_weights_map()
+
+        mask = self.diffuse_shaded_weights_map  # no tracking: (nSourcePoints, nSkyPatches) ; tracking: (nSourcePoints, Ntimesteps, nSkyPatches)
+        rd = radiance_distr.astype(mask.dtype, copy=False)
+
+        if mask.ndim == 1:  # No panels
+            # elementwise multiply -> same length
+            # rd: shape (Nskypatches,)
+            # mask: shape (Nsourcepoints,)
+            # goal: result shape (Nsourcepoints, Nskypatches)
+            return np.multiply(mask[:, None], rd[None, :])
+
+        if type(self.geometry) == list:  # sun tracking
+            # There should be either the case ndim == 2 or 3, but not both I think
+            if mask.ndim == 2:
+                # mask shape (Nskypatches, Nsourcepoints)
+                # goal: result shape (Nskypatches, Nsourcepoints)
+                # preallocate
+                res = np.empty_like(mask, dtype=rd.dtype)
+                # broadcast radiance over axis 1
+                res[:] = rd[:, None]
+                res *= mask
+                return res
+            elif mask.ndim == 3:
+                # mask shape (nSourcePoints, Ntimesteps, nSkyPatches)
+                res = np.empty_like(mask, dtype=rd.dtype)
+                res[:] = rd[None, None, :]
+                res *= mask
+                return res
+        else:
+            # mask shape is (Nsourcepoints, Nskypatches)
+            res = np.empty_like(mask, dtype=rd.dtype)
+            res[:] = rd[None, :]
+            res *= mask
+            # res shape is (Nsourcepoints, Nskypatches)
+            return res
+
+    def compute_daily_diff_irradiation(self, df, n_freq, indices=None):
+        """
+        Compute the daily irradiation received by each source points from the diffusers.
+        Input:
+            df (pandas DataFrame of size T): Weather data with at least 'GHI' and 'SolPosInd' columns.
+            n_freq (int) : number of samples per hours
+            indices (Mask of bool values) indices of the rows where CIE sky is a number
+        Output:
+            diff_irradiance_map_MJ_m2: daily diffuse irradiance in MJ/m²
+        """
+        dhi = df['DHI'].to_numpy()  # (T,)
+        az = df['azimuth'].to_numpy()  # (T,)
+        el = df['elevation'].to_numpy()  # (T,)
+        sky_type = df['CIE Sky Type'].to_numpy()  # (T,)
+        T = dhi.shape[0]
+
+        outs = [self.get_shaded_radiance_contrib(az[i], el[i], sky_type[i]) for i in range(T)]
+
+        # Determine if outputs are 2D or 3D per-time and stack appropriately
+        if outs[0].ndim == 2:  # No tracking
+            stacked = np.stack(outs, axis=0)   # (T, M, P) if each out is (M,P)
+            weighted = stacked * dhi[:, None, None]
+            diff_irradiance_map = weighted.sum(axis=(0,2))  # returns (nSourcePoints,) ndarray
+        elif outs[0].ndim == 3:  # ndim==3; Tracking active
+            if indices is None:
+                raise ValueError("indices required")
+            stacked = np.stack(outs, axis=0)   # (nHours, nSourcePoints, nSunPositions, Nskypatches) ; nHours is the number of hours with sunlight during the day that is being computed
+            t_idx = np.arange(T)
+            selected = stacked[t_idx, :, indices, :]
+            weighted = selected * dhi[:, None, None]
+            diff_irradiance_map = weighted.sum(axis=(0, 2))
+        elif outs[0].ndim == 1: # for unity benchmarking case (only ?)
+            stacked = np.stack(outs, axis=0)
+            weighted = stacked * dhi[:, None, None]
+            diff_irradiance_map = weighted.sum(axis=-1)
+
+        diff_irradiance_map_MJ_m2 = diff_irradiance_map * 3600.0 * 1e-6 / n_freq
+        return diff_irradiance_map_MJ_m2  # shape (nSourcePoints,)
+
+    def  compute_daily_diffuser_irradiation(self, df, n_freq):
+        """
+        Compute the daily irradiation received by each source points from the diffusers.
+        Input:
+            df (pandas DataFrame of size T): Weather data with at least 'GHI' and 'SolPosInd' columns.
+            n_freq (int) : number of samples per hours
+        Output:
+            diffuser_irradiance_map_MJ_m2: daily irradiance from the diffusers in MJ/m²
+        """
+        ghi = df['GHI'].to_numpy()  # (T,)
+        ghi = ghi[:, np.newaxis]
+        indices = df['SolPosInd']
+        outs = self.diffuser_map[indices,:]
+        weighted = ghi*outs
+        diffuser_irradiance_map = weighted.sum(axis=0)
+        diffuser_irradiance_map_MJ_m2 = diffuser_irradiance_map * 3600.0 * 1e-6 / n_freq
+        return diffuser_irradiance_map_MJ_m2
 
     def visualize_direct_light_map(self, Sun_P_map_to_visualize):
         """
-        Open the visualization of the direct light map for a specific 
+        Open the visualization of the direct light map for a specific
         sun position corresponding to the sun positions sampled vector
 
         Parameters
@@ -730,21 +1049,20 @@ class Ray_casting_scene:
         None.
 
         """
-        
+
         if type(self.geometry) == list:
             geo = self.geometry[Sun_P_map_to_visualize]
         else:
             geo = self.geometry
-        
-        open_pyvista_3D_visualization(self.sourcepoints[:,:-1], 
-                                      self.dir_map[:,Sun_P_map_to_visualize], 
+
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
+                                      self.dir_mask[:, Sun_P_map_to_visualize],
                                       geo,
                                       "Direct map [-]")
-        
 
-    def visualize_diffuse_light_map(self, Sun_P_map_to_visualize=None):
+    def visualize_diffuse_light_map(self, Sun_P_map_to_visualize):
         """
-        Open the visualization of the diffuse light map for a specific 
+        Open the visualization of the diffuse light map for a specific
         tilt of the PV modules if there is a rotation axis
         (corresponding to a sun position from the sun positions sampled vector)
 
@@ -758,23 +1076,95 @@ class Ray_casting_scene:
         None.
 
         """
-        
+
         if type(self.geometry) == list:
             geo = self.geometry[Sun_P_map_to_visualize]
-            diff_map = self.diff_map[:,Sun_P_map_to_visualize]
+            diffuse_shaded_weights_map = self.diffuse_shaded_weights_map[:,
+                                         Sun_P_map_to_visualize, :]
         else:
             geo = self.geometry
-            diff_map = self.diff_map
-        
-        open_pyvista_3D_visualization(self.sourcepoints[:,:-1], 
-                                      np.array(diff_map, dtype=np.float32), 
-                                      geo,
-                                      "Sky visibility map [-]")
+            diffuse_shaded_weights_map = self.diffuse_shaded_weights_map
 
-            
+        try:
+            map_to_display = np.array(diffuse_shaded_weights_map.sum(axis=1))
+        except np.exceptions.AxisError as e:
+            print(f'{e} ; \n Other shape ...')
+            map_to_display = np.array(diffuse_shaded_weights_map)
+
+
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
+                                      np.array(map_to_display, dtype=np.float32),
+                                      geo,
+                                      "Unweighted shaded diffuse map [-]")
+
+    def visualize_diffuser_light_map(self, Sun_P_map_to_visualize, sun_P):
+        """
+        Open the visualization of the diffuser light map for a specific
+        tilt of the PV modules if there is a rotation axis
+        (corresponding to a sun position from the sun positions sampled vector)
+
+        Parameters
+        ----------
+        Sun_P_map_to_visualize : integer
+            id of the sun position in the sun positions sampled vector
+
+        Sun_P : array Nx3
+            sun positions sampled vector
+
+        Returns
+        -------
+        None.
+
+        """
+        labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)', ylabel='Y (NORTH)')
+
+        plotter = pyV.Plotter()
+
+        plotter.add_mesh(self.geometry.polydata_by_property(property_dict={'Type':['PV']}), color='black')
+        plotter.add_mesh(self.geometry.polydata_by_property(property_dict={'Type':['Diffuser']}), color='skyblue')
+        ground = np.array([[-200, 200, 0],
+                           [200, 200, 0],
+                           [-200, -200, 0],
+                           [200, -200, 0]])
+
+        ground_m = np.hstack([[3, 0, 1, 2],
+                              [3, 1, 2, 3], ])
+
+        grnd = pyV.PolyData(ground, ground_m)
+
+        plotter.add_mesh(grnd, color='green')
+
+        plotter.add_axes(**labels)
+
+        plotter.add_mesh(self.sourcepoints[:, :],
+                         scalars=np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32),
+                         point_size=10,
+                         lighting=False,
+                         show_edges=False,
+                         scalar_bar_args={"title": 'Diffuser map'},
+                         clim=[np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32).min(),
+                               np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32).max()])
+        D = self.geometry.polydata_by_property(property_dict={'Type':['Diffuser']}).center_of_mass()
+        plotter.add_lines(np.array([D, D+sun_P[Sun_P_map_to_visualize]]), color='yellow', width=1)
+        plotter.add_lines(np.array([D, D + self.diffusers.normal]), color='black',width=1)
+        plotter.add_lines(np.array([D, D + self.diffusers.len_vector]), color = 'black', width = 1)
+        dr = 3*np.array([self.diffusers.x_sr[Sun_P_map_to_visualize, :],
+                       self.diffusers.y_sr[Sun_P_map_to_visualize, :],
+                       self.diffusers.z_sr[Sun_P_map_to_visualize, :],
+                       ])
+        dr = dr.T
+        N = dr.shape[0]
+        points = np.vstack([np.repeat(D[None, :], N, axis=0), D - dr])
+
+        lines = np.hstack([[2, i, i + N] for i in range(N)])
+        poly = pyV.PolyData(points, lines=lines)
+
+        plotter.add_mesh(poly, color='red', line_width=1)
+        plotter.show()
+
     def visualize_daily_irrad_map(self, year, julian_day):
         """
-        Open the visualization of the daily irradiation map 
+        Open the visualization of the daily irradiation map
         for a specific year and julian day
 
         Parameters
@@ -789,14 +1179,17 @@ class Ray_casting_scene:
         None.
 
         """
-      
+
         if type(self.geometry) == list:
             geo = self.geometry[0]
         else:
             geo = self.geometry
-        
-        open_pyvista_3D_visualization(self.sourcepoints[:,:-1], 
-                                      self.daily_irr_spat[str(year)][:,julian_day], 
+
+        open_pyvista_3D_visualization(self.sourcepoints[:, :],
+                                      self.daily_irr_spat[str(year)][:,
+                                      julian_day],
                                       geo,
-                                      "Total irradiation reaching the ground on the julian day "+str(julian_day)+" of "+ str(year) +" [MJ/m²]")
+                                      "Total irradiation reaching the ground on the julian day " + str(
+                                          julian_day) + " of " + str(
+                                          year) + " [MJ/m²]")
 

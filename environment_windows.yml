@@ -13,9 +13,11 @@ dependencies:
   - rtree
   - windrose
   - pvlib
-  - pyvista
+  - pyvista==0.44.1
   - pyyaml
   - seaborn
   - yaml
+  - pytest
+  - pytest-cov
   - xmltodict
   - unidecode

@@ -5,13 +5,15 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
+from datetime import datetime
+import numpy as np
+
 from pase.CROPS.SIMPLE.run_simple import run_independant_years_of_crop
 from pase.CROPS.STICS.JAVASTICS.run_java_stics import run_independant_usms
 from pase.CROPS.STICS.PYSTICS.run_pystics_from_PASE import run_independant_usms_in_pystics
 from pase.CROPS.GRASSIM.run_grassim import run_grassim
 from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
-from datetime import datetime
-import numpy as np
+
 
 
 
@@ -30,9 +32,9 @@ def run_crop_simu(config, option_2D, WD, daily_irr, scenario_P):
         results = Crop_plot.nyears_data      
         
     if config['CropModel'] == 'pystics':
-        Crop_plot = run_independant_usms_in_pystics(config, WD, daily_irr, scenario_P)  
+        Crop_plot = run_independant_usms_in_pystics(config, WD, daily_irr, scenario_P)
         results = Crop_plot.nyears_data
-        
+
     if config['CropModel'] == 'grassim':
         Soil_plot, Crop_plot, Management_plot = run_grassim(config, WD, daily_irr, scenario_P['Latitude'], scenario_P['Altitude'])
         results = merge_results([Soil_plot, Crop_plot, Management_plot])
@@ -93,11 +95,11 @@ def visualize_map_of_a_variable(config, results, variable, scene_3D, meshes, yea
         
     if config['CropModel'] == 'stics':
         data = results[str(year)][variable]
-        
+
     if config['CropModel'] == 'pystics':
         data = results[str(year)][variable]
-    
-    open_pyvista_3D_visualization(meshes.sourcepoints[:,:-1], 
+
+    open_pyvista_3D_visualization(meshes.sourcepoints[:,:],
                                   data, 
                                   geo,
                                   variable+' map '+ config['CropModel']+' '+ str(year)+'-'+MM_DD+' ['+unit+']')
