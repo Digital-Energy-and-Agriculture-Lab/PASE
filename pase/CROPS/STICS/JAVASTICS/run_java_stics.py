@@ -5,7 +5,7 @@
 #Author : Roxane Bruhwyler (roxane.bruhwyler@uliege.be or roxane.bruhwyler@hotmail.com)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
-=import os
+import os
 import subprocess
 import platform
 import pandas as pd
