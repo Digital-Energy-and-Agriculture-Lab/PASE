@@ -125,6 +125,17 @@ class Sun_positions:
         return solar_hour_angle
     
     
+# Maps the 6 CIE sky types used in PASE to their human-readable category label.
+# Types 1, 4, 7, 11, 13 correspond to the 5 zones of the Igawa (2014) Kc/Cle diagram.
+# Type 5 (isotropic uniform sky) and any value not in the diagram → "undefined".
+SKY_CATEGORY_LABELS = {
+    1:  'overcast',
+    4:  'intermediate overcast',
+    7:  'intermediate',
+    11: 'intermediate clear',
+    13: 'clear',
+}
+
 class Light:
     def __init__(self, WD, SP, sky_type_source='uniform', ghi_multiplier=1):
 
@@ -166,7 +177,10 @@ class Light:
                                    'CIE Sky Type': cie_sky_type},
                                   index=WD[year].index)
                 n_days = len(WD[year].index.normalize().unique())
-                self.daily_sky_type[year] = pd.Series(5, index=range(n_days))
+                self.daily_sky_type[year] = pd.DataFrame({
+                    'CIE Sky Type': pd.Series(5, index=range(n_days)),
+                    'Sky Category': pd.Series('undefined', index=range(n_days)),
+                })
             else:
                 # Compute from weather data
                 # Extraterrestrial Normal Irradiance (used for the Kc and Cle below)
@@ -305,8 +319,8 @@ class Light:
 
     def get_daily_sky_type(self, sky_type_series):
         """
-        Computation of  one representative CIE sky type per calendar/Julian day from the
-        'CIE Sky Type' values produced by get_sky_type
+        Compute one representative CIE sky type and sky category per calendar day
+        from the 'CIE Sky Type' values produced by get_sky_type().
 
         For each day:
           - NaN values (nighttime) are ignored.
@@ -314,7 +328,10 @@ class Light:
           - Decimal 0.1-0.4 rounds down; 0.6-0.9 rounds up.
           - At 0.5, the more frequent of the two adjacent integers decides direction.
 
-          Returns a Series of length 365 or 366, indexed by date.
+        Returns a DataFrame of length 365 or 366, indexed by date, with columns:
+          - 'CIE Sky Type' : integer sky type ID
+          - 'Sky Category'  : human-readable label (overcast, intermediate overcast,
+                              intermediate, intermediate clear, clear, or undefined)
         """
         def pick_day(group):
             valid = group.dropna()
@@ -335,7 +352,16 @@ class Light:
                 upper_count = (valid == upper).sum()
                 return lower if lower_count >= upper_count else upper
 
-        return sky_type_series.groupby(sky_type_series.index.date).apply(pick_day)
+        daily_type = sky_type_series.groupby(sky_type_series.index.date).apply(pick_day)
+
+        daily_category = daily_type.map(
+            lambda t: SKY_CATEGORY_LABELS.get(t, 'undefined') if not pd.isna(t) else 'undefined'
+        )
+
+        return pd.DataFrame({
+            'CIE Sky Type': daily_type,
+            'Sky Category': daily_category,
+        })
 
 class Sun_positions_sampled:
     
