@@ -129,6 +129,7 @@ class Light:
     def __init__(self, WD, SP, sky_type_source='uniform', ghi_multiplier=1):
 
         self.data = {}
+        self.daily_sky_type = {}
         sky_type_lut_path = os.path.join('INPUTS', 'Igawa-5_sky_types_lut.csv')
         self.sky_type_lut = pd.read_csv(sky_type_lut_path, sep=';')
 
@@ -164,6 +165,8 @@ class Light:
                                    'f': f.tolist(),
                                    'CIE Sky Type': cie_sky_type},
                                   index=WD[year].index)
+                n_days = len(WD[year].index.normalize().unique())
+                self.daily_sky_type[year] = pd.Series(5, index=range(n_days))
             else:
                 # Compute from weather data
                 # Extraterrestrial Normal Irradiance (used for the Kc and Cle below)
@@ -186,6 +189,9 @@ class Light:
                                    'Cle': Cle.tolist(),
                                    'CIE Sky Type': cie_sky_type},
                                   index=WD[year].index)
+                self.daily_sky_type[year] = self.get_daily_sky_type(
+                    pd.Series(cie_sky_type, index=WD[year].index, dtype=float)
+                )
             
             self.data[year] = df
                     
@@ -297,7 +303,39 @@ class Light:
 
         return temp_list
 
-# TODO: Add a daily average-rounding to the nearest integer methodology for the skytype.
+    def get_daily_sky_type(self, sky_type_series):
+        """
+        Computation of  one representative CIE sky type per calendar/Julian day from the
+        'CIE Sky Type' values produced by get_sky_type
+
+        For each day:
+          - NaN values (nighttime) are ignored.
+          - The mean of the daytime values is computed.
+          - Decimal 0.1-0.4 rounds down; 0.6-0.9 rounds up.
+          - At 0.5, the more frequent of the two adjacent integers decides direction.
+
+          Returns a Series of length 365 or 366, indexed by date.
+        """
+        def pick_day(group):
+            valid = group.dropna()
+            if valid.empty:
+                return np.nan
+
+            mean_val = valid.mean()
+            decimal = mean_val % 1
+
+            if decimal <= 0.4:
+                return int(np.floor(mean_val))
+            elif decimal >= 0.6:
+                return int(np.ceil(mean_val))
+            else:
+                lower = int(np.floor(mean_val))
+                upper = int(np.ceil(mean_val))
+                lower_count = (valid == lower).sum()
+                upper_count = (valid == upper).sum()
+                return lower if lower_count >= upper_count else upper
+
+        return sky_type_series.groupby(sky_type_series.index.date).apply(pick_day)
 
 class Sun_positions_sampled:
     
