@@ -33,7 +33,7 @@ Loc_1 = YAML_Inputs_provider(file='Siguesol_loc.yaml', subpath='SCENARIOS').inpu
 AV_1 = YAML_Inputs_provider(file='AV_siguesol.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
 Structure = dict()  # no structure here yet
-crop_config = YAML_Inputs_provider(file='grassim_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
+crop_config = YAML_Inputs_provider(file='pystics_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
 
 # Using Sky Types characterization while simulating an AV central with solar
 # tracking is very computer intensive ; InputChecker asks the user to reconsider
@@ -174,7 +174,7 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP,
 
 L.visualize_direct_light_map(1)
 L.visualize_diffuse_light_map(10)
-L.visualize_daily_irrad_map(Loc_1['SimulationStartingYear'], 150)
+L.visualize_daily_irrad_map(2005, 150)
 
 #DiffuseGround = L.Get_diffuse_map_byFlag(Flags=["wheat","corn"])
 #DirectGround = L.Get_direct_map_byFlag(Flags=["crop"])
@@ -282,13 +282,18 @@ agro_results = run_crop_simu(crop_config, option_2D, WD.nyears_daily_data,
                                      Loc_1)
 
 
-if crop_config['CropModel'] == ('simple' or 'stics'):
+if crop_config['CropModel'] == 'simple':
     visualize_map_of_a_variable(crop_config, agro_results, 'Fresh_yield',
                                 PV_1_3Dconfig.PV_central_PD, M, Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='g/m²')
     save_mean_to_csv('mean_data.csv', agro_results, ['Dry_yield', 'Biomass'])
-else:
+elif crop_config['CropModel'] == 'grassim':
     visualize_map_of_a_variable(crop_config, agro_results,'BM',
                                 PV_1_3Dconfig.PV_central_PD, M, Loc_1['SimulationStartingYear'],
                                 MM_DD='10-10', unit='t/ha')
     save_mean_to_csv('mean_data.csv', agro_results, ['BM'])
+
+else:
+    visualize_map_of_a_variable(crop_config, agro_results,'Dry_yield',
+                                PV_1_3Dconfig.PV_central_PD, M, 2006,
+                                MM_DD='Harvest_day', unit='t/ha')

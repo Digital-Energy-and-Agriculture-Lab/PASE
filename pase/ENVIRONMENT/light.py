@@ -26,6 +26,19 @@ from pase.ENVIRONMENT.shading import Horizon
 
 logger = logging.getLogger(__name__)
 
+def get_sun_vector(beta, gamma):
+    #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
+    #beta : sun elevation (from -90 to 90°), negative angle means it's night
+    #gamma : azimuth from north to east
+    gamma, beta = gamma*np.pi/180, beta*np.pi/180
+    solar_vector = np.zeros((len(gamma),3))
+    solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
+    solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
+    solar_vector[:,2]=np.sin(beta)
+    #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
+    return solar_vector
+
+
 class Sun_positions:
     
     def __init__(self, lat, long, freq_deter, TZ):
@@ -57,7 +70,7 @@ class Sun_positions:
                                                   self.lat, 
                                                   self.long)
         
-        self.sun_vect_leapY = self.get_sun_vector(self.sp_leapY['elevation'], 
+        self.sun_vect_leapY = get_sun_vector(self.sp_leapY['elevation'],
                                                   self.sp_leapY['azimuth'])
         
         self.sp_leapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_leap_year,
@@ -71,24 +84,11 @@ class Sun_positions:
                                                      self.lat, 
                                                      self.long)
         
-        self.sun_vect_nonleapY = self.get_sun_vector(self.sp_nonleapY['elevation'], 
+        self.sun_vect_nonleapY = get_sun_vector(self.sp_nonleapY['elevation'],
                                                      self.sp_nonleapY['azimuth'])
         
         self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_com_year,
                                                                   n)
-        
-        
-    def get_sun_vector(self, beta, gamma):
-        #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
-        #beta : sun elevation (from -90 to 90°), negative angle means it's night
-        #gamma : azimuth from north to east
-        gamma, beta = gamma*np.pi/180, beta*np.pi/180
-        solar_vector = np.zeros((len(gamma),3))
-        solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
-        solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
-        solar_vector[:,2]=np.sin(beta)
-        #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
-        return solar_vector
         
     def get_top_of_atm_radiation(self, index, n):
         """
@@ -128,7 +128,7 @@ class Sun_positions:
     
 class Light:
     def __init__(self, WD, SP, sky_type_source='uniform', ghi_multiplier=1):
-        
+
         self.data = {}
         sky_type_lut_path = os.path.join('INPUTS', 'Igawa-5_sky_types_lut.csv')
         self.sky_type_lut = pd.read_csv(sky_type_lut_path, sep=';')
@@ -145,7 +145,7 @@ class Light:
                 rad_top_atm = SP.sp_nonleapY['Top_atm_radiation'].to_numpy()
                 apparent_sun_zenith = SP.sp_nonleapY['apparent_zenith'].to_numpy()
                 sun_elevation = SP.sp_nonleapY['elevation'].to_numpy()
-            
+
             n_timesteps = len(sun_elevation)
             kt = self.get_clearness_sky_index(rad_top_atm, GHI)    
             DHI = self.get_diffuse_horizontal_radiation(kt, GHI)
@@ -307,7 +307,7 @@ class Sun_positions_sampled:
         self.long = long
         self.loc_name = loc_name
         self.get_solar_positions_sampled(lat, long, precision_lvl, freq_deter, TZ)
-        self.get_sun_vector(self.SP['elevation'], self.SP['azimuth'])
+        self.solar_vector = get_sun_vector(self.SP['elevation'], self.SP['azimuth'])
         #self.get_sun_path_diagram()
         #self.get_PVSyst_Plot()
    
@@ -348,22 +348,6 @@ class Sun_positions_sampled:
             SP = solar_position
         #Positions when the sun elevation is below the horizon are discarded to save computation ressources    
         self.SP = SP.loc[SP['elevation']>=0]
-        
-                
-   
-            
-               
-         
-    def get_sun_vector(self, beta, gamma):
-        #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
-        #beta : sun elevation (from -90 to 90°), negative angle means it's night
-        #gamma : azimuth from north to east
-        gamma, beta = gamma*np.pi/180, beta*np.pi/180
-        self.solar_vector = np.zeros((len(gamma),3))
-        self.solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
-        self.solar_vector[:,1]=np.cos(gamma)*np.cos(beta)
-        self.solar_vector[:,2]=np.sin(beta)
-        #SOURCE : Kevin Anderson and Mark Mikofski, Slope-Aware Backtracking for Single-Axis Trackers, NREL
         
     def get_sun_path_diagram(self):
         
@@ -475,7 +459,7 @@ class Ray_casting_scene:
             self.diffuse_mask = np.zeros((len(self.sourcepoints),
                                           len(sun_P[:, 0]),
                                           len(self.discrete_sky)))
-            
+
             for time in range(len(sun_P[:,0])):
                 print(time)
                 geometry = self.geometry[time]
@@ -651,7 +635,7 @@ class Ray_casting_scene:
         
         #Creation of the target points array (Nx3) with N = len(Source) * len(n_sky_elements)
         TargetPoints = np.tile(pTarget,[self.n_sourcepoints,1])
-        
+
         #Computation of the ray interception of the N rays
         #id_rays_stopped provided the index of the ray which has been intercepted
         try:
@@ -670,7 +654,7 @@ class Ray_casting_scene:
                 first_point=False,
                 retry=False)
 
-        
+
         id_rays_stopped_filtred, _ = self.self_intercept(SourcePoints,intercept_points,id_rays_stopped,tol = 0.01)
 
         diffuse_mask = np.ones(self.n_sourcepoints*n_sky_elements, bool)
@@ -716,7 +700,7 @@ class Ray_casting_scene:
 
         Index = self.mesh.get_source_points_index(Flags)
         return self.dir_mask[Index, :]
-    
+
     def get_diffuse_map_by_flag(self,Flags):
         """
         Public method, filter the computed Diffuse_Map based on flags
@@ -878,7 +862,7 @@ class Ray_casting_scene:
         self.daily_dir_irr_spat = {}
         self.daily_diff_irr_spat = {}
         self.daily_diffuser_irr_spat = {}
-        
+
         #initialisation des différents dataframes utilisés
         #df1 contient les données lié aux positions du soleil utilisé pour les cartes d'ombrage
         #df2 et df3 contiennent les données météos
@@ -995,8 +979,8 @@ class Ray_casting_scene:
         norm = np.asarray(self.normalized_diffuse_weights_map, dtype=np.float64)
         ndim = mask.ndim
 
-        if ndim == 1:  # Obsolete - binary mask (does not account for cos(z) or sky patch area)
-            self.diffuse_shaded_weights_map = mask
+        if ndim == 1:
+            self.diffuse_shaded_weights_map = norm[np.newaxis, :] * mask[:, np.newaxis]
             return
 
         if ndim == 2:
@@ -1043,15 +1027,18 @@ class Ray_casting_scene:
                 return res
         else:
             # mask shape is (Nsourcepoints, Nskypatches)
+            norm = np.asarray(self.normalized_diffuse_weights_map, dtype=rd.dtype)
+            sky_integral = (rd * norm).sum()  # sky_integral used to normalize the resulting shaded radiance distribution
             res = np.empty_like(mask, dtype=rd.dtype)
             res[:] = rd[None, :]
             res *= mask
+            res /= sky_integral  # normalize the resulting radiance distribution
             # res shape is (Nsourcepoints, Nskypatches)
             return res
 
     def compute_daily_diff_irradiation(self, df, n_freq, indices=None):
         """
-        Compute the daily irradiation received by each source points from the diffusers.
+        Compute the daily irradiation received by each source points from the sky (diffuse irradiation).
         Input:
             df (pandas DataFrame of size T): Weather data with at least 'GHI' and 'SolPosInd' columns.
             n_freq (int) : number of samples per hours

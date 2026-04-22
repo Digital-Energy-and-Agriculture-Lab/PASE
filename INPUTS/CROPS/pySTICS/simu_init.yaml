@@ -1,7 +1,11 @@
 PlantFile: 
    Value: wheat_plt
    Type: string
-   Definition: Name of the xml file of STICS with crop and variety parameters
+   Definition: Name of the plt.xml file of STICS with crop and variety parameters
+Variety: 
+   Value: Talent
+   Type: string
+   Definition: Name of the variety sown that is available in the plt.xml JavaStics file
 BeginDate:
    Value: 240
    Type: integer

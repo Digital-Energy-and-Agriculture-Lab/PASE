@@ -39,13 +39,13 @@ DailyWeatherFileName:
    Type: string
    Definition: Name of the daily weather data csv file with precipitation and vapour pressure (pay attention to the format it should have) if WeatherDataOption is 1 (PVGis used)
 SimulationStartingYear:
-   Value: 2015
+   Value: 2005
    Type: integer
    Limit: [1900, SimulationEndingYear]
    Unit: dimensionless [-]
    Definition: Starting year of the simulation, PvGis has data from 2005 to 2016 comprise
 SimulationEndingYear:
-   Value: 2015
+   Value: 2006
    Type: integer
    Limit: [SimulationStartingYear, 2023]
    Unit: dimensionless [-]
