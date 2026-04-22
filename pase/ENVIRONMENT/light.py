@@ -204,7 +204,10 @@ class Light:
                                    'CIE Sky Type': cie_sky_type},
                                   index=WD[year].index)
                 self.daily_sky_type[year] = self.get_daily_sky_type(
-                    pd.Series(cie_sky_type, index=WD[year].index, dtype=float)
+                    pd.DataFrame({
+                        'CIE Sky Type': pd.Series(cie_sky_type, index=WD[year].index, dtype=float),
+                        'GHI': GHI,
+                    })
                 )
             
             self.data[year] = df
@@ -317,42 +320,42 @@ class Light:
 
         return temp_list
 
-    def get_daily_sky_type(self, sky_type_series):
+    def get_daily_sky_type(self, df_sky_ghi):
         """
-        Compute one representative CIE sky type and sky category per calendar day
-        from the 'CIE Sky Type' values produced by get_sky_type().
+        For each calendar day, pick the most frequent CIE sky type (mode).
+        If two types appear equally often, the one with the higher total GHI wins.
+        If still tied, the lower sky type number is kept (more conservative choice).
+        Nighttime rows (NaN sky type) are ignored throughout.
 
-        For each day:
-          - NaN values (nighttime) are ignored.
-          - The mean of the daytime values is computed.
-          - Decimal 0.1-0.4 rounds down; 0.6-0.9 rounds up.
-          - At 0.5, the more frequent of the two adjacent integers decides direction.
-
-        Returns a DataFrame of length 365 or 366, indexed by date, with columns:
-          - 'CIE Sky Type' : integer sky type ID
-          - 'Sky Category'  : human-readable label (overcast, intermediate overcast,
-                              intermediate, intermediate clear, clear, or undefined)
+        Input : DataFrame with columns 'CIE Sky Type' and 'GHI', hourly DatetimeIndex.
+        Output: DataFrame indexed by date (365 or 366 rows) with columns
+                'CIE Sky Type' (int) and 'Sky Category' (str).
         """
-        def pick_day(group):
-            valid = group.dropna()
-            if valid.empty:
+        def pick_day(day_group):
+            # Keep only daytime hours (nighttime sky type is NaN)
+            daytime = day_group.dropna(subset=['CIE Sky Type'])
+            if daytime.empty:
                 return np.nan
 
-            mean_val = valid.mean()
-            decimal = mean_val % 1
+            # Step 1 — count how many hours each sky type appears
+            hour_counts = daytime['CIE Sky Type'].value_counts()
+            top_count = hour_counts.iloc[0]
+            candidates = hour_counts[hour_counts == top_count].index.tolist()
 
-            if decimal <= 0.4:
-                return int(np.floor(mean_val))
-            elif decimal >= 0.6:
-                return int(np.ceil(mean_val))
-            else:
-                lower = int(np.floor(mean_val))
-                upper = int(np.ceil(mean_val))
-                lower_count = (valid == lower).sum()
-                upper_count = (valid == upper).sum()
-                return lower if lower_count >= upper_count else upper
+            # Step 2 — if one type appears more than all others, that's the answer
+            if len(candidates) == 1:
+                return int(candidates[0])
 
-        daily_type = sky_type_series.groupby(sky_type_series.index.date).apply(pick_day)
+            # Step 3 — tie: sum GHI for each tied type and pick the highest
+            ghi_sums = daytime.groupby('CIE Sky Type')['GHI'].sum()
+            candidates_ghi = ghi_sums[candidates].sort_values(ascending=False)
+            top_ghi = candidates_ghi.iloc[0]
+            ghi_candidates = candidates_ghi[candidates_ghi == top_ghi].index.tolist()
+
+            # Step 4 — if GHI is also tied, take the lower sky type number
+            return int(min(ghi_candidates))
+
+        daily_type = df_sky_ghi.groupby(df_sky_ghi.index.date).apply(pick_day)
 
         daily_category = daily_type.map(
             lambda t: SKY_CATEGORY_LABELS.get(t, 'undefined') if not pd.isna(t) else 'undefined'
