@@ -89,7 +89,7 @@ class Sun_positions:
         self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(
             index_com_year)
         
-    def get_top_of_atm_radiation(self, index, n):
+    def get_top_of_atm_radiation(self, index):
         """
         Compute extraterrestrial (i.e. at the top of the atmosphere) radiation on a
         horizontal surface.
