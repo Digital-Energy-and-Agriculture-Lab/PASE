@@ -582,6 +582,12 @@ class Ray_casting_scene:
 
             masks['Diffuse'] = masks['Diffuse'].reshape(self.n_sourcepoints, n_sky_elements)
 
+        if self.horizon is not None and masks['Diffuse'].ndim == 2:
+            sky_az = np.asarray(self.discrete_sky.az)
+            sky_el = np.asarray(self.discrete_sky.el)
+            horizon_vis = np.array(self.horizon.get_horizon_mask(sky_az, sky_el))
+            masks['Diffuse'][:] = masks['Diffuse'] & horizon_vis[np.newaxis, :]
+
         return masks
 
     def get_diffuse_mask(self, geometry):
@@ -606,11 +612,9 @@ class Ray_casting_scene:
                 diffuse_mask = np.ones(self.n_sourcepoints, dtype=np.float16)
 
             if self.horizon is not None:
-                 sky_az = self.discrete_sky.az
-                 sky_el = self.discrete_sky.el
-                 
-                 horizon_vis = self.horizon.get_horizon_mask(sky_az, sky_el)
-            
+                 sky_az = np.asarray(self.discrete_sky.az)
+                 sky_el = np.asarray(self.discrete_sky.el)
+                 horizon_vis = np.array(self.horizon.get_horizon_mask(sky_az, sky_el))
                  n_sky_elements = len(self.discrete_sky)
                  full_mask = np.ones((self.n_sourcepoints, n_sky_elements), dtype=bool)
                  full_mask[:] = horizon_vis[np.newaxis, :]
