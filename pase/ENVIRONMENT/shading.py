@@ -128,7 +128,7 @@ class Horizon:
         azimuths = np.linspace(0, FULL_CIRCLE_DEG, FULL_CIRCLE_DEG + 1)  # 1 degree resolution
         elevations = self.interp_func(azimuths)
         
-        bottom_el = -10.0
+        bottom_el = 0.0
         
         az_rad = np.radians(azimuths)
         el_rad = np.radians(elevations)
