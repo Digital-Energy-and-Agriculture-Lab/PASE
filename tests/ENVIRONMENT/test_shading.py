@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import pandas as pd
 import pytest
+import pyvista as pyV
 from scipy.interpolate import interp1d
 
 from pase.ENVIRONMENT.shading import Horizon
@@ -135,3 +137,112 @@ def test_direct_mask_horizon_no_effect():
     mask_with = L_with.get_direct_mask(_SUN, cfg)
     mask_without = L_without.get_direct_mask(_SUN, cfg)
     assert np.array_equal(mask_with, mask_without)
+
+
+# ─────────────────────────────────────────────
+# Diffuse irradiance — analytical horizon tests
+# ─────────────────────────────────────────────
+#
+# For a uniform-radiance sky, diffuse irradiance on a horizontal surface is:
+#
+#   E = ∫ L·cos(θ)·dΩ  over the visible sky
+#     = πL · cos²(el₀)
+#
+# where el₀ is the flat horizon elevation threshold (el > el₀ → visible).
+# The fraction of irradiance remaining is therefore cos²(el₀).
+#
+# The discrete Reinhart sky weight w_j = cos(z_j) × A_normalized_j
+# approximates this: Σ_{j: el_j > el₀} w_j / Σ_all w_j ≈ cos²(el₀).
+
+
+def _sky_horizon_fraction(patches, horizon):
+    """Fraction of normalized diffuse weight visible through horizon."""
+    visible = horizon.get_horizon_mask(patches['az'].values, patches['el'].values)
+    w = patches['cos(z)'].values * patches['Normalized surf area'].values
+    return float(w[visible].sum() / w.sum())
+
+
+def test_horizon_diffuse_fraction_lower_half_sky_area():
+    """Horizon at 30° blocks the lower half of sky by surface area → fraction ≈ cos²(30°) = 0.75.
+
+    The sky hemisphere surface area up to elevation el₀ is 2π·sin(el₀).
+    For el₀ = 30°, sin(30°) = 0.5, so exactly half the surface is hidden.
+    """
+    sky = ReinhartSky(MF=4)
+    h = _make_horizon(flat_elevation=30.0)
+    fraction = _sky_horizon_fraction(sky.reinhart_patches, h)
+    assert abs(fraction - 0.75) < 0.03
+
+
+@pytest.mark.parametrize('el_threshold', [30.0, 45.0, 60.0])
+def test_horizon_diffuse_fraction_matches_cos2_analytical(el_threshold):
+    """Fraction of diffuse weight visible through flat horizon at el° ≈ cos²(el°).
+
+    Analytical derivation:
+        E_visible / E_full
+          = ∫_{el>el₀} sin(el)·cos(el) dΩ / ∫_hemisphere sin(el)·cos(el) dΩ
+          = cos²(el₀)
+
+    Tolerance of 0.03 accounts for Reinhart MF=4 discretization error
+    (~alpha × cos(el)·sin(el) × π/180 ≈ 0.028 at worst).
+    """
+    sky = ReinhartSky(MF=4)
+    h = _make_horizon(flat_elevation=el_threshold)
+    fraction = _sky_horizon_fraction(sky.reinhart_patches, h)
+    expected = np.cos(np.radians(el_threshold)) ** 2
+    assert abs(fraction - expected) < 0.03, (
+        f"el={el_threshold}°: got {fraction:.4f}, expected {expected:.4f}"
+    )
+
+
+def test_horizon_below_all_patches_full_sky():
+    """Horizon below all patches (-1°) → all patches visible → fraction = 1.0."""
+    sky = ReinhartSky(MF=4)
+    h = _make_horizon(flat_elevation=-1.0)
+    fraction = _sky_horizon_fraction(sky.reinhart_patches, h)
+    assert abs(fraction - 1.0) < 1e-10
+
+
+def test_horizon_89deg_nearly_all_blocked():
+    """Horizon at 89° blocks almost all sky → fraction ≈ cos²(89°) ≈ 0.0003."""
+    sky = ReinhartSky(MF=4)
+    h = _make_horizon(flat_elevation=89.0)
+    fraction = _sky_horizon_fraction(sky.reinhart_patches, h)
+    assert fraction < 0.005
+
+
+def test_horizon_diffuse_irradiance_cos2_fraction_via_scene():
+    """Horizon at 45° reduces DHI to cos²(45°) = 50% through the full pipeline.
+
+    Uses an empty PolyData geometry so only the horizon blocks sky patches
+    (no panel geometry → 2D mask path via the AttributeError branch in
+    get_diffuse_mask). Sky type 5 (uniform) ensures sky_integral = 1.0 so
+    the get_shaded_radiance_contrib normalization is transparent.
+    """
+    pyV.global_theme.allow_empty_mesh = True
+    el_threshold = 45.0
+    h = _make_horizon(flat_elevation=el_threshold)
+
+    M = Mesh()
+    M.add_triangular_probe(position=(0, 0, 0), normal=(0, 0, 1), area=0.01)
+    discrete_sky = ReinhartSky(MF=4).reinhart_patches
+
+    DHI = 1.0  # W/m²
+    df = pd.DataFrame({
+        'DHI': [DHI], 'azimuth': [180.0], 'elevation': [45.0],
+        'CIE Sky Type': [5],  # uniform sky → sky_integral = 1.0
+    })
+
+    L = Ray_casting_scene(mesh=M, geometry=pyV.PolyData(),
+                          discrete_sky=discrete_sky, horizon=h)
+    L.diffuse_mask = L.get_diffuse_mask(L.geometry)
+    L.get_diffuse_weights_map()
+    L.get_diffuse_shaded_weights_map()
+    result = L.compute_daily_diff_irradiation(df, n_freq=1, indices=pd.Index([0]))
+
+    result_Wh = float(result[0] / 3600 * 1e6)   # MJ/m² → W·h/m²
+    expected = DHI * np.cos(np.radians(el_threshold)) ** 2   # = 0.5
+    assert abs(result_Wh - expected) < 0.03, (
+        f"expected {expected:.3f} W·h/m², got {result_Wh:.4f}. "
+        f"Horizon mask may not propagate correctly through diffuse irradiance computation."
+    )
