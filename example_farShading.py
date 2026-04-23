@@ -31,17 +31,17 @@ PASE_Logger()
 ###############
 # Load inputs #
 ###############
-Loc_1 = YAML_Inputs_provider(file='Mountain_loc.yaml', subpath='SCENARIOS').inputs
+Loc_1 = YAML_Inputs_provider(file='Plain_loc.yaml', subpath='SCENARIOS').inputs
 # Import PV system and PV modules parameters
 AV_1 = YAML_Inputs_provider(file='Example1_AV.yaml', subpath='AV_CENTRAL').inputs
 PV_module_1 = YAML_Inputs_provider(file='Example1_PV_Module.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
-Structure = YAML_Inputs_provider(file='Example1_PV_structure.yaml', subpath=os.path.join('HARDWARE', 'STRUCTURES')).inputs
+Structure = YAML_Inputs_provider(file='PV_table.yaml', subpath=os.path.join('HARDWARE', 'STRUCTURES')).inputs
 crop_config = YAML_Inputs_provider(file='simple_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
 
 # InputsEvaluator is there to safeguard computing time and memory usage by checking some parameters values
 input_checker = InputsEvaluator(Loc_1, AV_1)
 
-PV_params_dict = Inputs_aggregator([AV_1, PV_module_1]).aggregated_inputs
+PV_params_dict = Inputs_aggregator([AV_1, PV_module_1, Structure]).aggregated_inputs
 
 om = OutputsManager(Loc_1['LocationName'],
                     Loc_1['SimulationStartingYear'],
