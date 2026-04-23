@@ -38,5 +38,5 @@ TEMPORARY_FILES/
 # IPython Notebook clutter
 *.ipynb_checkpoints
 
-# vscode cash
+# vscode clutter
 .vscode/
