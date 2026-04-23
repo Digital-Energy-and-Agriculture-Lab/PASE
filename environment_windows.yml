@@ -19,3 +19,5 @@ dependencies:
   - yaml
   - pytest
   - pytest-cov
+  - xmltodict
+  - unidecode

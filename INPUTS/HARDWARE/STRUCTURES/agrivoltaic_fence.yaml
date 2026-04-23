@@ -1,7 +1,7 @@
 StructureType:
   Value: Agrivoltaic Fence
   Type: string
-  Choices: [Agrivoltaic Fence]
+  Choices: [Agrivoltaic Fence, PV Table, HSATS]
   Definition: which type of structure for the PV modules
 Material:
   Value: Wood
@@ -10,14 +10,29 @@ Material:
   Definition: used to apply texture to the structure ;
     Metal -> grey structure
     Wood -> brown structure
-PanelsPerGroup:
-  Value: 2
+NumberOfStructureGroups:
+  Value: 16
   Type: integer
   Limit: [1, 100]
   Unit: dimensionless [-]
-  Definition: Number of panels per pole in the structure
+  Definition: Number of structure groups in one PV block
+RepetitionDistanceGroupYMode:
+  Value: auto
+  Type: string
+  Choices: [ auto, manual ]
+  Definition: Choose how the repetition distance of structure groups along Y axis is
+    handled.
+    - auto means the software adjusts the structure layout to the panels layout
+    - manual requires the RepetitionDistanceGroupY to be provided by the user
+RepetitionDistanceGroupY:
+  Value: 6.2
+  Type: float
+  Limit: [ 0.0, 50.0 ]
+  Unit: meters [m]
+  Definition: spacing of structure groups along Y. Only used when
+    RepetitionDistanceGroupYMode is set to manual.
 PoleShape:
-  Value: Cylinder
+  Value: cylinder
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the pole profile
@@ -26,31 +41,25 @@ PoleWidth:
   Type: float
   Limit: [0.01, 10.0]
   Unit: meters [m]
-  Definition: Pole size along x (used in case of square or rectangular pole)
+  Definition: Pole size along x (used in rectangular pole)
 PoleHeight:
   Value: 0.2
   Type: float
   Limit: [0.05, 10.0]
   Unit: meters [m]
-  Definition: Pole size along y (used in case of square or rectangular pole)
+  Definition: Pole size along y (used in rectangular pole)
 PoleSide:
   Value: 0.1
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: Pole side length (used in case of square pole)
+  Definition: Pole side length (used in square pole)
 PoleRadius:
   Value: 0.1
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: Pole radius (used in case of cylindrical pole)
-PoleLength:
-  Value: 3.8
-  Type: float
-  Limit: [0.01, 50.0]
-  Unit: meters [m]
-  Definition: Pole size along z
+  Definition: Pole radius (used in cylindrical pole)
 PoleGroundPositioning:
   Value: -0.5
   Type: float
@@ -60,7 +69,7 @@ PoleGroundPositioning:
     0 is flush with the ground, negative values mean the pole base is below
     ground level.
 PurlinShape:
-  Value: Cylinder
+  Value: cylinder
   Type: string
   Choices: [Square, Rectangle, Cylinder]
   Definition: shape of the purlin profile
@@ -69,34 +78,22 @@ PurlinWidth:
   Type: float
   Limit: [0.01, 10.0]
   Unit: meters [m]
-  Definition: purlin size along x (used in case of square or rectangular purlin)
+  Definition: purlin size along x (used in rectangular purlin)
 PurlinHeight:
   Value: 0.2
   Type: float
   Limit: [0.05, 10.0]
   Unit: meters [m]
-  Definition: purlin size along y (used in case of square or rectangular purlin)
+  Definition: purlin size along y (used in rectangular purlin)
 PurlinSide:
   Value: 0.1
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: Pole side length (used in case of square purlin)
+  Definition: Pole side length (used in square purlin)
 PurlinRadius:
   Value: 0.05
   Type: float
   Limit: [0.01, 50.0]
   Unit: meters [m]
-  Definition: Purlin radius (used in case of cylindrical purlin)
-StructureSpacingY:
-  Value: 5.0
-  Type: float
-  Limit: [0.0, 50.0]
-  Unit: meters [m]
-  Definition: Spacing along Y (interpreted by spacing_mode)
-StructureHeight:
-  Value: 3.3
-  Type: float
-  Limit: [0.0, 50.0]
-  Unit: meters [m]
-  Definition: Structure height
+  Definition: Purlin radius (used in cylindrical purlin)
