@@ -72,8 +72,8 @@ class Sun_positions:
         self.sun_vect_leapY = get_sun_vector(self.sp_leapY['elevation'],
                                                   self.sp_leapY['azimuth'])
         
-        self.sp_leapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_leap_year,
-                                                               n)
+        self.sp_leapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(
+            index_leap_year)
         
     def SD_nonleap_year(self, frq, n, TZ):
         
@@ -86,39 +86,70 @@ class Sun_positions:
         self.sun_vect_nonleapY = get_sun_vector(self.sp_nonleapY['elevation'],
                                                      self.sp_nonleapY['azimuth'])
         
-        self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(index_com_year,
-                                                                  n)
+        self.sp_nonleapY['Top_atm_radiation'] = self.get_top_of_atm_radiation(
+            index_com_year)
         
-    def get_top_of_atm_radiation(self, index, n):
+    def get_top_of_atm_radiation(self, index):
         """
+        Compute extraterrestrial (i.e. at the top of the atmosphere) radiation on a
+        horizontal surface.
 
-        :param index: datetime index
-        :param n: seems unused ?
+        Source: John A. Duffie, William A. Beckman(auth.)- Solar Engineering of Thermal Processes,
+        Fourth Edition (2013), page 37, equation 1.10.2
+
+        :param index: timestamp in %Y-%m-%d %H:%M:%S format
+        :type index: DatetimeIndex day of the year (numeric)
         :return: irradiance at top of atmosphere on a horizontal surface [W/m²]
         """
         day_of_year = np.array(index.dayofyear)
         n_days_in_year = day_of_year[len(index)-1]
-        solar_declination = self.get_solar_declination(day_of_year)
-        solar_hour_angle = self.get_solar_hour_angle(day_of_year, index)
+        solar_declination = self.get_solar_declination(day_of_year)  # [deg]
+        solar_hour_angle = self.get_solar_hour_angle(day_of_year, index)  # [rad]
         
-        lat_rad = self.lat*np.pi/180
-        solar_cst = 1367
+        lat_rad = self.lat*np.pi/180  # [rad]
+        solar_cst = 1367  # [W/m²]
         top_of_atm_radiation = solar_cst*(np.ones(len(index)) +
                                 0.033*np.cos((360*day_of_year/n_days_in_year)*np.pi/180))* \
                                 (np.cos(lat_rad)*np.cos(solar_declination)*
                                 np.cos(solar_hour_angle*np.pi/180) +
-                                np.sin(lat_rad)*np.sin(solar_declination))
+                                np.sin(lat_rad)*np.sin(solar_declination))  # [W/m²]
+
+        # Clip negative values to 0
         top_of_atm_radiation[top_of_atm_radiation<0] = 0
+
         return top_of_atm_radiation
         
     def get_solar_declination(self, day_of_year):
-        
+        """
+        Compute the declination, i.e. angular position of the sun at solar noon
+        relative to the plane of the equator, approximately between +/-23.45 (degrees).
+        Uses pvlib.solarposition.declination_spencer71
+        (source: https://pvlib-python.readthedocs.io/en/v0.9.0/generated/pvlib.solarposition.declination_spencer71.html)
+
+        :param day_of_year: day of the year (numeric)
+        :type day_of_year: int
+        :return: declination angle in radians
+        :rtype: ndarray
+        """
         declination = pvlibSP.declination_spencer71(day_of_year)
         
         return declination
     
     def get_solar_hour_angle(self, day_of_year, index):
-        
+        """
+        Compute the hour angle in local solar time, i.e. the angular displacement of the
+        sun east or west of the local meridian  due to rotation of the earth on its axis
+        at 15◦ per hour; morning negative, afternoon positive. Zero at local solar noon.
+
+        Source: https://pvlib-python.readthedocs.io/en/stable/reference/generated/pvlib.solarposition.hour_angle.html
+
+        :param day_of_year: day of the year (numeric)
+        :type day_of_year: int
+        :param index: timestamp in %Y-%m-%d %H:%M:%S format
+        :type index: DatetimeIndex day of the year (numeric)
+        :return: solar_hour_angle in degrees
+        :rtype: ndarray
+        """
         equation_of_time = pvlibSP.equation_of_time_spencer71(day_of_year)
         solar_hour_angle = pvlibSP.hour_angle(index, self.long, equation_of_time)
         
@@ -231,9 +262,18 @@ class Light:
         Ai = np.zeros(len(rad_top_atm))
         ind = np.where(rad_top_atm!=0)
         Ai[ind] = BHI[ind]/rad_top_atm[ind]
-        
-        return Ai  
-    
+        ind_ai_too_big = np.where(Ai > 1)
+        Ai[ind_ai_too_big] = 1
+
+        if len(ind_ai_too_big[0]) > 5:
+            print(
+                "\u001B[38;5;208mWarning: BHI exceeds top of atmosphere "
+                "radiation {0} times : check weather data location and "
+                "input location coherence\u001B[0m".format(
+                str(len(ind_ai_too_big[0]))))
+
+        return Ai
+
     def get_modulating_factor(self, GHI, BHI):
         
         f = np.zeros(len(GHI))
