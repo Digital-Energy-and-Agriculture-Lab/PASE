@@ -138,9 +138,21 @@ class YAML_Inputs_provider:
         if data['Value'] not in data['Possibilities']:
             self.msg = ('Input "' + key + '" value should be one of the '
                         'following possibilities: ' + str(data['Possibilities']))
+        value = data['Value']
+        possibilities = data['Possibilities']
+
+        if isinstance(value, str):
+            value = value.strip().lower()
+            normalized_possibilities = [p.lower() if isinstance(p, str) else p for p in possibilities]
+        else:
+            normalized_possibilities = possibilities
+
+        if value not in normalized_possibilities:
+            self.msg = (f'Input "{key}" value should be one of the following possibilities: '
+                        f'{possibilities}, got: {data["Value"]}')
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
-            self.inputs[key] = data['Value']
+            self.inputs[key] = value
 
 
     def check_limits(self, key, data, inputs):
