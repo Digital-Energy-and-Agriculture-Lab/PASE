@@ -41,7 +41,7 @@ PanelOffset:
    Unit: meters [m]
    Definition: Spacing between the center of the panel and the height of the base through the normal of the panel
 Hinge:
-   Value: center
+   Value:   center
    Type: string
    Possibilities: [ Center, Top]
    Definition: Do the panels rotate about the axis going through their center or

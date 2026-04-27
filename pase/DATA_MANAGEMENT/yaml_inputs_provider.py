@@ -135,11 +135,14 @@ class YAML_Inputs_provider:
 
 
     def check_possibilities(self, key, data, inputs):
-        if data['Value'] not in data['Possibilities']:
-            self.msg = ('Input "' + key + '" value should be one of the '
-                        'following possibilities: ' + str(data['Possibilities']))
         value = data['Value']
         possibilities = data['Possibilities']
+
+        if not isinstance(possibilities, list):
+            raise TypeError(f'Input "{key}": Possibilities must be a YAML list (use square brackets). '
+                            f'Got {type(possibilities).__name__}: {possibilities!r}\n'
+                            f'  Wrong:   Possibilities: a, b, c\n'
+                            f'  Correct: Possibilities: [a, b, c]')
 
         if isinstance(value, str):
             value = value.strip().lower()
