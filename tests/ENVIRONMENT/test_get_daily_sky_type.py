@@ -6,6 +6,7 @@
 # The method does not use any instance attributes, so we create a bare
 # Light object (skipping __init__) to avoid needing weather files or PVGIS.
 
+from calendar import isleap
 import numpy as np
 import pandas as pd
 
@@ -23,9 +24,9 @@ def one_day(sky_types, ghi_values, date='2020-06-01'):
                         index=index, dtype=float)
 
 
-def full_year(sky_type_value, year=2020, leap=False):
+def full_year(sky_type_value, year=2020):
     """Build a full-year hourly DataFrame filled with one constant sky type."""
-    n_hours = (366 if leap else 365) * 24
+    n_hours = (366 if isleap(year) else 365) * 24
     index = pd.date_range(f'{year}-01-01', periods=n_hours, freq='h')
     return pd.DataFrame({'CIE Sky Type': float(sky_type_value), 'GHI': 100.0},
                         index=index)
@@ -134,11 +135,11 @@ def test_output_is_a_dataframe_with_two_columns():
 
 
 def test_regular_year_gives_365_rows():
-    assert len(light.get_daily_sky_type(full_year(5, year=2019, leap=False))) == 365
+    assert len(light.get_daily_sky_type(full_year(5, year=2019))) == 365
 
 
 def test_leap_year_gives_366_rows():
-    assert len(light.get_daily_sky_type(full_year(5, year=2020, leap=True))) == 366
+    assert len(light.get_daily_sky_type(full_year(5, year=2020))) == 366
 
 
 # ── Multi-day: each day is computed independently ─────────────────────────────
