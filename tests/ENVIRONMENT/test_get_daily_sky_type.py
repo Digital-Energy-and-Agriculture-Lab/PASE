@@ -97,8 +97,8 @@ def test_all_nighttime_returns_nan():
 
 def test_nighttime_nans_excluded_from_count():
     # night: NaN, daytime: type 4 x 3, type 1 x 1 → mode = 4
-    sky_type, _ = run([np.nan, 1, 4, 4, 4, np.nan],
-                      [0,     50, 200, 300, 200, 0])
+    sky_type, _ = run([np.nan, 1, 4, 4, 4, np.nan, np.nan, np.nan, np.nan, np.nan],
+                      [0,     50, 200, 300, 200, 0, 0, 0, 0, 0])
     assert sky_type == 4
 
 
