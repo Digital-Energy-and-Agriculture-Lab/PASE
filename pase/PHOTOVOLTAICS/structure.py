@@ -641,8 +641,9 @@ class AgrivoltaicFence(PVStructure):
         Assemble all fence groups along Y and add a terminal post.
         """
         if _z_world is None:
-            def _z_world(x_pre, y_pre): return 0.0
-        
+            _z_world = lambda x_pre, y_pre: float(self.ground.elevation(x_pre, y_pre))
+            z_center = float(self.ground.elevation(x_center, y_center))
+
         half_span = (self.number_of_structure_groups - 1) * self.repetition_distance_group_Y / 2
         group_y_offsets = [
             -half_span + idx * self.repetition_distance_group_Y
@@ -802,7 +803,8 @@ class PVTable(PVStructure):
         """Replicate groups across the Y grid and cap with an end group.
         """
         if _z_world is None:
-            def _z_world(x_pre, y_pre): return 0.0
+            _z_world = lambda x_pre, y_pre: float(self.ground.elevation(x_pre, y_pre))
+            z_center = float(self.ground.elevation(x_center, y_center))
         # group positions centered around 0, spaced by repetition_distance_group_Y
         half_span = (self.number_of_structure_groups - 1) * self.repetition_distance_group_Y / 2
         group_y_offsets = [
@@ -919,7 +921,8 @@ class HSATS(PVStructure):
         """Return the assembled HSATS group (single-axis tracker).
         """
         if _z_world is None:
-            def _z_world(x_pre, y_pre): return 0.0
+            _z_world = lambda x_pre, y_pre: float(self.ground.elevation(x_pre, y_pre))
+            z_center = float(self.ground.elevation(x_center, y_center))
             
         half_span = (self.number_of_structure_groups - 1) * self.repetition_distance_group_Y / 2
         group_y_offsets = [
