@@ -320,6 +320,41 @@ class Light:
 
         return temp_list
 
+    @staticmethod
+    def _modal_sky_type_candidates(daytime):
+        """Return sky types tied for the highest hourly occurrence count."""
+        hour_counts = daytime['CIE Sky Type'].value_counts()
+        top_count = hour_counts.iloc[0]
+        return hour_counts[hour_counts == top_count].index.tolist()
+
+    @staticmethod
+    def _resolve_ghi_tie(daytime, candidates):
+        """Among tied sky type candidates, return those with the highest total GHI."""
+        ghi_sums = daytime.groupby('CIE Sky Type')['GHI'].sum()
+        candidates_ghi = ghi_sums[candidates].sort_values(ascending=False)
+        top_ghi = candidates_ghi.iloc[0]
+        return candidates_ghi[candidates_ghi == top_ghi].index.tolist()
+
+    @staticmethod
+    def _representative_sky_type(day_group):
+        """
+        Return the representative CIE sky type for a single day.
+
+        Nighttime rows (NaN sky type) are excluded. Ties in hourly count are
+        broken by total GHI; remaining ties resolve to the lower sky type number.
+        Returns NaN if the entire day is nighttime.
+        """
+        daytime = day_group.dropna(subset=['CIE Sky Type'])
+        if daytime.empty:
+            return np.nan
+
+        candidates = Light._modal_sky_type_candidates(daytime)
+        if len(candidates) == 1:
+            return int(candidates[0])
+
+        ghi_candidates = Light._resolve_ghi_tie(daytime, candidates)
+        return int(min(ghi_candidates))
+
     def get_daily_sky_type(self, df_sky_ghi):
         """
         For each calendar day, pick the most frequent CIE sky type (mode).
@@ -331,31 +366,7 @@ class Light:
         Output: DataFrame indexed by date (365 or 366 rows) with columns
                 'CIE Sky Type' (int) and 'Sky Category' (str).
         """
-        def pick_day(day_group):
-            # Keep only daytime hours (nighttime sky type is NaN)
-            daytime = day_group.dropna(subset=['CIE Sky Type'])
-            if daytime.empty:
-                return np.nan
-
-            # Step 1 — count how many hours each sky type appears
-            hour_counts = daytime['CIE Sky Type'].value_counts()
-            top_count = hour_counts.iloc[0]
-            candidates = hour_counts[hour_counts == top_count].index.tolist()
-
-            # Step 2 — if one type appears more than all others, that's the answer
-            if len(candidates) == 1:
-                return int(candidates[0])
-
-            # Step 3 — tie: sum GHI for each tied type and pick the highest
-            ghi_sums = daytime.groupby('CIE Sky Type')['GHI'].sum()
-            candidates_ghi = ghi_sums[candidates].sort_values(ascending=False)
-            top_ghi = candidates_ghi.iloc[0]
-            ghi_candidates = candidates_ghi[candidates_ghi == top_ghi].index.tolist()
-
-            # Step 4 — if GHI is also tied, take the lower sky type number
-            return int(min(ghi_candidates))
-
-        daily_type = df_sky_ghi.groupby(df_sky_ghi.index.date).apply(pick_day)
+        daily_type = df_sky_ghi.groupby(df_sky_ghi.index.date).apply(self._representative_sky_type)
 
         daily_category = daily_type.map(
             lambda t: SKY_CATEGORY_LABELS.get(t, 'undefined') if not pd.isna(t) else 'undefined'
@@ -365,6 +376,7 @@ class Light:
             'CIE Sky Type': daily_type,
             'Sky Category': daily_category,
         })
+
 
 class Sun_positions_sampled:
     
