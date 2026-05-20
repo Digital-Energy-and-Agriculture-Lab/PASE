@@ -157,10 +157,22 @@ class Sun_positions:
         return solar_hour_angle
     
     
+# Maps the 6 CIE sky types used in PASE to their human-readable category label.
+# Types 1, 4, 7, 11, 13 correspond to the 5 zones of the Igawa (2014) Kc/Cle diagram.
+# Type 5 (isotropic uniform sky) and any value not in the diagram → "undefined".
+SKY_CATEGORY_LABELS = {
+    1:  'overcast',
+    4:  'intermediate overcast',
+    7:  'intermediate',
+    11: 'intermediate clear',
+    13: 'clear',
+}
+
 class Light:
     def __init__(self, WD, SP, sky_type_source='uniform', ghi_multiplier=1):
 
         self.data = {}
+        self.daily_sky_type = {}
         sky_type_lut_path = os.path.join('INPUTS', 'Igawa-5_sky_types_lut.csv')
         self.sky_type_lut = pd.read_csv(sky_type_lut_path, sep=';')
 
@@ -196,6 +208,11 @@ class Light:
                                    'f': f.tolist(),
                                    'CIE Sky Type': cie_sky_type},
                                   index=WD[year].index)
+                n_days = len(WD[year].index.normalize().unique())
+                self.daily_sky_type[year] = pd.DataFrame({
+                    'CIE Sky Type': pd.Series(5, index=range(n_days)),
+                    'Sky Category': pd.Series('undefined', index=range(n_days)),
+                })
             else:
                 # Compute from weather data
                 # Extraterrestrial Normal Irradiance (used for the Kc and Cle below)
@@ -218,6 +235,12 @@ class Light:
                                    'Cle': Cle.tolist(),
                                    'CIE Sky Type': cie_sky_type},
                                   index=WD[year].index)
+                self.daily_sky_type[year] = self.get_daily_sky_type(
+                    pd.DataFrame({
+                        'CIE Sky Type': pd.Series(cie_sky_type, index=WD[year].index, dtype=float),
+                        'GHI': GHI,
+                    })
+                )
             
             self.data[year] = df
                     
@@ -337,6 +360,63 @@ class Light:
                 temp_list.append(int(self.sky_type_lut['CIE Sky Type'].iloc[i]))
 
         return temp_list
+
+    @staticmethod
+    def _modal_sky_type_candidates(daytime):
+        """Return sky types tied for the highest hourly occurrence count."""
+        hour_counts = daytime['CIE Sky Type'].value_counts()
+        top_count = hour_counts.iloc[0]
+        return hour_counts[hour_counts == top_count].index.tolist()
+
+    @staticmethod
+    def _resolve_ghi_tie(daytime, candidates):
+        """Among tied sky type candidates, return those with the highest total GHI."""
+        ghi_sums = daytime.groupby('CIE Sky Type')['GHI'].sum()
+        candidates_ghi = ghi_sums[candidates].sort_values(ascending=False)
+        top_ghi = candidates_ghi.iloc[0]
+        return candidates_ghi[candidates_ghi == top_ghi].index.tolist()
+
+    @staticmethod
+    def _representative_sky_type(day_group):
+        """
+        Return the representative CIE sky type for a single day.
+
+        Nighttime rows (NaN sky type) are excluded. Ties in hourly count are
+        broken by total GHI; remaining ties resolve to the lower sky type number.
+        Returns NaN if the entire day is nighttime.
+        """
+        daytime = day_group.dropna(subset=['CIE Sky Type'])
+        if daytime.empty:
+            return np.nan
+
+        candidates = Light._modal_sky_type_candidates(daytime)
+        if len(candidates) == 1:
+            return int(candidates[0])
+
+        ghi_candidates = Light._resolve_ghi_tie(daytime, candidates)
+        return int(min(ghi_candidates))
+
+    def get_daily_sky_type(self, df_sky_ghi):
+        """
+        For each calendar day, pick the most frequent CIE sky type (mode).
+        If two types appear equally often, the one with the higher total GHI wins.
+        If still tied, the lower sky type number is kept (more conservative choice).
+        Nighttime rows (NaN sky type) are ignored throughout.
+
+        Input : DataFrame with columns 'CIE Sky Type' and 'GHI', hourly DatetimeIndex.
+        Output: DataFrame indexed by date (365 or 366 rows) with columns
+                'CIE Sky Type' (int) and 'Sky Category' (str).
+        """
+        daily_type = df_sky_ghi.groupby(df_sky_ghi.index.date).apply(self._representative_sky_type)
+
+        daily_category = daily_type.map(
+            lambda t: SKY_CATEGORY_LABELS.get(t, 'undefined') if not pd.isna(t) else 'undefined'
+        )
+
+        return pd.DataFrame({
+            'CIE Sky Type': daily_type,
+            'Sky Category': daily_category,
+        })
 
 
 class Sun_positions_sampled:
