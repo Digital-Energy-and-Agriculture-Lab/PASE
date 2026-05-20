@@ -10,7 +10,7 @@ dependencies:
   - matplotlib-base
   - pandas
   - vtk
-  - trimesh
+  - trimesh==4.11.5
   - rtree
   - windrose
   - pvlib
