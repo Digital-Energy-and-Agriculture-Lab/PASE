@@ -14,11 +14,13 @@ import pandas as pd
 import pyvista as pyv
 
 from pase.DATA_MANAGEMENT.visualization_in_3D import compute_ground_extent
-from pase.PHOTOVOLTAICS.structure import build_structure, compute_flush_panel_offset
+from pase.PHOTOVOLTAICS.structure import (build_structure,
+                                          compute_flush_panel_offset,
+                                          compute_structure_footprint_half_extent)
 from pase.pase_math import (compute_panel_grid_positions,
                             compute_block_centers,
                             rotate_about_z)
-from pase.ENVIRONMENT.ground import Ground, SlopedGround
+from pase.ENVIRONMENT.ground import Ground, SlopedGround, block_reference_elevation
 import math as _math
 
 pyv.global_theme.allow_empty_mesh = True
@@ -1038,27 +1040,27 @@ class PVConfiguration3D(MultiBlockPASE):
         df_rows: Dict[int, Dict[str, Any]] = {}
         N = positions.shape[0]
 
-        # Pre-compute the rotation applied later via rotate_z(-azimuth_deg, point=(0,0,0)):
-        #   x_world =  x·cos(az) + y·sin(az)
-        #   y_world = −x·sin(az) + y·cos(az)
-        # Ground elevation must be evaluated at post-rotation world positions so that
-        # blocks which end up at different (x,y) after rotation get the correct z.
-        import math as _math
-        _az = _math.radians(azimuth_deg)
-        _cos_az, _sin_az = _math.cos(_az), _math.sin(_az)
+        footprint = compute_structure_footprint_half_extent(config, ground=self.ground)
+        if footprint is None:
+            panel_span_x = (panels_per_block_x - 1) * panel_spacing_x + panel_height
+            panel_span_y = (panels_per_block_y - 1) * panel_spacing_y + panel_width
+            half_x_fp, half_y_fp = panel_span_x / 2.0, panel_span_y / 2.0
+        else:
+            half_x_fp, half_y_fp = footprint
+
+        cz_terrain_by_block: Dict[Tuple[int, int], float] = {}
 
         for idx in range(N):
             bx, by, mx, my = map(int, grid_indices[idx])
             offx, offy, offz = map(float, positions[idx])
             cx, cy, cz = map(float, block_centers[idx])
 
-            # Lift the entire block as a rigid body: all panels in the same block
-            # use the block-center elevation so relative positions are preserved
-            # after rotate_y(tilt, point=(cx, cy, cz)).
-            cz_terrain = float(self.ground.elevation(
-                cx * _cos_az + cy * _sin_az,
-                -cx * _sin_az + cy * _cos_az,
-            ))
+            block_key = (bx, by)
+            if block_key not in cz_terrain_by_block:
+                cz_terrain_by_block[block_key] = block_reference_elevation(
+                    self.ground, cx, cy, half_x_fp, half_y_fp, azimuth_deg,
+                )
+            cz_terrain = cz_terrain_by_block[block_key]
             offz += cz_terrain
             cz   += cz_terrain
 
@@ -1146,7 +1148,7 @@ class PVConfiguration3D(MultiBlockPASE):
 
         if 'DiffusersBetweenPanels' in pv_config:
             if pv_config['DiffusersBetweenPanels']:
-                self.add_diffusers_to_central(pv_config)
+                self.add_diffusers_to_central(pv_config, cz_terrain_by_block)
 
         only_block_centers = compute_block_centers(
             num_blocks_x, num_blocks_y,
@@ -1156,12 +1158,12 @@ class PVConfiguration3D(MultiBlockPASE):
             base_height,
         )
 
-        self.add_structure(config, only_block_centers)
+        self.add_structure(config, only_block_centers, cz_terrain_by_block)
 
         # Bump central ID
         self.central_id += 1
 
-    def add_diffusers_to_central(self, pv_config):
+    def add_diffusers_to_central(self, pv_config, cz_terrain_by_block=None):
         ndiff = 1 if pv_config['DiffusersAtRowEnds'] == True else -1
         diff_dimX, diff_dimY, diff_dimZ = (float(pv_config['DiffuserDimensionX']),
                                            float(pv_config['DiffuserDimensionY']),
@@ -1192,18 +1194,33 @@ class PVConfiguration3D(MultiBlockPASE):
         base_area = diff_dimX*diff_dimY
         N = positions.shape[0] # number of diffusers in the central
 
-        _az_d = _math.radians(azimuth_deg)
-        _cos_az_d, _sin_az_d = _math.cos(_az_d), _math.sin(_az_d)
+        # Reuse the panel block reference elevation so diffusers stay vertically
+        # aligned with their parent block on sloped terrain.  Fall back to a
+        # local computation when called without a precomputed table.
+        footprint = compute_structure_footprint_half_extent(pv_config, ground=self.ground)
+        if footprint is None:
+            panel_height = float(pv_config["PanelDimensionX"])
+            panel_width = float(pv_config["PanelDimensionY"])
+            panel_span_x = (panels_per_block_x - 1) * panel_spacing_x + panel_height
+            panel_span_y = (panels_per_block_y - 1) * panel_spacing_y + panel_width
+            half_x_fp, half_y_fp = panel_span_x / 2.0, panel_span_y / 2.0
+        else:
+            half_x_fp, half_y_fp = footprint
+
+        if cz_terrain_by_block is None:
+            cz_terrain_by_block = {}
 
         for idx in range(N):
             bx, by, mx, my = map(int, grid_indices[idx])
             offx, offy, offz = map(float, positions[idx])
             cx, cy, cz = map(float, block_centers[idx])
 
-            cz_terrain = float(self.ground.elevation(
-                cx * _cos_az_d + cy * _sin_az_d,
-                -cx * _sin_az_d + cy * _cos_az_d,
-            ))
+            block_key = (bx, by)
+            if block_key not in cz_terrain_by_block:
+                cz_terrain_by_block[block_key] = block_reference_elevation(
+                    self.ground, cx, cy, half_x_fp, half_y_fp, azimuth_deg,
+                )
+            cz_terrain = cz_terrain_by_block[block_key]
             offz += cz_terrain
             cz   += cz_terrain
 
@@ -1243,7 +1260,7 @@ class PVConfiguration3D(MultiBlockPASE):
             }
             self.add_custom_polydata(diffuser, info, name)
 
-    def add_structure(self, config, block_centers):
+    def add_structure(self, config, block_centers, cz_terrain_by_block=None):
         struct_type = (config.get('StructureType') or config.get('Structype'))
         if not struct_type:
             logger.info('No StructureType defined; skipping structure geometry for central %s',
@@ -1260,9 +1277,12 @@ class PVConfiguration3D(MultiBlockPASE):
             for j in range(num_blocks_y):
                 cx = float(block_centers[block_counter, 0])
                 cy = float(block_centers[block_counter, 1])
+                z_c = (cz_terrain_by_block.get((i, j))
+                       if cz_terrain_by_block is not None else None)
                 struct = build_structure(config, ground=self.ground,
                                          x_center=cx, y_center=cy,
-                                         azimuth_deg=config.get('CentralAzimut', 0.0))
+                                         azimuth_deg=config.get('CentralAzimut', 0.0),
+                                         z_center=z_c)
                 struct = (struct
                           .translate([cx, cy, 0])
                           .rotate_z(-config['CentralAzimut'], point=(0.0, 0.0, 0.0)))
@@ -1512,23 +1532,34 @@ class PV_Configuration_3D(PVConfiguration3D):
         # Precompute area (constant per panel primitive)
         base_area = float(panel_width * panel_height)
 
-        _az_t = _math_t.radians(azimuth_deg)
-        _cos_az_t, _sin_az_t = _math_t.cos(_az_t), _math_t.sin(_az_t)
-
         # ---- Creation loop (vectorized positions + single loop) ----
         pieces: List[Tuple[int, pyv.PolyData]] = []
         df_rows: Dict[int, Dict[str, Any]] = {}
         N = positions.shape[0]
+
+        # Anchor each block at the maximum terrain elevation over its full
+        # footprint so large blocks on a slope do not sink under the ground
+        footprint = compute_structure_footprint_half_extent(config, ground=self.ground)
+        if footprint is None:
+            panel_span_x = (panels_per_block_x - 1) * panel_spacing_x + panel_height
+            panel_span_y = (panels_per_block_y - 1) * panel_spacing_y + panel_width
+            half_x_fp, half_y_fp = panel_span_x / 2.0, panel_span_y / 2.0
+        else:
+            half_x_fp, half_y_fp = footprint
+
+        cz_terrain_by_block: Dict[Tuple[int, int], float] = {}
 
         for idx in range(N):
             bx, by, mx, my = map(int, grid_indices[idx])
             offx, offy, offz = map(float, positions[idx])
             cx, cy, cz = map(float, block_centers[idx])
 
-            cz_terrain = float(self.ground.elevation(
-                cx * _cos_az_t + cy * _sin_az_t,
-                -cx * _sin_az_t + cy * _cos_az_t,
-            ))
+            block_key = (bx, by)
+            if block_key not in cz_terrain_by_block:
+                cz_terrain_by_block[block_key] = block_reference_elevation(
+                    self.ground, cx, cy, half_x_fp, half_y_fp, azimuth_deg,
+                )
+            cz_terrain = cz_terrain_by_block[block_key]
             offz += cz_terrain
             cz   += cz_terrain
 

@@ -84,6 +84,41 @@ def apply_rotation_matrix(
     return polydata
 
 
+def block_reference_elevation(
+    ground: "Ground",
+    cx: float,
+    cy: float,
+    half_x: float,
+    half_y: float,
+    azimuth_deg: float = 0.0,
+) -> float:
+    """
+    Return the maximum terrain elevation over the 4 corners of a block footprint.
+
+    The block is an axis-aligned rectangle ``[cx ± half_x] × [cy ± half_y]`` in
+    the pre-rotation (central) frame.  Corners are mapped to world coordinates
+    by rotating by ``-azimuth_deg`` about the origin before sampling the ground.
+
+    Anchoring PV blocks (panels + structure) at this elevation — rather than at
+    the ground elevation at their center — guarantees that no component of the
+    block sits below the terrain on a slope, since on a tilted plane the
+    maximum elevation over a rectangle is always attained at one of its corners.
+    """
+    az = math.radians(azimuth_deg)
+    cos_az, sin_az = math.cos(az), math.sin(az)
+    z_max = -math.inf
+    for dx in (-half_x, half_x):
+        for dy in (-half_y, half_y):
+            x_pre = cx + dx
+            y_pre = cy + dy
+            x_w = x_pre * cos_az + y_pre * sin_az
+            y_w = -x_pre * sin_az + y_pre * cos_az
+            z = float(ground.elevation(x_w, y_w))
+            if z > z_max:
+                z_max = z
+    return z_max
+
+
 # ── Base class — flat ground ──────────────────────────────────────────────────
 
 class Ground:

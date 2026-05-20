@@ -3,13 +3,38 @@ import logging
 import math
 import numpy as np
 import pyvista as pyv
-from pase.ENVIRONMENT.ground import Ground
+from pase.ENVIRONMENT.ground import Ground, block_reference_elevation
 
 pyv.global_theme.allow_empty_mesh = True
 
 logger = logging.getLogger(__name__)
 
-def build_structure(config_dict, ground=None, x_center=0.0, y_center=0.0, azimuth_deg=0.0):
+
+def compute_structure_footprint_half_extent(config_dict, ground=None):
+    """Return ``(half_x, half_y)`` of one block's footprint, or ``None`` when
+    no ``StructureType`` is configured.
+
+    Intended for callers (e.g. ``PVConfiguration3D.create_regular_central``)
+    that need to anchor panels and structure at a common terrain reference
+    elevation derived from the block's full footprint.
+    """
+    struct_type = (config_dict.get('StructureType')
+                   or config_dict.get('Structype'))
+    if not struct_type:
+        return None
+
+    struct_type = struct_type.lower()
+    if struct_type == 'agrivoltaic fence':
+        return AgrivoltaicFence(config_dict, ground=ground).get_footprint_half_extent()
+    if struct_type == 'pv table':
+        return PVTable(config_dict, ground=ground).get_footprint_half_extent()
+    if struct_type == 'hsats':
+        return HSATS(config_dict, ground=ground).get_footprint_half_extent()
+    raise ValueError(f"Unsupported StructureType '{struct_type}'")
+
+
+def build_structure(config_dict, ground=None, x_center=0.0, y_center=0.0,
+                    azimuth_deg=0.0, z_center=None):
     """
     Factory that selects the appropriate PV structure from the configuration.
 
@@ -27,6 +52,11 @@ def build_structure(config_dict, ground=None, x_center=0.0, y_center=0.0, azimut
     azimuth_deg : float
         CentralAzimut rotation applied after building (degrees, clockwise from North).
         Used to compute terrain elevation at the correct post-rotation world positions.
+    z_center : float, optional
+        Reference Z elevation at which the block is anchored.  When omitted, it
+        is computed as the maximum terrain elevation over the block's footprint
+        (so the structure stays above ground everywhere within its extent on a
+        slope, instead of dipping below it on the uphill side).
     """
     struct_type = (config_dict.get('StructureType')
                    or config_dict.get('Structype'))
@@ -47,22 +77,32 @@ def build_structure(config_dict, ground=None, x_center=0.0, y_center=0.0, azimut
         if ground is not None:
             return float(ground.elevation(x_w, y_w))
         return 0.0
-    
-    z_center = _z_world(x_center, y_center)
-    
-    kwargs_ext = {
-        'x_center': x_center,
-        'y_center': y_center,
-        '_z_world': _z_world,
-        'z_center': z_center
-    }
 
     if struct_type == 'agrivoltaic fence':
-        return AgrivoltaicFence(config_dict, ground=ground).build_structure(**kwargs_ext)
-    if struct_type == 'pv table':
-        return PVTable(config_dict, ground=ground).build_structure(**kwargs_ext)
-    if struct_type == 'hsats':
-        return HSATS(config_dict, ground=ground).build_structure(**kwargs_ext)
+        cls = AgrivoltaicFence
+    elif struct_type == 'pv table':
+        cls = PVTable
+    elif struct_type == 'hsats':
+        cls = HSATS
+    else:
+        raise ValueError(f"Unsupported StructureType '{struct_type}'")
+
+    instance = cls(config_dict, ground=ground)
+    if z_center is None:
+        if ground is None:
+            z_center = 0.0
+        else:
+            half_x, half_y = instance.get_footprint_half_extent()
+            z_center = block_reference_elevation(
+                ground, x_center, y_center, half_x, half_y, azimuth_deg,
+            )
+
+    return instance.build_structure(
+        x_center=x_center,
+        y_center=y_center,
+        _z_world=_z_world,
+        z_center=z_center,
+    )
 
     raise ValueError(f"Unsupported StructureType '{struct_type}'")
 
@@ -379,6 +419,32 @@ class PVStructure(ABC):
         Abstract method overridden in inherited classes.
         """
         pass
+
+    def _structure_half_x(self) -> float:
+        """Half-extent of the structure along X in the pre-rotation frame.
+
+        Default 0.0 for thin single-pole structures (e.g. fences).  Overridden
+        by table/tracker subclasses that span a non-trivial X distance.
+        """
+        return 0.0
+
+    def get_footprint_half_extent(self) -> tuple[float, float]:
+        """Return ``(half_x, half_y)`` of one block's footprint in the pre-rotation frame.
+
+        The footprint encloses both the structural elements (poles, rafters,
+        purlins) and the panel grid carried by the block.  It is used by the
+        caller to anchor the block at the highest terrain elevation under its
+        full footprint on sloped ground.
+        """
+        panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
+                        + self.panel_height)
+        panel_span_y = ((self.panels_per_block_y - 1) * self.panel_spacing_y
+                        + self.panel_width)
+        half_y_struct = (self.number_of_structure_groups
+                         * self.repetition_distance_group_Y / 2.0)
+        half_x = max(self._structure_half_x(), panel_span_x / 2.0)
+        half_y = max(half_y_struct, panel_span_y / 2.0)
+        return half_x, half_y
     
     def get_characteristic_dim(self, part_type):
         """
@@ -684,6 +750,9 @@ class PVTable(PVStructure):
     Fixed tilted table with posts, rafters, and diagonal bracing.
     """
 
+    def _structure_half_x(self) -> float:
+        return self.half_span
+
     REQUIRED: list = _BASE_REQUIRED + ['PoleSpacingX', 'TiltY', 'DiagonalEpsilon', 'DiagonalGroundGuard']
     OPTIONAL: dict = {
         'PoleWidth': 0.0, 'PoleHeight': 0.0, 'PoleSide': 0.0,
@@ -846,6 +915,9 @@ class HSATS(PVStructure):
     """
     HSATS: horizontal single-axis tracker managing purlins and tilted rafters.
     """
+
+    def _structure_half_x(self) -> float:
+        return self.rafter_length / 2.0
 
     REQUIRED: list = _BASE_REQUIRED + ['PoleSpacingX', 'TiltY', 'NumberOfRafters']
     OPTIONAL: dict = {
