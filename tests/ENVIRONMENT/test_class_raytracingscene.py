@@ -1,10 +1,14 @@
+import math
+import numpy as np
+import pandas as pd
+import pytest
+import pyvista as pyV
+
 from pase.ENVIRONMENT.light import Ray_casting_scene
 from pase.PHOTOVOLTAICS.configuration import PVConfiguration3D
 from pase.ENVIRONMENT.sky_model import ReinhartSky
 from pase.ENVIRONMENT.mesh import Mesh
 from pase.PHOTOVOLTAICS.diffuser import LenticularDiffuser
-import numpy as np
-import pandas as pd
 
 
 def _diffuser_trace(x, x0, a, l, theta_max):
@@ -176,3 +180,67 @@ def test_compute_daily_diffuser_irradiation():
     Irr2 = np.sum(L.diffuser_map[sunIndex, :]*ghi[:, np.newaxis], axis=0) * 3600.0 * 1e-6
 
     assert np.allclose(Irr, Irr2)
+
+
+# ---------------------------------------------------------------------------
+# compute_daily_diff_irradiation must recover DHI for all CIE sky types
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize('sky_type', [1, 4, 5, 7, 11, 13])
+def test_diffuse_irr_unity_all_sky_types(sky_type):
+    """
+    For any CIE sky type, an unobstructed sensor with non-empty geometry
+    (2D mask path) must recover DHI within 1 %.
+    The geometry is a tiny disc placed far away so it blocks a negligible
+    fraction of the sky (~1e-12), forcing the 2D mask path without introducing
+    meaningful shading.
+    """
+    pyV.global_theme.allow_empty_mesh = True
+    geometry = pyV.Cylinder(center=(100, 0, 1000), radius=0.001,
+                            height=0.0001, direction=(0, 0, 1)).triangulate()
+    M = Mesh()
+    M.add_triangular_probe(position=(0, 0, 0), normal=(0, 0, 1), area=0.01)
+    discrete_sky = ReinhartSky(MF=1).reinhart_patches
+    DHI = 1.0  # W/m²
+    df = pd.DataFrame({'DHI': [DHI], 'azimuth': [180.0],
+                       'elevation': [45.0], 'CIE Sky Type': [sky_type]})
+    L = Ray_casting_scene(mesh=M, geometry=geometry, discrete_sky=discrete_sky)
+    L.diffuse_mask = L.get_diffuse_mask(L.geometry)
+    L.get_diffuse_weights_map()
+    L.get_diffuse_shaded_weights_map()
+    result = L.compute_daily_diff_irradiation(df, n_freq=1, indices=pd.Index([0]))
+    result_Wh = float(result[0] / 3600 * 1e6)  # MJ/m² → W·h/m²
+    assert math.isclose(result_Wh, DHI, rel_tol=0.01), (
+        f"sky_type={sky_type}: expected {DHI} W·h/m², got {result_Wh:.6f}. "
+        f"Possible sky_integral normalization bug."
+    )
+
+
+# ---------------------------------------------------------------------------
+# get_diffuse_shaded_weights_map must produce 2D output for empty geometry
+# ---------------------------------------------------------------------------
+
+def test_diffuse_shaded_weights_map_2d_for_empty_geometry():
+    """
+    get_diffuse_shaded_weights_map() must return a 2D
+    array of shape (n_sources, N_patches) even when the scene is empty.
+    For an unshaded sensor the row sum must equal 1 (energy conservation).
+    """
+    pyV.global_theme.allow_empty_mesh = True
+    M = Mesh()
+    M.add_triangular_probe(position=(0, 0, 0), normal=(0, 0, 1), area=0.01)
+    discrete_sky = ReinhartSky(MF=1).reinhart_patches
+    N = len(discrete_sky)
+    L = Ray_casting_scene(mesh=M, geometry=pyV.PolyData(), discrete_sky=discrete_sky)
+    L.diffuse_mask = L.get_diffuse_mask(L.geometry)
+    L.get_diffuse_weights_map()
+    L.get_diffuse_shaded_weights_map()
+    assert L.diffuse_shaded_weights_map.ndim == 2, (
+        f"Expected 2D weights map for empty geometry, "
+        f"got ndim={L.diffuse_shaded_weights_map.ndim}"
+    )
+    assert L.diffuse_shaded_weights_map.shape == (1, N)
+    row_sum = float(L.diffuse_shaded_weights_map.sum(axis=1)[0])
+    assert math.isclose(row_sum, 1.0, rel_tol=1e-3), (
+        f"Row sum should be 1.0 for unshaded sensor, got {row_sum:.6f}"
+    )

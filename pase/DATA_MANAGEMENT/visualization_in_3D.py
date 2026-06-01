@@ -29,7 +29,7 @@ def compute_ground_extent(scene, margin: float = 10.0):
     return xmin - margin, xmax + margin, ymin - margin, ymax + margin
 
 
-def open_pyvista_3D_visualization(interest_points, spatialized_variable, scene, lgd_title):
+def open_pyvista_3D_visualization(interest_points, spatialized_variable, scene, lgd_title, extra_mesh=None):
     """
     
     Function to open a 3D visualization window of the scene with a specific spatialized variable plotted.
@@ -87,6 +87,11 @@ def open_pyvista_3D_visualization(interest_points, spatialized_variable, scene, 
     
     plotter.add_axes(**labels)
     
+    plotter.set_background('white')
+
+    if extra_mesh is not None:
+         plotter.add_mesh(extra_mesh, color='black')
+
     plotter.add_mesh(interest_points,
                      scalars=spatialized_variable,
                      point_size=10,

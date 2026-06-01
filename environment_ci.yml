@@ -10,10 +10,11 @@ dependencies:
   - matplotlib-base
   - pandas
   - vtk
-  - trimesh
+  - trimesh==4.11.5
   - rtree
   - windrose
-  - pvlib
+  - scipy
+  - pvlib-python
   - pyembree
   - pyvista==0.44.1
   - pyyaml

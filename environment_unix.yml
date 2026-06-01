@@ -12,7 +12,8 @@ dependencies:
   - trimesh
   - rtree
   - windrose
-  - pvlib
+  - scipy
+  - pvlib-python
   - pyembree
   - pyvista==0.44.1
   - pyyaml
@@ -20,7 +21,8 @@ dependencies:
   - yaml
   - pytest
   - pytest-cov
-  # Optional — only needed for TerrainSource='srtm' / real-DEM terrain (issue #248)
+  - xmltodict
+  - unidecode
   - rasterio
   - pyproj
   - elevation

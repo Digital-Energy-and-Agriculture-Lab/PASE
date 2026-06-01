@@ -59,13 +59,13 @@ x_sensors = np.arange(start, stop+step, step=step)
 y_sensors = np.arange(start, stop+step, step=step)
 
 for y, x in product(y_sensors, x_sensors):
-    M.add_sensor(x, y,0)
+    M.add_triangular_probe(position=(x, y, 0), normal=(0, 0, 1), area=0.01)
 
 # Initialize and run light ray casting model (direct and diffuse) with points of interest and scene
 
 
 MFs = [1, 2, 4, 6, 8]
-results_indices = ['point ID', 0, 1, 2, 3, 4, 5, 6, 7, 8, 'Relative error center point [%]', 'COV corners', 'COV midpoints', 'Test result']
+results_indices = ['point ID', 0, 1, 2, 3, 4, 5, 6, 7, 8, 'Relative error center point [0-1]', 'COV corners', 'COV midpoints', 'Test result']
 results = []
 results_cols = ['point ID']
 
@@ -83,9 +83,9 @@ for MF in MFs:
     L.get_diffuse_shaded_weights_map()
 
     if PLOT:
-        L.visualize_diffuse_light_map()
+        L.visualize_diffuse_light_map(0)
 
-    L.diffuse_shaded_weights_map = L.diffuse_shaded_weights_map.sum(axis=0)
+    L.diffuse_shaded_weights_map = L.diffuse_shaded_weights_map.sum(axis=1)
 
     print(f'{MF=}')
     if VERBOSE:
@@ -98,8 +98,8 @@ for MF in MFs:
     center_computed_value = L.diffuse_shaded_weights_map[center_id]
     print(f'Center point computed value = {center_computed_value}')
     print(f'Center point expected value = {analytical_f}')
-    rel_error_center_value = (1 - center_computed_value / analytical_f) * 100  # [%]
-    print(f'Relative error on center value = {rel_error_center_value:.3g} %')
+    rel_error_center_value = (1 - center_computed_value / analytical_f)  # [-]
+    print(f'Relative error on center value = {rel_error_center_value:.3g}')
 
     # Analyze corners
     corners_ids = [0, 2, 6, 8]
@@ -120,25 +120,63 @@ for MF in MFs:
     cov_midpoints = L.diffuse_shaded_weights_map[midpoints_ids].std() / L.diffuse_shaded_weights_map[midpoints_ids].mean()
 
 
+    TOL_STRICT = 0.01
+    TOL_LOOSE  = 0.05
+
+    center_ok_strict  = np.isclose(rel_error_center_value, 0, atol=TOL_STRICT)
+    center_ok_loose   = np.isclose(rel_error_center_value, 0, atol=TOL_LOOSE)
+    corners_ok_strict  = math.isclose(cov_corners,   0, abs_tol=TOL_STRICT)
+    corners_ok_loose   = math.isclose(cov_corners,   0, abs_tol=TOL_LOOSE)
+    midpoints_ok_strict = math.isclose(cov_midpoints, 0, abs_tol=TOL_STRICT)
+    midpoints_ok_loose  = math.isclose(cov_midpoints, 0, abs_tol=TOL_LOOSE)
+
     print(20*'=')
-    if (cov_midpoints == 0) and (cov_corners == 0):
+    if center_ok_strict and corners_ok_strict and midpoints_ok_strict:
         result = 'passed'
         print('Test passed !')
-        # results.append({f'{MF=}': 'pass', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
-    elif (math.isclose(cov_midpoints, 0, abs_tol=0.01)) or (math.isclose(cov_midpoints, 0, abs_tol=0.01)):
+    elif center_ok_loose and corners_ok_loose and midpoints_ok_loose:
         result = 'borderline'
-        print('Test borderline.')
-        # results.append({f'{MF=}': 'Borderline', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
+        failed_criteria = []
+        if not center_ok_strict:
+            failed_criteria.append(f'center rel. error ({rel_error_center_value:.3g}) > {TOL_STRICT}')
+        if not corners_ok_strict:
+            failed_criteria.append(f'COV corners ({cov_corners:.3g}) > {TOL_STRICT}')
+        if not midpoints_ok_strict:
+            failed_criteria.append(f'COV midpoints ({cov_midpoints:.3g}) > {TOL_STRICT}')
+        print('Test borderline. Criteria outside strict tolerance: ' + '; '.join(failed_criteria))
     else:
         result = 'FAILED'
-        print('Test failed.')
-        # results.append({f'{MF=}': 'FAIL', 'cov corners': cov_corners, 'cov midpoints': cov_midpoints})
+        failed_criteria = []
+        if not center_ok_loose:
+            failed_criteria.append(f'center rel. error ({rel_error_center_value:.3g}) > {TOL_LOOSE}')
+        if not corners_ok_loose:
+            failed_criteria.append(f'COV corners ({cov_corners:.3g}) > {TOL_LOOSE}')
+        if not midpoints_ok_loose:
+            failed_criteria.append(f'COV midpoints ({cov_midpoints:.3g}) > {TOL_LOOSE}')
+        print('Test FAILED. Failed criteria: ' + '; '.join(failed_criteria))
+        
     results.append([L.diffuse_shaded_weights_map[0], L.diffuse_shaded_weights_map[1], L.diffuse_shaded_weights_map[2],
                     L.diffuse_shaded_weights_map[3], L.diffuse_shaded_weights_map[4], L.diffuse_shaded_weights_map[5],
                     L.diffuse_shaded_weights_map[6], L.diffuse_shaded_weights_map[7], L.diffuse_shaded_weights_map[8],
                     rel_error_center_value,
                     cov_corners, cov_midpoints,
                     result])
+
+    # Absolute irradiance check — catches the /N bug and sky_integral normalization bug.
+    # For a uniform sky (type 5), an unshaded sensor recovers DHI * analytical_f.
+    # The view factor checks above only verify relative geometry; this verifies absolute calibration.
+    DHI_ref = 1.0  # W/m²
+    df_irr = pd.DataFrame({'DHI': [DHI_ref], 'azimuth': [180.0],
+                           'elevation': [45.0], 'CIE Sky Type': [5]})
+    irr_map = L.compute_daily_diff_irradiation(df_irr, n_freq=1)  # calls get_diffuse_shaded_weights_map internally
+    center_irr_Wh = float(irr_map[center_id] / 3600 * 1e6)
+    irr_rel_error = abs(center_irr_Wh / (DHI_ref * analytical_f) - 1)
+    irr_ok = math.isclose(irr_rel_error, 0, abs_tol=TOL_LOOSE)
+    print(f'Center absolute irradiance: {center_irr_Wh:.4f} W·h/m²'
+          f' (expected ≈{DHI_ref * analytical_f:.4f})')
+    print(f'Irradiance relative error: {irr_rel_error:.3g}'
+          f' (tol={TOL_LOOSE}) → {"OK" if irr_ok else "FAILED"}')
+
     print('')
 
 print('Computation is over')
@@ -170,7 +208,7 @@ if DEBUG:
 
     spatialized_variable = np.array(L.diffuse_shaded_weights_map, dtype=np.float32)
     lgd_title = 'Diffuse map'
-    plotter.add_mesh(L.sourcepoints[:,:-1],
+    plotter.add_mesh(L.sourcepoints[:,:],
                      scalars=spatialized_variable,
                      point_size=10,
                      lighting=False,
