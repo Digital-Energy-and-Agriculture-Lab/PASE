@@ -20,3 +20,7 @@ dependencies:
   - yaml
   - pytest
   - pytest-cov
+  # Optional — only needed for TerrainSource='srtm' / real-DEM terrain (issue #248)
+  - rasterio
+  - pyproj
+  - elevation

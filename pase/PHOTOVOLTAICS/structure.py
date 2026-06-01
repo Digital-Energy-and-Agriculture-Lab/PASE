@@ -95,6 +95,7 @@ def build_structure(config_dict, ground=None, x_center=0.0, y_center=0.0,
             half_x, half_y = instance.get_footprint_half_extent()
             z_center = block_reference_elevation(
                 ground, x_center, y_center, half_x, half_y, azimuth_deg,
+                samples=getattr(ground, 'footprint_samples', 2),
             )
 
     return instance.build_structure(

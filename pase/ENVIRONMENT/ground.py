@@ -98,26 +98,36 @@ def block_reference_elevation(
     half_x: float,
     half_y: float,
     azimuth_deg: float = 0.0,
+    samples: int = 2,
 ) -> float:
     """
-    Return the maximum terrain elevation over the 4 corners of a block footprint.
+    Return the maximum terrain elevation over a block footprint.
 
     The block is an axis-aligned rectangle ``[cx ± half_x] × [cy ± half_y]`` in
-    the pre-rotation (central) frame.  Corners are mapped to world coordinates
-    by rotating by ``-azimuth_deg`` about the origin before sampling the ground.
+    the pre-rotation (central) frame.  Sample points are mapped to world
+    coordinates by rotating by ``-azimuth_deg`` about the origin before sampling
+    the ground.
 
     Anchoring PV blocks (panels + structure) at this elevation — rather than at
     the ground elevation at their center — guarantees that no component of the
-    block sits below the terrain on a slope, since on a tilted plane the
-    maximum elevation over a rectangle is always attained at one of its corners.
+    block sits below the terrain, since the block top is lifted to the highest
+    terrain point under its footprint.
+
+    Parameters
+    ----------
+    samples : int
+        Number of sample points per axis (``>= 2``).  ``samples=2`` evaluates
+        the 4 corners only — exact for a tilted plane, where the maximum over a
+        rectangle is always attained at a corner.  Real (bumpy) terrain may peak
+        in the interior, so ``DEMGround`` requests a denser ``samples`` grid via
+        its ``footprint_samples`` attribute.
     """
+    samples = max(2, int(samples))
     az = math.radians(azimuth_deg)
     cos_az, sin_az = math.cos(az), math.sin(az)
     z_max = -math.inf
-    for dx in (-half_x, half_x):
-        for dy in (-half_y, half_y):
-            x_pre = cx + dx
-            y_pre = cy + dy
+    for x_pre in np.linspace(cx - half_x, cx + half_x, samples):
+        for y_pre in np.linspace(cy - half_y, cy + half_y, samples):
             x_w = x_pre * cos_az + y_pre * sin_az
             y_w = -x_pre * sin_az + y_pre * cos_az
             z = float(ground.elevation(x_w, y_w))
@@ -130,6 +140,19 @@ def block_reference_elevation(
 
 class Ground:
     """Flat ground at z = 0.  All queries always return True for contains()."""
+
+    #: Sample points per axis used by ``block_reference_elevation`` to anchor
+    #: blocks.  2 (the 4 corners) is exact for planar grounds; ``DEMGround``
+    #: raises this to capture interior peaks on bumpy real terrain.
+    footprint_samples: int = 2
+
+    def assert_covers(self, x_min, x_max, y_min, y_max) -> None:
+        """Raise if the footprint is not fully within the ground extent.
+
+        No-op for unbounded grounds (flat / sloped infinite planes).  Overridden
+        by ``DEMGround`` to fail early with an actionable message.
+        """
+        return None
 
     def elevation(self, x, y) -> float | np.ndarray:
         """Return z at (x, y).  Accepts scalars or NumPy arrays."""
@@ -246,6 +269,10 @@ class DEMGround(Ground):
         When (x, y) is **outside** the terrain bounding box.
     """
 
+    #: Real terrain can peak inside a footprint, not only at its corners, so we
+    #: sample a denser grid than the 2-corner default of planar grounds.
+    footprint_samples: int = 5
+
     def __init__(self, terrain: pv.PolyData):
         if "Normals" not in terrain.point_data:
             terrain = terrain.compute_normals(consistent_normals=True)
@@ -261,6 +288,23 @@ class DEMGround(Ground):
     def contains(self, x: float, y: float) -> bool:
         return (self._xmin <= x <= self._xmax
                 and self._ymin <= y <= self._ymax)
+
+    def assert_covers(self, x_min, x_max, y_min, y_max) -> None:
+        """Fail early if the PV layout extends beyond the DEM extent.
+
+        Raises a clear, actionable error (increase ``TerrainExtentRadius``)
+        instead of letting an opaque per-pole ``ValueError`` surface mid-build.
+        """
+        if (x_min < self._xmin or x_max > self._xmax
+                or y_min < self._ymin or y_max > self._ymax):
+            raise ValueError(
+                "The PV layout extends beyond the downloaded terrain extent "
+                f"(layout X [{x_min:.1f} – {x_max:.1f}] Y [{y_min:.1f} – {y_max:.1f}] "
+                f"vs DEM X [{self._xmin:.1f} – {self._xmax:.1f}] "
+                f"Y [{self._ymin:.1f} – {self._ymax:.1f}]). "
+                "Increase 'TerrainExtentRadius' in the scenario YAML so the "
+                "terrain covers the whole installation."
+            )
 
     def _check(self, x: float, y: float) -> None:
         if not self.contains(x, y):
@@ -337,24 +381,74 @@ class DEMGround(Ground):
 
 # ── Config-driven factory ─────────────────────────────────────────────────────
 
-def ground_from_config(config: dict) -> "Ground":
-    """Build a Ground from terrain-slope parameters in a config dict.
+_METERS_PER_DEGREE_LAT = 111_320.0
 
-    Reads the user-facing, intuitive slope parameters:
 
-        TerrainSlopeAngle  — terrain inclination from horizontal [°], 0 = flat.
-        TerrainSlopeAspect — downhill direction [°], meteorological convention
-                             (0°=N, 90°=E, 180°=S, 270°=W).
+def bounds_around(lat: float, lon: float, radius_m: float) -> tuple:
+    """Return a ``(west, south, east, north)`` WGS84 box of half-size *radius_m*
+    metres centred on (*lat*, *lon*).
 
-    These map onto the geometric ``SlopedGround`` convention via
-    ``terrain_normal_elevation = 90 - TerrainSlopeAngle`` and
-    ``terrain_normal_azimuth = TerrainSlopeAspect``.
-
-    Returns a flat ``Ground()`` when the slope angle is ~0, else a ``SlopedGround``.
+    Used to build the SRTM download extent around the scenario location.
     """
-    slope_angle = float(config.get('TerrainSlopeAngle', 0.0))
-    aspect      = float(config.get('TerrainSlopeAspect', 0.0))
-    if slope_angle <= 1e-6:
-        return Ground()
-    return SlopedGround(terrain_normal_azimuth=aspect,
-                        terrain_normal_elevation=90.0 - slope_angle)
+    dlat = radius_m / _METERS_PER_DEGREE_LAT
+    cos_lat = max(math.cos(math.radians(lat)), 1e-6)
+    dlon = radius_m / (_METERS_PER_DEGREE_LAT * cos_lat)
+    return (lon - dlon, lat - dlat, lon + dlon, lat + dlat)
+
+
+def _dem_ground_from_config(cfg: dict) -> "DEMGround":
+    """Download SRTM terrain around the location and wrap it in a ``DEMGround``.
+
+    Requires ``Latitude`` / ``Longitude`` (from the scenario YAML) and uses
+    ``TerrainExtentRadius`` [m] for the download box.  Imports the SRTM pipeline
+    lazily so the optional ``elevation`` / ``rasterio`` deps are only needed for
+    this mode.
+    """
+    if 'Latitude' not in cfg or 'Longitude' not in cfg:
+        raise ValueError(
+            "TerrainSource='srtm' requires 'Latitude' and 'Longitude' to build "
+            "the terrain extent. Pass the scenario/location config via "
+            "ground_from_config(config, location=<loc>)."
+        )
+    lat = float(cfg['Latitude'])
+    lon = float(cfg['Longitude'])
+    radius = float(cfg.get('TerrainExtentRadius', 500.0))
+    bounds = bounds_around(lat, lon, radius)
+
+    from pase.ENVIRONMENT.terrain_pipeline import build_terrain_surface
+    surface = build_terrain_surface(bounds=bounds)
+    return DEMGround(surface)
+
+
+def ground_from_config(config: dict, location: dict | None = None) -> "Ground":
+    """Build a Ground from terrain parameters in the config / location dicts.
+
+    Reads from a merged view (the central ``config`` overrides the scenario
+    ``location``), so terrain keys may live in either file.
+
+    Parameters
+    ----------
+    TerrainSource      — ``flat`` | ``sloped`` | ``srtm`` (default ``flat``).
+    TerrainSlopeAngle  — terrain inclination from horizontal [°], 0 = flat (``sloped``).
+    TerrainSlopeAspect — downhill direction [°], meteorological convention
+                         (0°=N, 90°=E, 180°=S, 270°=W) (``sloped``).
+    Latitude/Longitude — location, required for ``srtm``.
+    TerrainExtentRadius — half-size [m] of the SRTM download box (``srtm``).
+
+    ``sloped`` maps onto the geometric ``SlopedGround`` convention via
+    ``terrain_normal_elevation = 90 - TerrainSlopeAngle`` and
+    ``terrain_normal_azimuth = TerrainSlopeAspect``.  ``srtm`` downloads a real
+    DEM around the location and returns a ``DEMGround``.
+    """
+    cfg = {**(location or {}), **(config or {})}
+    source = str(cfg.get('TerrainSource', 'flat')).lower()
+
+    if source in ('srtm', 'dem'):
+        return _dem_ground_from_config(cfg)
+
+    slope_angle = float(cfg.get('TerrainSlopeAngle', 0.0))
+    if source == 'sloped' or slope_angle > 1e-6:
+        aspect = float(cfg.get('TerrainSlopeAspect', 0.0))
+        return SlopedGround(terrain_normal_azimuth=aspect,
+                            terrain_normal_elevation=90.0 - slope_angle)
+    return Ground()

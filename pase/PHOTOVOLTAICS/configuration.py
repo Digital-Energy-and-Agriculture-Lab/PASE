@@ -35,6 +35,31 @@ DEFAULT_PANEL_Z_DIM = 0.1
 logger = logging.getLogger(__name__)
 
 
+def _assert_layout_within_ground(ground, block_centers, half_x_fp, half_y_fp,
+                                 azimuth_deg) -> None:
+    """Check the whole PV layout footprint fits within the ground extent.
+
+    Computes the world-space bounding box of every block footprint (rotated by
+    ``-azimuth_deg`` about the origin, matching ``block_reference_elevation``)
+    and delegates to ``ground.assert_covers``.  No-op for unbounded grounds;
+    ``DEMGround`` raises an actionable error if the layout exceeds the DEM.
+    """
+    if block_centers is None or len(block_centers) == 0:
+        return
+    az = _math.radians(azimuth_deg)
+    cos_az, sin_az = _math.cos(az), _math.sin(az)
+    centers = np.asarray(block_centers, dtype=float)
+    # Pre-rotation footprint corners around each block center.
+    corners = np.array([[-half_x_fp, -half_y_fp], [-half_x_fp, half_y_fp],
+                        [half_x_fp, -half_y_fp], [half_x_fp, half_y_fp]])
+    xs_pre = centers[:, 0][:, None] + corners[:, 0][None, :]
+    ys_pre = centers[:, 1][:, None] + corners[:, 1][None, :]
+    xs_w = xs_pre * cos_az + ys_pre * sin_az
+    ys_w = -xs_pre * sin_az + ys_pre * cos_az
+    ground.assert_covers(float(xs_w.min()), float(xs_w.max()),
+                         float(ys_w.min()), float(ys_w.max()))
+
+
 # ----- Utilities -----
 def merge_polydata(datasets: List[pyv.PolyData], *, extract_surface: bool = True) -> pyv.PolyData:
     """
@@ -1051,6 +1076,11 @@ class PVConfiguration3D(MultiBlockPASE):
 
         cz_terrain_by_block: Dict[Tuple[int, int], float] = {}
 
+        # Fail early (clear message) if the layout extends beyond the ground
+        # extent — no-op for unbounded flat/sloped grounds, enforced by DEMGround.
+        _assert_layout_within_ground(self.ground, block_centers,
+                                     half_x_fp, half_y_fp, azimuth_deg)
+
         for idx in range(N):
             bx, by, mx, my = map(int, grid_indices[idx])
             offx, offy, offz = map(float, positions[idx])
@@ -1060,6 +1090,7 @@ class PVConfiguration3D(MultiBlockPASE):
             if block_key not in cz_terrain_by_block:
                 cz_terrain_by_block[block_key] = block_reference_elevation(
                     self.ground, cx, cy, half_x_fp, half_y_fp, azimuth_deg,
+                    samples=self.ground.footprint_samples,
                 )
             cz_terrain = cz_terrain_by_block[block_key]
             offz += cz_terrain
@@ -1220,6 +1251,7 @@ class PVConfiguration3D(MultiBlockPASE):
             if block_key not in cz_terrain_by_block:
                 cz_terrain_by_block[block_key] = block_reference_elevation(
                     self.ground, cx, cy, half_x_fp, half_y_fp, azimuth_deg,
+                    samples=self.ground.footprint_samples,
                 )
             cz_terrain = cz_terrain_by_block[block_key]
             offz += cz_terrain
@@ -1548,6 +1580,11 @@ class PV_Configuration_3D(PVConfiguration3D):
 
         cz_terrain_by_block: Dict[Tuple[int, int], float] = {}
 
+        # Fail early (clear message) if the layout extends beyond the ground
+        # extent — no-op for unbounded flat/sloped grounds, enforced by DEMGround.
+        _assert_layout_within_ground(self.ground, block_centers,
+                                     half_x_fp, half_y_fp, azimuth_deg)
+
         for idx in range(N):
             bx, by, mx, my = map(int, grid_indices[idx])
             offx, offy, offz = map(float, positions[idx])
@@ -1557,6 +1594,7 @@ class PV_Configuration_3D(PVConfiguration3D):
             if block_key not in cz_terrain_by_block:
                 cz_terrain_by_block[block_key] = block_reference_elevation(
                     self.ground, cx, cy, half_x_fp, half_y_fp, azimuth_deg,
+                    samples=self.ground.footprint_samples,
                 )
             cz_terrain = cz_terrain_by_block[block_key]
             offz += cz_terrain
