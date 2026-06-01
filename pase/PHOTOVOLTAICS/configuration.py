@@ -20,7 +20,8 @@ from pase.PHOTOVOLTAICS.structure import (build_structure,
 from pase.pase_math import (compute_panel_grid_positions,
                             compute_block_centers,
                             rotate_about_z)
-from pase.ENVIRONMENT.ground import Ground, SlopedGround, block_reference_elevation
+from pase.ENVIRONMENT.ground import (Ground, SlopedGround, block_reference_elevation,
+                                      ground_from_config)
 import math as _math
 
 pyv.global_theme.allow_empty_mesh = True
@@ -875,8 +876,8 @@ class PVConfiguration3D(MultiBlockPASE):
         config.setdefault("MeshConfig", False)
         config.setdefault("RotationAxisNumber", 0)
         config.setdefault("CentralAzimut", 0)
-        config.setdefault("TerrainNormalAzimuth", 0.0)
-        config.setdefault("TerrainNormalElevation", 90.0)
+        config.setdefault("TerrainSlopeAngle", 0.0)
+        config.setdefault("TerrainSlopeAspect", 0.0)
         return config
 
     # ---- Panel primitives ----
@@ -1397,9 +1398,7 @@ class PV_Configuration_3D(PVConfiguration3D):
 
         if params_dict is not None:
             params_dict = self._apply_defaults(params_dict)
-            az = float(params_dict.get('TerrainNormalAzimuth', 0.0))
-            el = float(params_dict.get('TerrainNormalElevation', 90.0))
-            ground = SlopedGround(az, el) if el < 90.0 - 1e-6 else Ground()
+            ground = ground_from_config(params_dict)
         else:
             ground = Ground()
         super().__init__(ground=ground, **kwargs)

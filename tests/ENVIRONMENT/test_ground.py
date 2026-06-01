@@ -4,7 +4,8 @@ import math
 import numpy as np
 import pytest
 
-from pase.ENVIRONMENT.ground import Ground, SlopedGround, rotation_from_z_to_normal
+from pase.ENVIRONMENT.ground import (Ground, SlopedGround, rotation_from_z_to_normal,
+                                     ground_from_config)
 
 
 class TestGround:
@@ -116,3 +117,32 @@ class TestRotationFromZToNormal:
         R = rotation_from_z_to_normal(n)
         np.testing.assert_allclose(R @ R.T, np.eye(3), atol=1e-10)
         assert abs(np.linalg.det(R) - 1.0) < 1e-10
+
+
+class TestGroundFromConfig:
+    def test_missing_keys_returns_flat_ground(self):
+        g = ground_from_config({})
+        assert isinstance(g, Ground) and not isinstance(g, SlopedGround)
+        assert g.elevation(100, 200) == pytest.approx(0.0)
+
+    def test_zero_angle_returns_flat_ground(self):
+        g = ground_from_config({'TerrainSlopeAngle': 0.0, 'TerrainSlopeAspect': 180.0})
+        assert isinstance(g, Ground) and not isinstance(g, SlopedGround)
+
+    def test_positive_angle_returns_sloped_ground(self):
+        g = ground_from_config({'TerrainSlopeAngle': 10.0, 'TerrainSlopeAspect': 180.0})
+        assert isinstance(g, SlopedGround)
+
+    def test_conversion_matches_normal_convention(self):
+        # TerrainSlopeAngle=10, TerrainSlopeAspect=180 ≡ SlopedGround(180, 80)
+        g = ground_from_config({'TerrainSlopeAngle': 10.0, 'TerrainSlopeAspect': 180.0})
+        ref = SlopedGround(terrain_normal_azimuth=180, terrain_normal_elevation=80)
+        for x, y in [(0, 0), (10, -20), (-5, 30)]:
+            assert g.elevation(x, y) == pytest.approx(ref.elevation(x, y))
+        np.testing.assert_allclose(g.gradient(0, 0), ref.gradient(0, 0))
+
+    def test_string_values_are_coerced(self):
+        # YAML values may arrive as numbers; ensure float() coercion is robust.
+        g = ground_from_config({'TerrainSlopeAngle': '10', 'TerrainSlopeAspect': '180'})
+        ref = SlopedGround(terrain_normal_azimuth=180, terrain_normal_elevation=80)
+        assert g.elevation(0, 100) == pytest.approx(ref.elevation(0, 100))

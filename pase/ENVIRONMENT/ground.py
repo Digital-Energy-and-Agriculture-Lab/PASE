@@ -16,18 +16,25 @@ All share the same interface:
     .contains(x, y)   → bool           is (x, y) within the ground extent?
     .to_polydata(x_range, y_range, resolution) → pv.PolyData
 
-Parameter conventions (SlopedGround)
---------------------------------------
-TerrainNormalAzimuth   — horizontal azimuth of the surface normal [°],
-                         meteorological convention: 0°=North, 90°=East,
-                         180°=South, 270°=West.
-                         Equal to the downhill direction (the normal's
-                         horizontal projection points the same way as the
-                         slope falls).
-TerrainNormalElevation — elevation angle of the surface normal above the
-                         horizontal plane [°].
-                         90° → flat terrain (normal points straight up).
-                         60° → 30° slope.   0° → vertical wall.
+Parameter conventions (SlopedGround constructor — geometric primitive)
+----------------------------------------------------------------------
+terrain_normal_azimuth   — horizontal azimuth of the surface normal [°],
+                           meteorological convention: 0°=North, 90°=East,
+                           180°=South, 270°=West.
+                           Equal to the downhill direction (the normal's
+                           horizontal projection points the same way as the
+                           slope falls).
+terrain_normal_elevation — elevation angle of the surface normal above the
+                           horizontal plane [°].
+                           90° → flat terrain (normal points straight up).
+                           60° → 30° slope.   0° → vertical wall.
+
+YAML-facing parameters (intuitive layer — see ``ground_from_config``)
+---------------------------------------------------------------------
+TerrainSlopeAngle  — terrain inclination from horizontal [°] (0° = flat).
+TerrainSlopeAspect — downhill direction [°] (same meteorological convention).
+Mapping: terrain_normal_elevation = 90 − TerrainSlopeAngle,
+         terrain_normal_azimuth   = TerrainSlopeAspect.
 
 Open-design-question answers (from issue #14)
 ---------------------------------------------
@@ -326,3 +333,28 @@ class DEMGround(Ground):
                     self._z_bot, self._z_top),
             invert=False,
         )
+
+
+# ── Config-driven factory ─────────────────────────────────────────────────────
+
+def ground_from_config(config: dict) -> "Ground":
+    """Build a Ground from terrain-slope parameters in a config dict.
+
+    Reads the user-facing, intuitive slope parameters:
+
+        TerrainSlopeAngle  — terrain inclination from horizontal [°], 0 = flat.
+        TerrainSlopeAspect — downhill direction [°], meteorological convention
+                             (0°=N, 90°=E, 180°=S, 270°=W).
+
+    These map onto the geometric ``SlopedGround`` convention via
+    ``terrain_normal_elevation = 90 - TerrainSlopeAngle`` and
+    ``terrain_normal_azimuth = TerrainSlopeAspect``.
+
+    Returns a flat ``Ground()`` when the slope angle is ~0, else a ``SlopedGround``.
+    """
+    slope_angle = float(config.get('TerrainSlopeAngle', 0.0))
+    aspect      = float(config.get('TerrainSlopeAspect', 0.0))
+    if slope_angle <= 1e-6:
+        return Ground()
+    return SlopedGround(terrain_normal_azimuth=aspect,
+                        terrain_normal_elevation=90.0 - slope_angle)
