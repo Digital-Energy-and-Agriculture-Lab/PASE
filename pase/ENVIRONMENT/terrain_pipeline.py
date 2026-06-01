@@ -124,6 +124,17 @@ def build_terrain_surface(
         x_coords = src.transform[2] + np.arange(src.width)  * src.transform[0]
         y_coords = src.transform[5] + np.arange(src.height) * src.transform[4]
 
+        if not np.any(np.isfinite(elev)):
+            raise ValueError(
+                f"No valid elevation data in {output_utm} (the DEM is entirely "
+                "nodata). This usually means a corrupt SRTM tile in the cache. "
+                "Clear ~/.cache/elevation and ~/.cache/pase/dem and retry, or "
+                "call build_terrain_surface(..., force_download=True)."
+            )
+        # Fill any remaining nodata gaps so the mesh stays finite everywhere.
+        if np.any(np.isnan(elev)):
+            elev = np.where(np.isnan(elev), np.nanmin(elev), elev)
+
         print(f"  Grid: {src.width} × {src.height} px  |  "
               f"pixel size: {src.transform[0]:.1f} m  |  "
               f"elevation: {np.nanmin(elev):.0f}–{np.nanmax(elev):.0f} m")
