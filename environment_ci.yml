@@ -11,12 +11,12 @@ dependencies:
   - pandas
   - conda-forge::vtk>=9.3,<9.5
   - conda-forge::vtk-base>=9.3,<9.5
-  - conda-forge::vtk-io-ffmpeg>=9.3,<9.5
   - trimesh
   - rtree
   - windrose
   - scipy
-  - pvlib-python
+  - pvlib>0.15
+  - pvlib-python>0.15
   - pyvista
   - pip:
     - embreex
