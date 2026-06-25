@@ -14,7 +14,8 @@ dependencies:
   - rtree
   - windrose
   - scipy
-  - pvlib-python
+  - pvlib>0.15
+  - pvlib-python>0.15
   - pyvista
   - pip:
     - embreex
