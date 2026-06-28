@@ -1181,7 +1181,7 @@ class Ray_casting_scene:
         # instant. We therefore accumulate matrix-vector products instead of
         # materializing the full (nSourcePoints x nSkyPatches) array T times via
         # get_shaded_radiance_contrib. This is a pure re-association of the sum,
-        # so the result is identical (see test_diff_irradiation_matvec_equivalence).
+        # so the result is identical (see tests/ENVIRONMENT/test_diff_irradiation_perf.py).
         self.get_diffuse_shaded_weights_map()
         mask = self.diffuse_shaded_weights_map
 
