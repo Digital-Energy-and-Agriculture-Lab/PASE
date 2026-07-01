@@ -13,6 +13,8 @@ Visit regularly to access the most up-to-date versions.
 
 ## Installation
 
+> **⚠ Breaking change (issue [#256](https://gitlab.uliege.be/deal-public/pase/-/issues/256), July 2026):** the conda environment files were rebuilt: Python `3.10` → `3.12`, `pyembree` replaced by `embreex`, and the `pyvista`/`vtk`/`pvlib`/`trimesh` pins were updated. This pulls in pandas 2.2+, which removed the uppercase `"H"` hourly frequency alias in favor of lowercase `"h"`. **If your own scripts or notebooks call PASE functions with `freq="H"`** (e.g. weather-data resampling) **or use pandas directly with `"H"`**, update them to `freq="h"` or they will error after rebuilding your environment. See the wiki's [Installation](https://gitlab.uliege.be/deal-public/pase/-/wikis/documentation/installation) page for full details.
+
 The repository provides environment files for setting up a conda virtual environment with all necessary dependencies. There are two separate files:
 
 - One for Windows users (`environment_windows.yml`)
@@ -34,19 +36,13 @@ If you haven’t installed Conda, we recommend following the [Conda installation
    conda env create -f environment_windows.yml
    ```
 
-2. Activate the environment:
+2. Activate the environment (the name comes from the `name:` field in the yml file, currently `pase-2026-07`; feel free to override it at creation time with `conda env create -f environment_windows.yml -n <your-name>`):
    
    ```bash
-   conda activate pase
+   conda activate pase-2026-07
    ```
 
-3. Install Embree-related dependencies with pip (while this is not standard practice in Conda, it should work without issues):
-   
-   ```bash
-   pip install pyembree embreex
-   ```
-
-4. The framework is now ready for use (for advanced crop modeling, see section [Installing JavaStics](#installing-javastics)).
+3. The framework is now ready for use (for advanced crop modeling, see section [Installing JavaStics](#installing-javastics)).
 
 ### Unix-based Installation
 
@@ -56,10 +52,10 @@ If you haven’t installed Conda, we recommend following the [Conda installation
    conda env create -f environment_unix.yml
    ```
 
-2. Activate the environment:
+2. Activate the environment (the name comes from the `name:` field in the yml file, currently `pase-2026-07`; feel free to override it at creation time with `conda env create -f environment_unix.yml -n <your-name>`):
    
    ```bash
-   conda activate pase
+   conda activate pase-2026-07
    ```
 
 3. The framework is now ready for use (for advanced crop modeling, see section [Installing JavaStics](#installing-javastics)).
