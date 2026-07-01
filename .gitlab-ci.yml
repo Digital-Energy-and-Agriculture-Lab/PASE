@@ -55,7 +55,7 @@ before_script:
   # sanity import test
   - |
     python -c "import importlib,sys; 
-    pkgs=['vtk','pyembree','numpy','pandas','trimesh','rtree', 'pyvista']; 
+    pkgs=['vtk','embreex','numpy','pandas','trimesh','rtree', 'pyvista'];
     for p in pkgs: 
       try: 
         m=importlib.import_module(p); print(p,'OK', getattr(m,'file',None)) 

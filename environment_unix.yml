@@ -1,21 +1,24 @@
-name: pase
+name: pase-2026-07
 channels:
   - conda-forge
 dependencies:
-  - python=3.10
-  - conda==23.3.1
-  - conda-libmamba-solver==23.3.0
+  - python=3.12
+  - conda
+  - conda-libmamba-solver
   - pip
   - numpy
   - pandas
-  - vtk
+  - conda-forge::vtk>=9.3,<9.5
+  - conda-forge::vtk-base>=9.3,<9.5
   - trimesh
   - rtree
   - windrose
   - scipy
-  - pvlib-python
-  - pyembree
-  - pyvista==0.44.1
+  - pvlib>0.15
+  - pvlib-python>0.15
+  - pyvista
+  - pip:
+    - embreex
   - pyyaml
   - seaborn
   - yaml

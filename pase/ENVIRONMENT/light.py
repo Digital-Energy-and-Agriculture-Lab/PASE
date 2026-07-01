@@ -50,7 +50,7 @@ class Sun_positions:
     def get_solar_positions(self, freq_deter, TZ):
         
         if (freq_deter == 8760 or freq_deter == 8784):
-            frq = '1H'
+            frq = '1h'
             n = 1
         elif (freq_deter == 35040 or freq_deter == 35136):
             frq = '15min'
@@ -441,7 +441,7 @@ class Sun_positions_sampled:
        Attribute SP is a dataframe containing the sun positions at the requested sampling
         """
         if (freq_deter == 8760 or freq_deter == 8784):
-            frq = '1H'
+            frq = '1h'
             n = 1
         elif (freq_deter == 35040 or freq_deter == 35136):
             frq = '15min'

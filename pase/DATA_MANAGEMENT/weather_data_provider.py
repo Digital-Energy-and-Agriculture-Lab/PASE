@@ -77,7 +77,7 @@ class Weather_data:
                 new_index = pd.date_range(
                     f"01-01-{year} 00:10:00",
                     f"31-12-{year} 23:10:00",
-                    freq='1H')
+                    freq='1h')
                 df = df.set_index(new_index)
                 rename_df = {'GHI': 'G(h)', 'DNI': 'Gb(n)', 'DHI': 'Gd(h)',
                              "TAmb": "T2m", "Ws": 'WS10m'}
@@ -101,7 +101,7 @@ class Weather_data:
             pvgis.request_hourly_time_series()
             one_year_dataframe = pvgis.pandas_data_frame()
             new_index = pd.date_range("01-01-"+str(year)+" 00:10:00", "31-12-"+str(year)+" 23:10:00",
-                                      freq='1H')
+                                      freq='1h')
             one_year_dataframe = one_year_dataframe.set_index(new_index)
             rename_df = {'GHI': 'G(h)', 'DNI': 'Gb(n)', 'DHI': 'Gd(h)',
                 "TAmb": "T2m", "Ws": 'WS10m'}            
