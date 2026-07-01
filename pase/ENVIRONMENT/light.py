@@ -884,20 +884,20 @@ class Ray_casting_scene:
                 logger.info("Geometry is empty. Returning full direct illumination.")
                 direct_mask = np.ones((self.n_sourcepoints, n_sun_positions), dtype=np.uint16)
             
-            if self.horizon is not None:
-                 
-                 beta = np.arcsin(sun_P[:,2])
-                 gamma = np.arctan2(sun_P[:,0], sun_P[:,1])
-                 
-                 # Convert to degrees
-                 solar_el = np.degrees(beta)
-                 solar_az = np.degrees(gamma)
-                 solar_az = np.mod(solar_az, 360) 
-                 
-                 horizon_vis = self.horizon.is_sun_visible(solar_az, solar_el)
-                 direct_mask[:] = direct_mask & horizon_vis[np.newaxis, :]
-                 
-            return direct_mask
+                if self.horizon is not None:
+                    
+                    beta = np.arcsin(sun_P[:,2])
+                    gamma = np.arctan2(sun_P[:,0], sun_P[:,1])
+                    
+                    # Convert to degrees
+                    solar_el = np.degrees(beta)
+                    solar_az = np.degrees(gamma)
+                    solar_az = np.mod(solar_az, 360) 
+                    
+                    horizon_vis = self.horizon.is_sun_visible(solar_az, solar_el)
+                    direct_mask[:] = direct_mask & horizon_vis[np.newaxis, :]
+                    
+                return direct_mask
 
         #Creation of the source points array (Nx3) with N = len(Source) * len(sun_positions)
         SourcePoints = np.repeat(np.column_stack((
