@@ -1,4 +1,4 @@
-name: pase
+name: pase-2026-07
 channels:
   - conda-forge
 dependencies:
