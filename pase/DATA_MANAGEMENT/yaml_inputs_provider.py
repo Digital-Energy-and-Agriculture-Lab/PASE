@@ -86,7 +86,7 @@ class YAML_Inputs_provider:
         self.check_limits(key, data, inputs)
 
         if 'Possibilities' in data:
-            self.check_possibilities(key, data, inputs) 
+            self.check_possibilities(key, data) 
 
                 
     def check_value_int(self, key, data, inputs):
@@ -100,7 +100,7 @@ class YAML_Inputs_provider:
         self.check_limits(key, data, inputs)
 
         if 'Possibilities' in data:
-            self.check_possibilities(key, data, inputs)        
+            self.check_possibilities(key, data)        
 
 
     def check_value_str(self, key, data, inputs):
@@ -112,7 +112,7 @@ class YAML_Inputs_provider:
             self.inputs[key] = data['Value']    
 
         if 'Possibilities' in data:
-            self.check_possibilities(key, data, inputs)            
+            self.check_possibilities(key, data)            
 
 
     def check_value_bool(self, key, data, inputs):
@@ -124,7 +124,7 @@ class YAML_Inputs_provider:
             self.inputs[key] = data['Value'] 
 
         if 'Possibilities' in data:
-            self.check_possibilities(key, data, inputs) 
+            self.check_possibilities(key, data) 
 
     
     def check_value_list(self, key, data, inputs):
@@ -136,10 +136,10 @@ class YAML_Inputs_provider:
             self.inputs[key] = data['Value']
 
         if 'Possibilities' in data:
-            self.check_possibilities(key, data, inputs)
+            self.check_possibilities(key, data)
 
 
-    def check_possibilities(self, key, data, inputs):
+    def check_possibilities(self, key, data):
         value = data['Value']
         possibilities = data['Possibilities']
 

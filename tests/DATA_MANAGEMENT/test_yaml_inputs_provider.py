@@ -21,7 +21,7 @@ def test_check_possibilities_numeric_value_passes():
     provider = _bare_provider()
     data = {"Value": 2, "Possibilities": [1, 2, 3]}
 
-    provider.check_possibilities("MF", data, {})
+    provider.check_possibilities("MF", data)
 
     assert provider.inputs["MF"] == 2
 
@@ -30,7 +30,7 @@ def test_check_possibilities_string_is_normalized():
     provider = _bare_provider()
     data = {"Value": " StIcS ", "Possibilities": ["stics", "grassim", "simple", "pystics"]}
 
-    provider.check_possibilities("CropModel", data, {})
+    provider.check_possibilities("CropModel", data)
 
     assert provider.inputs["CropModel"] == "stics"
 
@@ -40,7 +40,7 @@ def test_check_possibilities_invalid_value_raises():
     data = {"Value": "unknown_model", "Possibilities": ["stics", "grassim", "simple", "pystics"]}
 
     with pytest.raises(ValueError) as excinfo:
-        provider.check_possibilities("CropModel", data, {})
+        provider.check_possibilities("CropModel", data)
 
     assert "CropModel" in str(excinfo.value)
     assert "stics" in str(excinfo.value)
@@ -52,14 +52,14 @@ def test_check_possibilities_rejects_non_list_possibilities():
     data = {"Value": "stics", "Possibilities": "stics, grassim, simple, pystics"}
 
     with pytest.raises(TypeError, match="square brackets"):
-        provider.check_possibilities("CropModel", data, {})
+        provider.check_possibilities("CropModel", data)
 
 
 def test_check_possibilities_mixed_type_list():
     provider = _bare_provider()
     data = {"Value": "a", "Possibilities": ["A", 1]}
 
-    provider.check_possibilities("Key", data, {})
+    provider.check_possibilities("Key", data)
 
     assert provider.inputs["Key"] == "a"
 
@@ -68,7 +68,7 @@ def test_check_possibilities_boolean_value_not_normalized():
     provider = _bare_provider()
     data = {"Value": True, "Possibilities": [True, False]}
 
-    provider.check_possibilities("Flag", data, {})
+    provider.check_possibilities("Flag", data)
 
     assert provider.inputs["Flag"] is True
 
