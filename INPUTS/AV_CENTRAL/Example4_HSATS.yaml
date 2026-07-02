@@ -1,11 +1,11 @@
 NumberOfPanelsX:
-   Value: 1
+   Value: 2
    Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
    Definition: Number of panels on the x axis in one block of panels (x axis being the second potential axis of rotation of the block of panels)
 NumberOfPanelsY:
-   Value: 4
+   Value: 8
    Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
@@ -17,7 +17,7 @@ RepetitionDistanceOfPanelsX:
    Unit: meters [m]
    Definition: Length between the repetition of 2 panels on the x axis of one block of panels
 RepetitionDistanceOfPanelsY:
-   Value: 2.9
+   Value: 3.4
    Type: float
    Limit: [0, 100]
    Unit: meters [m]
@@ -29,13 +29,13 @@ RotationAxisNumber:
    Unit: dimensionless [-]
    Definition: Number of rotation axis that drive the block of panels
 TiltY:
-   Value: 50
+   Value: -50
    Type: float
    Limit: [-80, 80]
    Unit: degree [°]
    Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation
 Height:
-   Value: 4.3
+   Value: 2.3
    Type: float
    Limit: [0.1, 20]
    Unit: meters [m]

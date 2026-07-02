@@ -84,7 +84,10 @@ class YAML_Inputs_provider:
             self.inputs[key] = data['Value']
             
         self.check_limits(key, data, inputs)
-                
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data) 
+
                 
     def check_value_int(self, key, data, inputs):
         
@@ -94,7 +97,10 @@ class YAML_Inputs_provider:
         else:
             self.inputs[key] = data['Value']
             
-        self.check_limits(key, data, inputs)        
+        self.check_limits(key, data, inputs)
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data)        
 
 
     def check_value_str(self, key, data, inputs):
@@ -104,7 +110,10 @@ class YAML_Inputs_provider:
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
             self.inputs[key] = data['Value']    
-            
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data)            
+
 
     def check_value_bool(self, key, data, inputs):
             
@@ -113,7 +122,10 @@ class YAML_Inputs_provider:
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
             self.inputs[key] = data['Value'] 
-            
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data) 
+
     
     def check_value_list(self, key, data, inputs):
         
@@ -122,6 +134,33 @@ class YAML_Inputs_provider:
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
             self.inputs[key] = data['Value']
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data)
+
+
+    def check_possibilities(self, key, data):
+        value = data['Value']
+        possibilities = data['Possibilities']
+
+        if not isinstance(possibilities, list):
+            raise TypeError(f'Input "{key}": Possibilities must be a YAML list (use square brackets). '
+                            f'Got {type(possibilities).__name__}: {possibilities!r}\n'
+                            f'  Wrong:   Possibilities: a, b, c\n'
+                            f'  Correct: Possibilities: [a, b, c]')
+
+        if isinstance(value, str):
+            value = value.strip().lower()
+            normalized_possibilities = [p.lower() if isinstance(p, str) else p for p in possibilities]
+        else:
+            normalized_possibilities = possibilities
+
+        if value not in normalized_possibilities:
+            self.msg = (f'Input "{key}" value should be one of the following possibilities: '
+                        f'{possibilities}, got: {data["Value"]}')
+            PASE_Logger(self.msg, 'ERROR', 'value')
+        else:
+            self.inputs[key] = value
 
 
     def check_limits(self, key, data, inputs):
