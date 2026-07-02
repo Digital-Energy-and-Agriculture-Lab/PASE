@@ -2,7 +2,7 @@ import math
 import numpy as np
 import pytest
 
-from pase.ENVIRONMENT.sky_model import ReinhartSky
+from pase.ENVIRONMENT.sky_model import ReinhartSky, CIEStandardSky
 
 sky = ReinhartSky()
 
@@ -91,3 +91,91 @@ def test_compute_solid_angle_cone():
     assert math.isclose(sky.compute_solid_angle_cone(5),
                         0.024,
                         rel_tol=1e-2)
+
+
+# ---------------------------------------------------------------------------
+# compute_rel_radiance normalization
+# ---------------------------------------------------------------------------
+
+def test_uniform_sky_rel_radiance_sums_to_N():
+    """
+    For sky type 5 (uniform), rel_radiance_distribution must equal 1 for every
+    patch (f_P = 1, not f_P/N).
+    """
+    sky_MF1 = ReinhartSky(MF=1)
+    N = len(sky_MF1.reinhart_patches)
+    cie = CIEStandardSky(sky_MF1.reinhart_patches, sun_az=180, sun_el=45, sky_type=5)
+    assert np.isclose(cie.rel_radiance_distribution.sum(), N, rtol=1e-6), (
+        f"Expected sum={N} (f_P=1 for all patches); "
+        f"got {cie.rel_radiance_distribution.sum():.4f}. "
+        f"Possible /N normalization bug."
+    )
+
+
+# ---------------------------------------------------------------------------
+# TestCIEStandardSky
+# ---------------------------------------------------------------------------
+
+class TestCIEStandardSky:
+
+    SUN_AZ = 180.0
+    SUN_EL = 45.0
+    ALL_SKY_TYPES = list(range(1, 16))
+
+    @pytest.fixture(scope='class')
+    def patches(self):
+        return ReinhartSky(MF=1).reinhart_patches
+
+    @pytest.mark.parametrize('sky_type', ALL_SKY_TYPES)
+    def test_rel_radiance_non_negative(self, patches, sky_type):
+        """Relative radiance must be non-negative for all sky types and all patches."""
+        cie = CIEStandardSky(patches, sun_az=self.SUN_AZ, sun_el=self.SUN_EL,
+                             sky_type=sky_type)
+        assert (cie.rel_radiance_distribution >= 0).all(), (
+            f"sky_type={sky_type}: negative values found in rel_radiance_distribution"
+        )
+
+    @pytest.mark.parametrize('sky_type', ALL_SKY_TYPES)
+    def test_rel_radiance_not_divided_by_N(self, patches, sky_type):
+        """
+        rel_radiance_distribution must not be divided by N (number of sky patches).
+        By construction of the CIE model, the zenith patch always has f_P = 1, so
+        max(rel_radiance_distribution) >= 1. If the /N bug were present, the max
+        would be <= 1/N << 1.
+        """
+        N = len(patches)
+        cie = CIEStandardSky(patches, sun_az=self.SUN_AZ, sun_el=self.SUN_EL,
+                             sky_type=sky_type)
+        assert cie.rel_radiance_distribution.max() >= 1.0 - 1e-6, (
+            f"sky_type={sky_type}: max={cie.rel_radiance_distribution.max():.6f}. "
+            f"Suspicion of /N normalization bug (1/N = {1/N:.5f})"
+        )
+
+    def test_uniform_sky_constant_radiance(self, patches):
+        """For sky type 5 (uniform), all patches must have identical radiance f_P = 1."""
+        cie = CIEStandardSky(patches, sun_az=self.SUN_AZ, sun_el=self.SUN_EL,
+                             sky_type=5)
+        assert np.allclose(cie.rel_radiance_distribution, 1.0), (
+            "Uniform sky (type 5): expected f_P=1 for all patches, "
+            f"got min={cie.rel_radiance_distribution.min():.6f}, "
+            f"max={cie.rel_radiance_distribution.max():.6f}"
+        )
+
+    @pytest.mark.parametrize('sky_type', ALL_SKY_TYPES)
+    def test_sky_integral_finite_positive(self, patches, sky_type):
+        """
+        sky_integral = Σ_P(f_P * norm_P) must be finite and positive for all sky
+        types. This is the per-timestep normalization factor used in
+        get_shaded_radiance_contrib() to ensure energy conservation.
+        """
+        norm = patches['cos(z)'].values * patches['Normalized surf area'].values
+        norm = norm / norm.sum()
+        cie = CIEStandardSky(patches, sun_az=self.SUN_AZ, sun_el=self.SUN_EL,
+                             sky_type=sky_type)
+        sky_integral = float((cie.rel_radiance_distribution * norm).sum())
+        assert np.isfinite(sky_integral), (
+            f"sky_type={sky_type}: sky_integral is not finite"
+        )
+        assert sky_integral > 0, (
+            f"sky_type={sky_type}: sky_integral={sky_integral:.4f} is not positive"
+        )

@@ -131,7 +131,7 @@ def test_get_several_years_of_electricity_production_nominal(default_PV_Central,
         assert "2020-12-31 23:45" in albedo2020.index, \
             "End timestamp '2020-12-31 23:45' not in " \
             "albedo_colza series."
-    elif freq=="H":
+    elif freq=="h":
         assert "2020-12-31 23:00" in albedo2020.index, \
             "End timestamp '2020-12-31 23:00' not in albedo_colza series."
 
@@ -140,7 +140,7 @@ def test_get_several_years_of_electricity_production_hors_periode(default_PV_Cen
         "albedo_colza",
         '2021',
         '2021',
-        'H',
+        'h',
         0.25)
 
     assert isinstance(albedo, dict)

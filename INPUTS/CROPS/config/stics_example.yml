@@ -1,7 +1,7 @@
 CropModel:
   Value: stics
   Type: string
-  Possibilities: [stics, grassim, simple]
+  Possibilities: [stics, grassim, simple, pystics]
   Definition: Name of the crop model to use
 SimuInit:
   Value: simu_init.yaml

@@ -1,5 +1,5 @@
 LocationName: 
-   Value: Gembloux
+   Value: Lampernisse
    Type: string
    Definition: Name of the location
 TimeZone:
@@ -7,19 +7,19 @@ TimeZone:
    Type: string
    Definition: Precision on the time zone because otherwise, pvlib import sun positions in UTC0   
 Latitude:
-   Value: 50.565114
+   Value: 51.029
    Type: float
    Limit: [-90, 90]
    Unit: degrés décimaux [-]
-   Definition: Latitude of the location, used for PVGIS weather data and sun position computation
+   Definition: Latitude of the location
 Longitude:
-   Value: 4.702089
+   Value: 2.782
    Type: float
    Limit: [-180, 180]
    Unit: degrés décimaux [-]
-   Definition: Longitude of the location, used for PVGIS weather data and sun position computation
+   Definition: Longitude of the location
 Altitude:
-   Value: 165
+   Value: 1035
    Type: float
    Limit: [0, 3000]
    Unit: meters [m]
@@ -107,25 +107,25 @@ dX_InterestZone:
    Unit: meters [m]
    Definition: Increment in the x coordinates of the zone of interest for the light and crop modelling
 Ymin_InterestZone:
-   Value: 0
+   Value: -20
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Minimal y coordinates of the zone of interest for the light and crop modelling
 Ymax_InterestZone:
-   Value: 1
+   Value: 20
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Maximal y coordinates of the zone of interest for the light and crop modelling
 dY_InterestZone:
-   Value: 1
+   Value: 0.5
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Increment in the y coordinates of the zone of interest for the light and crop modelling
 InterestZoneOrientationMode:
-  Value: default
+  Value: custom
   Type: string
   Possibilities: [default, auto, custom]
   Definition: Orientation mode for the interest zone.
