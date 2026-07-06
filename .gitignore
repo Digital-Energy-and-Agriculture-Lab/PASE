@@ -40,3 +40,6 @@ TEMPORARY_FILES/
 
 # vscode clutter
 .vscode/
+
+# Claude Code user-local settings (never commit)
+.claude/settings.local.json
