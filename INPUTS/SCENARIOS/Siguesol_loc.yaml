@@ -80,43 +80,43 @@ DiffuseSkyType:
                to derive the sky type from weather data.
                "Uniform" assumes uniform radiance distribution (faster but less accurate).
 Xmin_InterestZone:
-   Value: -4
+   Value: -10
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Minimal x coordinates of the zone of interest for the light and crop modelling
 Xmax_InterestZone:
-   Value: 4
+   Value: 10
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Maximal x coordinates of the zone of interest for the light and crop modelling
 dX_InterestZone:
-   Value: 0.5
+   Value: 0.2
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Increment in the x coordinates of the zone of interest for the light and crop modelling
 Ymin_InterestZone:
-   Value: -4
+   Value: -1
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Minimal y coordinates of the zone of interest for the light and crop modelling
 Ymax_InterestZone:
-   Value: 4
+   Value: 5
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Maximal y coordinates of the zone of interest for the light and crop modelling
 dY_InterestZone:
-   Value: 0.5
+   Value: 0.2
    Type: float
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Increment in the y coordinates of the zone of interest for the light and crop modelling
 InterestZoneOrientationMode:
-  Value: custom
+  Value: default
   Type: string
   Possibilities: [default, auto, custom]
   Definition: Orientation mode for the interest zone.

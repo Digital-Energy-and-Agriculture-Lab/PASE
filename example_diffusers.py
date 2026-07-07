@@ -25,9 +25,10 @@ AV_1 = YAML_Inputs_provider(file='Example_diffuser_AV.yaml', subpath='AV_CENTRAL
 PV_module_1 = YAML_Inputs_provider(file='PV_module_SigueSOL.yaml', subpath=os.path.join('HARDWARE','PV_MODULES')).inputs
 crop_config = YAML_Inputs_provider(file='grassim_example.yml', subpath=os.path.join('CROPS', 'config')).inputs
 diffuser_config = YAML_Inputs_provider(file='dplenticular_3D 20 LPI UV-LF.yaml', subpath=os.path.join('HARDWARE', 'DIFFUSERS')).inputs
+Structure = YAML_Inputs_provider(file='agrivoltaic_fence.yaml', subpath=os.path.join('HARDWARE', 'STRUCTURES')).inputs
 input_checker = InputsEvaluator(Loc_1, AV_1)
 
-PV_params_dict = Inputs_aggregator([AV_1, PV_module_1,diffuser_config]).aggregated_inputs
+PV_params_dict = Inputs_aggregator([AV_1, PV_module_1,diffuser_config, Structure]).aggregated_inputs
 
 om = OutputsManager(Loc_1['LocationName'],
                     Loc_1['SimulationStartingYear'],
@@ -121,6 +122,7 @@ L.get_daily_irradiation_map(Sun_positions_samp.SP,
                             year=2005, julian_day=5)
 
 
-L.visualize_daily_irrad_map(2015, 48)
+L.visualize_daily_irrad_map(2005, 48)
 L.visualize_diffuser_light_map(50, Sun_positions_samp.solar_vector)
+L.visualize_diffuser_light_map(25, Sun_positions_samp.solar_vector)
 
