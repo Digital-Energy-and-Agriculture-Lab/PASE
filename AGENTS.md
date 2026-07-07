@@ -94,13 +94,13 @@ Each YAML parameter has `Type/Value/Limits/Unit/Definition` fields. `InputsEvalu
 ## Working With the Agent
 
 - NEVER push without explicit permission. Always ask before any git working-tree operation (commit, stash, shelve, push, pull, merge, reset).
-- Store working documents (plans, specs, notes) under `.claude/` to avoid cluttering the project root.
-- When using plan mode, when the plan is finalized, save in .md under `.claude/` with an explicit name for further reference
+- Store working documents (plans, specs, notes) under a working subdirectory (e.g. `.claude/`) to avoid cluttering the project root.
+- When using plan mode, when the plan is finalized, save it as a `.md` file in the working subdirectory with an explicit name for further reference
 
 ## Test-Driven Development
 
 When writing code, adopt a test-driven development cycle:
-1. **Specifications** — plan mode; write the plan to a clearly-named `.md` file under `.claude/`.
+1. **Specifications** — plan mode; write the plan to a clearly-named `.md` file in the working subdirectory.
 2. **Tests** — design and write unit tests under `tests/` (and the appropriate subdirectory). Cover unit code fragments but also some integration (e.g. always check for energy conservation where applicable).
 3. **Validate** the tests with the dev.
 4. **Code** — after validation, start writing the implementation.
@@ -116,6 +116,6 @@ The message should inform on:
 - what was done
 - why it was done
 
-Flag Claude-assisted commits with a `Co-Authored-By:` trailer so the reviewer can stay vigilant and not accept nice-looking code without analyzing it in depth.
+Flag agent-assisted commits with a `Co-Authored-By:` trailer so the reviewer can stay vigilant and not accept nice-looking code without analyzing it in depth.
 
-Write the commit message in `.claude/commit.txt` so it can be copy/pasted into the IDE's commit text box.
+Write the commit message to a `commit.txt` file in the working subdirectory so it can be copy/pasted into the IDE's commit text box.
