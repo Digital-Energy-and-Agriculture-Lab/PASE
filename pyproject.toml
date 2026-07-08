@@ -27,6 +27,9 @@ addopts = "--cov=pase --cov-report=term-missing --cov-report=html"
 [tool.setuptools.packages.find]
 include = ["pase*"]
 
+[tool.setuptools.package-data]
+"pase" = ["DATA/*.csv"]
+
 [tool.coverage.run]
 branch = true
 source = ["pase"]

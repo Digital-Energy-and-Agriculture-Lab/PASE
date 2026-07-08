@@ -21,6 +21,7 @@ import pase.conversion_functions as cf
 from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 from pase.ENVIRONMENT.sky_model import ReinhartSky, fibonacci_half_sphere
 from pase.ENVIRONMENT.sky_model import CIEStandardSky
+from pase.paths import static_data_path
 from pase.user_support_tools import PASE_Logger
 from pase.ENVIRONMENT.shading import Horizon
 
@@ -173,8 +174,8 @@ class Light:
 
         self.data = {}
         self.daily_sky_type = {}
-        sky_type_lut_path = os.path.join('INPUTS', 'Igawa-5_sky_types_lut.csv')
-        self.sky_type_lut = pd.read_csv(sky_type_lut_path, sep=';')
+        self.sky_type_lut = pd.read_csv(
+            static_data_path('Igawa-5_sky_types_lut.csv'), sep=';')
 
         for year in WD.keys():
             
