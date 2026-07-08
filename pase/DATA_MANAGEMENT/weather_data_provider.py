@@ -14,14 +14,11 @@ import time
 import math
 import numpy as np
 import os
-from pathlib import Path
 
 from pase.user_support_tools import PASE_Logger
 from pase.ENVIRONMENT.aerodynamics import get_wind_speed_specific_height
 from pase.DATA_MANAGEMENT.helpers import (aggregate_lat_lon, unpack_latlon,
                                           parse_date_range, get_sampling_period)
-
-CACHE_DIR = Path(__file__).parents[2] / 'OUTPUTS' / '_cache'
 
 
 def get_cache_key(latitude, longitude, sim_starting_year, sim_ending_year):
