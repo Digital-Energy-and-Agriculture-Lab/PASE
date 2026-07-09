@@ -560,24 +560,36 @@ class PVStructure(ABC):
     def make_diagonal(self, dz_left: float = 0.0, dz_right: float = 0.0):
         """
         Build a diagonal brace connecting the two poles with the correct slope.
+
+        ``dz_left`` / ``dz_right`` are the drops from the block anchor elevation
+        (local ``z = 0``) down to the terrain surface under the left / right
+        pole, so the ground sits at local ``z = -dz`` there.  The diagonal's
+        lower endpoint is clamped to ``terrain surface + DiagonalGroundGuard``
+        (``DiagonalGroundGuard = 0`` → resting on the ground) so it never dips
+        below grade.  Referencing the terrain *surface* — not the poles'
+        embedded feet at ``pole_ground_positioning`` — is what keeps the brace
+        from being dragged ``PoleGroundPositioning`` metres into the soil on a
+        slope.  On flat ground (``dz = 0``) this reduces to the historical
+        ``min(DiagonalGroundGuard, ...)`` behaviour.
         """
 
         left_pole_top = self.base_height + self.height_offset
         right_pole_top = self.base_height - self.height_offset
 
-        left_pole_bottom = self.pole_ground_positioning - dz_left
-        right_pole_bottom = self.pole_ground_positioning - dz_right
+        # Local z of the terrain surface under each pole (0 on flat ground).
+        left_ground = -dz_left
+        right_ground = -dz_right
 
         if left_pole_top <= right_pole_top:
             high_x = -self.half_span
             high_z = left_pole_top
             low_x = self.half_span
-            low_z_limit = right_pole_bottom + self.diagonal_ground_guard
+            low_z_limit = right_ground + self.diagonal_ground_guard
         else:
             high_x = self.half_span
             high_z = right_pole_top
             low_x = -self.half_span
-            low_z_limit = left_pole_bottom + self.diagonal_ground_guard
+            low_z_limit = left_ground + self.diagonal_ground_guard
 
         low_z = min(low_z_limit, high_z - self.diagonal_epsilon)
 
