@@ -17,6 +17,7 @@ safe.
 from __future__ import annotations
 
 import math
+import warnings
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
@@ -70,7 +71,7 @@ class Mesh:
         """
 
         normal_vector = _normalize_vector(normal)
-        center_vector = _to_array(center)
+        center_vector = np.asarray(center, dtype=float)
 
         width_direction = self._compute_width_direction(normal_vector, reference_direction)
         height_direction = np.cross(normal_vector, width_direction)
@@ -110,7 +111,7 @@ class Mesh:
                 "normal": normal_vector.tolist(),
                 "reference_direction": None
                 if reference_direction is None
-                else _to_array(reference_direction).tolist(),
+                else np.asarray(reference_direction, dtype=float).tolist(),
                 "face_type": normalized_face_type,
             },
         )
@@ -158,7 +159,8 @@ class Mesh:
             normal = (0.0, 0.0, 1.0)
 
         density = min(X_increment, Y_increment)
-        reference_direction = _direction_from_azimuth(azimuth_to_use)
+        theta = math.radians(azimuth_to_use)
+        reference_direction = np.array([math.cos(theta), math.sin(theta), 0.0])
 
         return self.add_rectangular_surface(
             width=width,
@@ -255,9 +257,11 @@ class Mesh:
         """Add a small triangular surface centered on a position."""
 
         normal_vector = _normalize_vector(normal)
-        position_vector = _to_array(position)
+        position_vector = np.asarray(position, dtype=float)
 
-        side_length = _equilateral_side_length(area)
+        if area <= 0.0:
+            raise ValueError("Area must be positive to create a triangular probe.")
+        side_length = math.sqrt((4.0 * area) / math.sqrt(3.0))
         base_direction = self._compute_width_direction(normal_vector, reference_direction=None)
         height_direction = np.cross(normal_vector, base_direction)
         height_direction = _normalize_vector(height_direction)
@@ -336,13 +340,21 @@ class Mesh:
         self,
         identifier: Union[int, str],
     ) -> Dict[str, np.ndarray]:
-        """Return centers, normals, and areas for a mesh referenced by ID or name."""
+        """Return centers, normals, and areas for a mesh referenced by ID or name flag.
 
-        mesh_index = self._resolve_mesh_index(identifier)
-        if isinstance(mesh_index,int):
-            polydata = self.meshes[mesh_index]
+        When *identifier* is a name flag that matches multiple blocks, all
+        matching blocks are merged into a single surface before computing
+        the properties.
+        """
+        index = self._resolve_mesh_index(identifier)
+        if isinstance(index, list):
+            polydata = (
+                pv.MultiBlock([self.meshes[i] for i in index])
+                .combine()
+                .extract_surface()
+            )
         else:
-            polydata = pv.MultiBlock([self.meshes[i] for i in mesh_index]).combine().extract_surface()
+            polydata = self.meshes[index]
 
         cell_centers = polydata.cell_centers().points
         normals = polydata.compute_normals(cell_normals=True, point_normals=False).cell_data["Normals"]
@@ -367,8 +379,12 @@ class Mesh:
 
     @property
     def sourcepoints(self) -> np.ndarray:
-        """Return the cell centers of every mesh as a single (n, 3) array."""
-
+        """Deprecated. Use get_sourcepoints() instead."""
+        warnings.warn(
+            "'sourcepoints' is deprecated, use 'get_sourcepoints()' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_sourcepoints()
 
     # ======================================================================
@@ -428,44 +444,31 @@ class Mesh:
         num_height_divisions: int,
     ) -> np.ndarray:
         """Generate grid points covering a rectangle defined by center and axes."""
-        half_width = width / 2.0
-        half_height = height / 2.0
+        ws = np.linspace(-width / 2.0,  width / 2.0,  num_width_divisions  + 1)
+        hs = np.linspace(-height / 2.0, height / 2.0, num_height_divisions + 1)
+        w_grid, h_grid = np.meshgrid(ws, hs)
+        offsets = w_grid[..., None] * width_direction + h_grid[..., None] * height_direction
+        return center + offsets.reshape(-1, 3)
 
-        width_positions = np.linspace(-half_width, half_width, num_width_divisions + 1)
-        height_positions = np.linspace(-half_height, half_height, num_height_divisions + 1)
+    def _resolve_mesh_index(self, identifier: Union[int, str]) -> Union[int, List[int]]:
+        """Translate a mesh id or name into one or more numerical indices.
 
-        grid_points: List[np.ndarray] = []
-        for height_offset in height_positions:
-            for width_offset in width_positions:
-                offset_vector = width_direction * width_offset + height_direction * height_offset
-                point = center + offset_vector
-                grid_points.append(point)
-
-        return np.vstack(grid_points)
-
-    def _resolve_mesh_index(
-        self, identifier: Union[int, str, Iterable[int]]
-    ) -> Union[int, List[int]]:
-        """Translate a mesh id or name into its numerical index."""
+        Parameters
+        ----------
+        identifier : int or str
+            - ``int``: returned as-is (direct index).
+            - ``str``: exact match against registered block names.
+              Returns a single ``int`` when one block matches, a ``List[int]``
+              when several share the same name, and raises ``KeyError`` when
+              nothing matches.
+        """
         if isinstance(identifier, int):
             return identifier
-        if isinstance(identifier, (list, tuple, np.ndarray)):
-            if not identifier:
-                return []
-
-            if all(isinstance(item, int) for item in identifier):
-                return [int(item) for item in identifier]
-
-            if all(isinstance(item, str) for item in identifier):
-                return [self._resolve_mesh_index(item) for item in identifier]
-
-            raise TypeError("Mesh identifier list must contain only int or only str values.")
-
         matches = self.metadata[self.metadata["name"] == identifier]
         if matches.empty:
-            raise KeyError(f"Unknown mesh name: {identifier}")
-
-        return int(matches.iloc[0]["id"])
+            raise KeyError(f"Unknown mesh name: '{identifier}'")
+        ids = [int(i) for i in matches["id"]]
+        return ids[0] if len(ids) == 1 else ids
 
     def compute_homogeneity(self, identifier: Union[int, str]) -> float:
         """Quantify point distribution homogeneity using coefficient of variation."""
@@ -476,9 +479,11 @@ class Mesh:
         if centers.shape[0] < 2:
             return 0.0
 
-        distances = _nearest_neighbor_distances(centers)
-        mean_distance = float(np.mean(distances))
-        std_distance = float(np.std(distances))
+        dists = np.linalg.norm(centers[:, None, :] - centers[None, :, :], axis=2)
+        np.fill_diagonal(dists, np.inf)
+        nearest = dists.min(axis=1)
+        mean_distance = float(np.mean(nearest))
+        std_distance = float(np.std(nearest))
 
         if math.isclose(mean_distance, 0.0):
             return 0.0
@@ -492,26 +497,13 @@ class Mesh:
 # ======================================================================
 
 
-def _to_array(vector: VectorLike) -> np.ndarray:
-    """Convert a vector-like object into a NumPy array of floats."""
-    array = np.asarray(vector, dtype=float)
-    return array
-
-
 def _normalize_vector(vector: VectorLike) -> np.ndarray:
     """Return a unit-length array from the provided vector-like object."""
-    array = _to_array(vector)
+    array = np.asarray(vector, dtype=float)
     norm = np.linalg.norm(array)
     if math.isclose(norm, 0.0):
         raise ValueError("Cannot normalize a zero-length vector.")
     return array / norm
-
-
-def _direction_from_azimuth(azimuth_deg: float) -> np.ndarray:
-    """Compute a unit vector in the XY plane from an azimuth angle (degrees)."""
-
-    theta = math.radians(azimuth_deg)
-    return np.array([math.cos(theta), math.sin(theta), 0.0])
 
 
 def _division_count(length: float, density: float) -> int:
@@ -599,26 +591,5 @@ def _subdivide_for_density(polydata: pv.PolyData, density: float) -> pv.PolyData
 
     return subdivided
 
-
-def _equilateral_side_length(area: float) -> float:
-    """Compute the side length of an equilateral triangle with the given area."""
-    if area <= 0.0:
-        raise ValueError("Area must be positive to create a triangular probe.")
-
-    side_length = math.sqrt((4.0 * area) / math.sqrt(3.0))
-    return side_length
-
-
-def _nearest_neighbor_distances(points: np.ndarray) -> np.ndarray:
-    """Calculate distances to the nearest neighbor for each point in a set."""
-    distances: List[float] = []
-    for index, origin in enumerate(points):
-        other_points = np.delete(points, index, axis=0)
-        deltas = other_points - origin
-        norms = np.linalg.norm(deltas, axis=1)
-        nearest = float(np.min(norms))
-        distances.append(nearest)
-
-    return np.asarray(distances)
 
 

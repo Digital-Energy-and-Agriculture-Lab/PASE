@@ -17,6 +17,16 @@ logger = logging.getLogger(__name__)
 
 VALID_TYPES = ['float', 'integer', 'string', 'boolean', 'list']
 
+# Repetition distances whose limit check is superfluous when the governing count is <= 1
+# (a repetition distance is only meaningful with more than one element along that axis).
+# Maps each repetition-distance parameter to the count parameter that governs it.
+CONDITIONAL_LIMIT_GOVERNORS = {
+    'RepetitionDistanceOfPanelsX': 'NumberOfPanelsX',
+    'RepetitionDistanceOfPanelsY': 'NumberOfPanelsY',
+    'RepetitionDistanceOfPVBlocksX': 'NumberOfPVBlocksX',
+    'RepetitionDistanceOfPVBlocksY': 'NumberOfPVBlocksY',
+}
+
 class YAML_Inputs_provider:
     
     def __init__(self, file=None, path='INPUTS', subpath=None, parentdir=None):
@@ -84,7 +94,10 @@ class YAML_Inputs_provider:
             self.inputs[key] = data['Value']
             
         self.check_limits(key, data, inputs)
-                
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data) 
+
                 
     def check_value_int(self, key, data, inputs):
         
@@ -94,7 +107,10 @@ class YAML_Inputs_provider:
         else:
             self.inputs[key] = data['Value']
             
-        self.check_limits(key, data, inputs)        
+        self.check_limits(key, data, inputs)
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data)        
 
 
     def check_value_str(self, key, data, inputs):
@@ -104,7 +120,10 @@ class YAML_Inputs_provider:
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
             self.inputs[key] = data['Value']    
-            
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data)            
+
 
     def check_value_bool(self, key, data, inputs):
             
@@ -113,7 +132,10 @@ class YAML_Inputs_provider:
             PASE_Logger(self.msg, 'ERROR', 'value')
         else:
             self.inputs[key] = data['Value'] 
-            
+
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data) 
+
     
     def check_value_list(self, key, data, inputs):
         
@@ -123,10 +145,46 @@ class YAML_Inputs_provider:
         else:
             self.inputs[key] = data['Value']
 
+        if 'Possibilities' in data:
+            self.check_possibilities(key, data)
+
+
+    def check_possibilities(self, key, data):
+        value = data['Value']
+        possibilities = data['Possibilities']
+
+        if not isinstance(possibilities, list):
+            raise TypeError(f'Input "{key}": Possibilities must be a YAML list (use square brackets). '
+                            f'Got {type(possibilities).__name__}: {possibilities!r}\n'
+                            f'  Wrong:   Possibilities: a, b, c\n'
+                            f'  Correct: Possibilities: [a, b, c]')
+
+        if isinstance(value, str):
+            value = value.strip().lower()
+            normalized_possibilities = [p.lower() if isinstance(p, str) else p for p in possibilities]
+        else:
+            normalized_possibilities = possibilities
+
+        if value not in normalized_possibilities:
+            self.msg = (f'Input "{key}" value should be one of the following possibilities: '
+                        f'{possibilities}, got: {data["Value"]}')
+            PASE_Logger(self.msg, 'ERROR', 'value')
+        else:
+            self.inputs[key] = value
+
 
     def check_limits(self, key, data, inputs):
-        
-        ## In the case there is an input paramater that has the upper and lower limits 
+
+        # Skip the range check for a repetition distance when its governing count is <= 1:
+        # with a single element the distance is geometrically unused, so an out-of-range value
+        # is harmless and must not abort the run. The value is still stored.
+        governor = CONDITIONAL_LIMIT_GOVERNORS.get(key)
+        if governor is not None and governor in inputs:
+            if inputs[governor]['Value'] <= 1:
+                self.inputs[key] = data['Value']
+                return
+
+        ## In the case there is an input paramater that has the upper and lower limits
         ## that are other inputs value    
         #if ((type(data['Limit'][0]) is str) and (type(data['Limit'][1]) is str)):
         #    if ((data['Value']<inputs[data['Limit'][0]]['Value']) or 
@@ -218,14 +276,21 @@ class Inputs_aggregator:
         self._check_structure_ground_clearance()
 
     def _check_panel_spacing(self):
-        """Check that panel repetition distances are not shorter than panel dimensions."""
-        if self.aggregated_inputs['RepetitionDistanceOfPanelsX'] < \
+        """Check that panel repetition distances are not shorter than panel dimensions.
+
+        The per-axis check is skipped when that axis holds a single panel
+        (``NumberOfPanelsX``/``NumberOfPanelsY`` <= 1), since a lone panel cannot clip into a
+        (non-existent) neighbour and its repetition distance is geometrically unused.
+        """
+        if self.aggregated_inputs['NumberOfPanelsX'] > 1 and \
+                self.aggregated_inputs['RepetitionDistanceOfPanelsX'] < \
                 self.aggregated_inputs['PanelDimensionX']:
             raise ValueError(
                 "Repetition distance between panels in axis X is too short, "
                 "panels are clipping into each other. Fix it in yaml config file.")
 
-        if self.aggregated_inputs['RepetitionDistanceOfPanelsY'] < \
+        if self.aggregated_inputs['NumberOfPanelsY'] > 1 and \
+                self.aggregated_inputs['RepetitionDistanceOfPanelsY'] < \
                 self.aggregated_inputs['PanelDimensionY']:
             raise ValueError(
                 "Repetition distance between panels in axis Y is too short, "
