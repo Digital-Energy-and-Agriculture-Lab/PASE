@@ -20,12 +20,28 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-os.environ.setdefault("MPLBACKEND", "Agg")
-
 from pase.paths import static_data_path
 from pase.DATA_MANAGEMENT.OUTPUT.outputs_manager import OutputsManager
 
 REPO_ROOT = Path(__file__).parents[1]
+
+
+def _snapshot_outside_writes():
+    """Files currently present where a path regression would write."""
+    seen = {d: set(os.listdir(d)) for d in (REPO_ROOT, REPO_ROOT / "pase")}
+    outputs = REPO_ROOT / "OUTPUTS"
+    seen[outputs] = ({p for p in outputs.rglob('*')}
+                     if outputs.exists() else set())
+    return seen
+
+
+def _assert_no_outside_writes(before):
+    for d, entries in before.items():
+        now = ({p for p in d.rglob('*')} if d.name == "OUTPUTS"
+               else set(os.listdir(d))) if d.exists() else set()
+        new = {str(p) for p in now - entries}
+        assert all("__pycache__" in p for p in new), (
+            f"unexpected writes outside tmp_path in {d}: {sorted(new)}")
 
 PV_PARAMS = {
     "PanelDimensionX": 2.384,
@@ -59,9 +75,9 @@ def test_static_data_and_writes_are_cwd_independent(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
 
     lut = pd.read_csv(static_data_path('Igawa-5_sky_types_lut.csv'), sep=';')
-    assert not lut.empty
+    assert {'Kc', 'Cle', 'CIE Sky Type'} <= set(lut.columns)
     cie = pd.read_csv(static_data_path('CIE_standard_skies.csv'))
-    assert not cie.empty
+    assert {'Type', 'Gradation'} <= set(cie.columns)
 
     om = OutputsManager("anywhere", 2020, 2020)
     assert om.root == tmp_path
@@ -69,7 +85,8 @@ def test_static_data_and_writes_are_cwd_independent(monkeypatch, tmp_path):
     assert (tmp_path / "OUTPUTS" / "_cache" / "probe.json").exists()
 
 
-@pytest.mark.skipif(os.environ.get("RUN_PASE_INTEGRATION") != "1",
+@pytest.mark.skipif(os.environ.get("RUN_PASE_INTEGRATION", "").lower()
+                    not in ("1", "true", "yes"),
                     reason="integration test, needs network access to PVGIS "
                            "(set RUN_PASE_INTEGRATION=1 to run)")
 def test_light_chain_runs_from_any_cwd(monkeypatch, tmp_path):
@@ -84,7 +101,6 @@ def test_light_chain_runs_from_any_cwd(monkeypatch, tmp_path):
     from pase.PHOTOVOLTAICS.production import PV_Production
 
     lat, lon, year = 50.6, 5.6, 2020
-    raw_weather = fetch_weather_from_pvgis(lat, lon, year, year)
 
     # User-data contract: the user places their INPUTS/ in the launch
     # directory. Provision the daily weather file the chain needs.
@@ -93,7 +109,9 @@ def test_light_chain_runs_from_any_cwd(monkeypatch, tmp_path):
     shutil.copy(REPO_ROOT / "INPUTS" / "WEATHER_FILES"
                 / "minimal_PRECIP_VP.csv", weather_dir)
     monkeypatch.chdir(tmp_path)
+    before = _snapshot_outside_writes()
 
+    raw_weather = fetch_weather_from_pvgis(lat, lon, year, year)
     wd = Weather_data(lat, lon, year, year, WD_option=1,
                       raw_weather=raw_weather,
                       daily_file="minimal_PRECIP_VP")
@@ -122,8 +140,11 @@ def test_light_chain_runs_from_any_cwd(monkeypatch, tmp_path):
     pv_prod = PV_Production(PV_PARAMS)
     pv_prod.get_several_years_of_electricity_production(sun, light.data,
                                                         wd.nyears_data)
-    assert str(year) in pv_prod.production
+    prod = pv_prod.production[str(year)]
+    assert prod["P_central"].notna().all()
+    assert prod["P_central"].sum() > 0
 
     # Writes follow the cwd, never the package directory.
     om = OutputsManager("anywhere", year, year)
     assert om.root == tmp_path
+    _assert_no_outside_writes(before)
