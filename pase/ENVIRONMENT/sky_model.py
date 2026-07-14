@@ -19,13 +19,7 @@ import os
 import pandas as pd
 from pathlib import Path
 from matplotlib import pyplot as plt
-import matplotlib
 from matplotlib.patches import Polygon
-if os.environ.get("CI") == "true":
-    matplotlib.use('Agg')
-else:
-    matplotlib.use('TkAgg')
-
 
 from pase.conversion_functions import sph_to_cart
 from pase.paths import static_data_path
