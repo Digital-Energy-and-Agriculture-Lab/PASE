@@ -22,6 +22,7 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
 
 from pase.conversion_functions import sph_to_cart
+from pase.paths import static_data_path
 
 logger = logging.getLogger(__name__)
 _CIE_STANDARD_SKIES = None
@@ -60,15 +61,8 @@ def _load_standard_skies() -> pd.DataFrame:
     """
     global _CIE_STANDARD_SKIES
     if _CIE_STANDARD_SKIES is None:
-        if '__file__' in globals():
-            pase_dir_path = Path(__file__).parents[2]
-        else:  # Assuming current dire is pase root directory.
-            pase_dir_path = Path('.')
-
-        _CIE_STANDARD_SKIES = pd.read_csv(os.path.join(pase_dir_path,
-                                                       'INPUTS',
-                                                       'CIE_standard_skies.csv')
-                                          )
+        _CIE_STANDARD_SKIES = pd.read_csv(
+            static_data_path('CIE_standard_skies.csv'))
     return _CIE_STANDARD_SKIES
 
 def fibonacci_half_sphere(samples=18):
