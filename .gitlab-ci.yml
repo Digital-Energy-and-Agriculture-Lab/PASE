@@ -6,11 +6,12 @@ stages:
 variables:
   CONDA_ENV_NAME: ci-env
   ENV_YML: environment_ci.yml
+  # Full clone (with tags) so setuptools-scm can derive the version from the
+  # latest git tag. The default shallow clone omits it (the last tag is
+  # hundreds of commits back), which makes `pip install -e .` fail.
+  GIT_DEPTH: 0
   # micromamba uses a read-only root; create envs under /tmp or $CI_PROJECT_DIR/.venv
   MAMBA_ROOT_PREFIX: "$CI_PROJECT_DIR/.mamba"
-  MAMBA_CACHE_DIR: "$CI_PROJECT_DIR/.mamba_cache"
-  # avoid interactive backends in CI
-  MPLBACKEND: Agg
   MAMBA_CACHE_DIR: "$CI_PROJECT_DIR/.mamba_cache"
   # avoid interactive backends in CI
   MPLBACKEND: Agg
@@ -62,6 +63,16 @@ before_script:
       except Exception as e: 
         print(p,'IMPORT FAILED:',e,file=sys.stderr); sys.exit(2)"
   - export PYTHONPATH="$CI_PROJECT_DIR:$PYTHONPATH"
+  # The micromamba image runs as a non-root user while the runner checks out the
+  # repo as another owner; without this, git refuses every operation ("dubious
+  # ownership") so both the fetch below and setuptools-scm fail to read a version.
+  - 'git config --global --add safe.directory "$CI_PROJECT_DIR"'
+  # Ensure the git tags are present so setuptools-scm can describe the version
+  # (on top of GIT_DEPTH: 0; git is available in the activated env). Let it fail
+  # loudly rather than masking git's error.
+  - git fetch --tags --force
+  # Diagnostic: show exactly what setuptools-scm will resolve from git.
+  - git describe --tags --always
   - pip install -e .
 
 pytest:
