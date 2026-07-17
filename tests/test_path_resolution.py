@@ -85,6 +85,7 @@ def test_static_data_and_writes_are_cwd_independent(monkeypatch, tmp_path):
     assert (tmp_path / "OUTPUTS" / "_cache" / "probe.json").exists()
 
 
+@pytest.mark.network
 @pytest.mark.skipif(os.environ.get("RUN_PASE_INTEGRATION", "").lower()
                     not in ("1", "true", "yes"),
                     reason="integration test, needs network access to PVGIS "
