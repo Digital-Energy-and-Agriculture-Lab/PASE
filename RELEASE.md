@@ -12,6 +12,44 @@ accident).
 
 ---
 
+## Versioning policy — choosing the number
+
+setuptools-scm derives the version *string* from the tag, but **you** choose the
+tag, so you decide MAJOR.MINOR.PATCH. PASE follows [SemVer](https://semver.org/):
+
+- **MAJOR** — a breaking change (see below).
+- **MINOR** — backward-compatible new functionality.
+- **PATCH** — backward-compatible bug fixes.
+
+**PASE's public contract** — what a change can break — is broader than a plain
+library's importable API. It is:
+
+1. the **Python API** users import (classes, functions, signatures);
+2. the **input-file schemas** (YAML/config formats — the main user interface);
+3. the **supported runtime and dependencies** users rely on (e.g. the minimum
+   Python version);
+4. the **default behaviour / results** produced when the user changes nothing.
+
+**The test for "breaking":** a user who does exactly what they did before now
+gets an error or a *materially different result*, without changing their own code
+or inputs. If yes, it is breaking → **MAJOR**.
+
+Examples:
+
+- **Breaking (MAJOR):** removing/renaming a public class or function; changing an
+  input-file layout so existing files no longer load; dropping a supported Python
+  version; changing a default so unchanged runs produce different results.
+- **Not breaking (MINOR/PATCH):** adding an optional feature or parameter with a
+  safe default; fixing a bug so results become *correct* (call it out in the
+  changelog, but it does not by itself force a MAJOR); internal refactors with
+  identical public behaviour.
+
+When in doubt, prefer the higher bump and describe the change in the CHANGELOG:
+under-signalling a breaking change erodes user trust more than an "extra" major
+does. (This is why the catch-up release is `2.0.0`, not `1.4.0` — see below.)
+
+---
+
 ## One-time setup (project Owner, in the GitLab UI)
 
 Do this once before the first release. It cannot be done from the repo.
@@ -86,15 +124,18 @@ On a pushed tag matching `vX.Y.Z`:
 
 ---
 
-## First release — v1.4.0 (catch-up)
+## First release — v2.0.0 (catch-up)
 
-`v1.4.0` is the first release on this pipeline and clears the `v1.3.0..develop`
-backlog (see the `[Unreleased]` entry in `CHANGELOG.md`). `main` is far behind
-`develop`; we do **not** reconstruct the intermediate releases — a single
-`release-v1.4.0 -> main -> tag v1.4.0` brings `main` current in one clean,
+`v2.0.0` is the first release on this pipeline and clears the `v1.3.0..develop`
+backlog (see the `[Unreleased]` entry in `CHANGELOG.md`). The major bump follows
+SemVer: the backlog carries breaking changes since v1.3.0 — the Python-floor bump
+(#256), the GRASSIM input-layout change (#199), the default sky-model change
+(#117), and the `MultiBlock_PASE` removal (#184). `main` is far behind `develop`;
+we do **not** reconstruct the intermediate releases — a single
+`release-v2.0.0 -> main -> tag v2.0.0` brings `main` current in one clean,
 auditable step and proves the pipeline end to end.
 
-Before tagging `v1.4.0`, smoke-test the pipeline with a throwaway pre-release
+Before tagging `v2.0.0`, smoke-test the pipeline with a throwaway pre-release
 tag (goes to TestPyPI only, never PyPI):
 
 ```bash

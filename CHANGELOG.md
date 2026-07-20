@@ -15,16 +15,16 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 
 ## [Unreleased]
 
-> The changes below constitute the upcoming **1.4.0** release — the first release cut from the new pipeline and the catch-up for the `v1.3.0..develop`
-> backlog. 
-> On release, retitle this section to `## [1.4.0] - YYYY-MM-DD`.
+> The changes below constitute the upcoming **2.0.0** release — the first release cut from the new pipeline and the catch-up for the `v1.3.0..develop`
+> backlog. The major bump reflects breaking changes since v1.3.0 (see #256, #199, #117, #184).
+> On release, retitle this section to `## [2.0.0] - YYYY-MM-DD`.
 
 ### For users
 
 #### Added
 - Far/distant shadings: the scene can now account for shading cast by distant objects (terrain, remote obstacles) beyond the immediate PV array. (#105)
 - Lenticular diffuser modeling via BSDF, letting simulations represent light-diffusing sheets on panels. (#168)
-- Multiple sky models, with Perez now the default anisotropic diffuse sky model. Sky type derived from weather data per timestep (#117)
+- Multiple sky models, with Perez now the default anisotropic diffuse sky model. Sky type derived from weather data per timestep. (#117)
 - Daily sky-type classification (clear/intermediate/overcast per day). (#158)
 - STICS crop model support through co-simulation with pySTICS. (#135)
 - MoSt-GG (2025) modifications to the Gras-Sim grassland model. (#142)
@@ -32,13 +32,13 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
   - Mounting structures included in the 3D PV configuration. (#156)
   - Support poles included in the 3D PV configuration. (#178)
   - Additional mounting-structure geometries (structures alpha release). (#223, #216)
-  - The Structures are thoroughly documented in the PASE wiki.
+  - The structures are thoroughly documented in the PASE wiki.
 - Time-varying (time-series) albedo input, with fallback to a default value when the albedo file is invalid. (#207)
 - `OutputsManager`:
   - centralized management of simulation outputs, caching, and result variants. (#203, #82)
   - can compute and report the parameter diff between simulation variants. (#209)
   - variant creation extended to cover crop-model parameters. (#211)
-  - The `OutputsManager` is included in the examples but is subject to a retro-compatible refactor (robustness improvements) in the near future
+  - The `OutputsManager` is included in the examples but is subject to a retro-compatible refactor (robustness improvements) in the near future.
 - Zone of interest now rotates with the array azimuth so it always stays parallel to the transect. (#48)
 - Stronger YAML input validation: allowed values/possibilities are now checked for input parameters. (#122)
 - Benchmarking scripts for the GRASSIM grassland model. (#149)
@@ -53,8 +53,8 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 - Improved estimation of the GHI reaching the ground. (#208)
 - Corrected daily diffuse irradiance that was reported too low. (#242)
 - The scene horizon now correctly reduces diffuse irradiance in the normal simulation flow (previously the horizon had no effect on diffuse light, and a horizon-related indexing error could occur). (#257)
-- Reinhart sky discretization issue (detected with MF=5 but occurred more widely) ; due to a rounding error (#212)
-- Corrected the distance check in `Light.get_sky_type` for more accurate and robust sky type determination (#238)
+- Fixed a Reinhart sky-discretization rounding error (detected at MF=5 but occurring more widely). (#212)
+- Corrected the distance check in `Light.get_sky_type` for more accurate and robust sky type determination. (#238)
 - Fixed a missing bracket in the light module. (#237)
 - Diffuse computations no longer error when the scene contains 0 panels. (#188)
 - Simulations with 0 panels no longer crash under the new MultiBlock geometry. (#196)
@@ -68,7 +68,7 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 - GRASSIM: 
   - corrected the temperature threshold used in the ST computation. (#191)
   - state variables are now updated daily as intended. (#198)
-- Added the missing `Hinge` parameter to `None.yaml` so `example_nopanels.py` runs. (#202) BUT this parameter was later removed (moot change).
+- Added the missing `Hinge` parameter to `None.yaml` so `example_nopanels.py` runs (#202); the parameter was later removed, making this moot.
 
 ### For developers
 
@@ -99,7 +99,7 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 - Added unit tests: aerodynamics module (#169), GRASSIM `subtract_with_min_values` (#170), GRASSIM `compute_fT` (#171), GRASSIM `compute_N_immobilization` (#172), `ReinhartSky` class (#174), `Light` class (#175).
 
 
-## [1.3.0] - 2025-09-17 and earlier
+## Earlier releases
 
 Releases up to and including `v1.3.0` predate this changelog. See the annotated
 git tags (`git tag -n`) and the GitLab release/tag history for their notes.
