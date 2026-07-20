@@ -115,14 +115,16 @@ test_release:
   allow_failure: false
 
 # Build the sdist + wheel and validate them. Runs on version tags and on the
-# default branch (to catch packaging breakage early). Plain Python image: no
-# conda needed to build, but git is required for setuptools-scm.
+# `develop` integration branch (to catch packaging breakage early); `main` only
+# ever receives already-tagged release merges, so it is covered by the tag rule.
+# Plain Python image: no conda needed to build, but git is required for
+# setuptools-scm.
 build:
   stage: build
   image: python:3.12-slim
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/'
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
   before_script:
     - 'apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*'
     - 'git config --global --add safe.directory "$CI_PROJECT_DIR"'
