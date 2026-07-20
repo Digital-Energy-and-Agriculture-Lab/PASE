@@ -121,12 +121,14 @@ test_release:
 # setuptools-scm.
 build:
   stage: build
-  image: python:3.12-slim
+  # Full image (buildpack-deps based) ships git out of the box; the slim image
+  # does not, and this locked-down runner forbids apt from installing it
+  # (apt cannot drop to its sandbox user). So avoid apt entirely.
+  image: python:3.12
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/'
     - if: '$CI_COMMIT_BRANCH == "develop"'
   before_script:
-    - 'apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*'
     - 'git config --global --add safe.directory "$CI_PROJECT_DIR"'
     - pip install --no-cache-dir build twine
   script:
