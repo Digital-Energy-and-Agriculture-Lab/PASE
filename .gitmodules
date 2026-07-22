@@ -1,0 +1,4 @@
+[submodule "pySTICS"]
+	path = pase/CROPS/STICS/PYSTICS/pySTICS
+	url = ../pySTICS.git
+	branch = develop

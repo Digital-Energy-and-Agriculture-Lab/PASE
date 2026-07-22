@@ -2,14 +2,46 @@
 
 The **PASE** framework is designed to simulate an agrivoltaic system, calculating both photovoltaic and agricultural outputs. It leverages the HDKR model to compute the global tilted irradiance on the PV panels and uses a ray casting algorithm to estimate the light reaching crops beneath the panels. These irradiance data are then used with crop models to simulate crop growth and yield.
 
+## Binder
+Try the PASE notebooks on Binder (**no installation required**):
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.uliege.be%2Fdeal-public%2Fpase/152-pase-training-session)
+
+Note: Currently, the above Binder button points to a feature branch. 
+The link is subject to change in the near future, as we continue improving the framework and notebooks, as well as keep creating new notebooks. 
+Visit regularly to access the most up-to-date versions. 
+
 ## Installation
+
+### Install with pip
+
+PASE is published on PyPI as **`pase-agrivoltaics`** — note the distribution name
+differs from the import name (as with `scikit-learn` / `sklearn`):
+
+```bash
+pip install pase-agrivoltaics
+```
+
+```python
+import pase
+```
+
+This installs the core library: the PV, light and environment modules, plus the
+pure-Python **SIMPLE** and **GRASSIM** crop models. The **STICS** and
+**CPlantBox** crop backends are not distributed on PyPI (they rely on external
+tools) and are set up separately. To run the bundled **examples and notebooks**,
+or for a full development environment, use the conda setup below — it also brings
+the repository's `INPUTS/` and example scripts.
+
+### Install with conda
+> **⚠ Breaking change (issue [#256](https://gitlab.uliege.be/deal-public/pase/-/issues/256), July 2026):** the conda environment files were rebuilt: Python `3.10` → `3.12`, `pyembree` replaced by `embreex`, and the `pyvista`/`vtk`/`pvlib`/`trimesh` pins were updated. This pulls in pandas 2.2+, which removed the uppercase `"H"` hourly frequency alias in favor of lowercase `"h"`. **If your own scripts or notebooks call PASE functions with `freq="H"`** (e.g. weather-data resampling) **or use pandas directly with `"H"`**, update them to `freq="h"` or they will error after rebuilding your environment. See the wiki's [Installation](https://gitlab.uliege.be/deal-public/pase/-/wikis/documentation/installation) page for full details.
 
 The repository provides environment files for setting up a conda virtual environment with all necessary dependencies. There are two separate files:
 
 - One for Windows users (`environment_windows.yml`)
 - One for Unix-based systems (macOS and GNU/Linux, such as Ubuntu, Debian, etc.) (`environment_unix.yml`)
 
-### Conda Installation
+
 
 If you haven’t installed Conda, we recommend following the [Conda installation guide](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html). Here are some options to consider:
 
@@ -25,19 +57,13 @@ If you haven’t installed Conda, we recommend following the [Conda installation
    conda env create -f environment_windows.yml
    ```
 
-2. Activate the environment:
+2. Activate the environment (the name comes from the `name:` field in the yml file, currently `pase-2026-07`; feel free to override it at creation time with `conda env create -f environment_windows.yml -n <your-name>`):
    
    ```bash
-   conda activate pase
+   conda activate pase-2026-07
    ```
 
-3. Install Embree-related dependencies with pip (while this is not standard practice in Conda, it should work without issues):
-   
-   ```bash
-   pip install pyembree embreex
-   ```
-
-4. The framework is now ready for use (for advanced crop modeling, see section [Installing JavaStics](#installing-javastics)).
+3. The framework is now ready for use (for advanced crop modeling, see section [Installing JavaStics](#installing-javastics)).
 
 ### Unix-based Installation
 
@@ -47,10 +73,10 @@ If you haven’t installed Conda, we recommend following the [Conda installation
    conda env create -f environment_unix.yml
    ```
 
-2. Activate the environment:
+2. Activate the environment (the name comes from the `name:` field in the yml file, currently `pase-2026-07`; feel free to override it at creation time with `conda env create -f environment_unix.yml -n <your-name>`):
    
    ```bash
-   conda activate pase
+   conda activate pase-2026-07
    ```
 
 3. The framework is now ready for use (for advanced crop modeling, see section [Installing JavaStics](#installing-javastics)).
@@ -65,6 +91,8 @@ If you want to use the crop model STICS, download JavaStics 1.5.1 : https://stic
 
 ### Quick start
 
+New users should get familiar with PASE via the `example.py` script. No coding is required to run it and visualize results.
+
 To easily configure the PASE framework, only modify the input files with `Example1`in their names (e.g. `Example1_AV.yaml`). These files are located in the **INPUTS** folders. There are three main types of files:
 
 1. **General and Location Parameters:** configure the location, time settings, weather data, and simulation parameters for a photovoltaic and agrivoltaic system. It sets the location name, time zone, coordinates (latitude, longitude, altitude), and options for retrieving weather data from PvGis or a local file. The user specifies the simulation years, with options for daily or hourly weather data. The precision level of sun position calculations ranges from monthly averages to daily specifics. It also defines a zone of interest with x and y boundaries and increments for light and crop modeling in the simulation. These files are ocated in **INPUTS/SCENARIOS**.
@@ -78,7 +106,7 @@ Each parameter in these files includes detailed information such as:
 - **Unit:** Indicates the unit of measurement.
 - **Definition:** Brief explanation of the parameter to clarify its purpose.
 
-To update a parameter, change only the value following the line labeled **"Value:"**. This helps ensure consistent formatting and preserves the contextual information about each parameter.
+To update a parameter, change only the field labeled **"Value:"**. This helps ensure consistent formatting and preserves the contextual information about each parameter.
 
 ## PASE Workflow Overview
 
@@ -88,19 +116,42 @@ The PASE framework operates in three main steps:
 2. **Microclimate Modeling**
 3. **Photovoltaic and Crop Production Calculation**
 
-You can find an example workflow in the `main.py` file.
+You can find an example workflow in the `example.py` file.
 
 ### 1. Agrivoltaic System Configuration
 
 #### Data Management Module:
 
-The data management module in PASE 1.0 includes the `YAML_Inputs_provider` class, found in the `yaml_inputs_provider.py` module, which reads YAML input files and converts them into dictionaries. This class features various methods to validate user-entered values and to identify any anomalies present. Additionally, the `Weather_data` class processes weather data provided in CSV format, converting it into Pandas DataFrames or importing it through the [PVGIS](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/getting-started-pvgis/api-non-interactive-service_en) class based on user-defined location and time parameters. The resulting weather DataFrames are organized in a dictionary by year. Since the [PVGIS](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/getting-started-pvgis/api-non-interactive-service_en) class does not supply rainfall and air vapor pressure data, users must provide a separate daily data file for these parameters if they are needed for the simulations.
+The data management module in PASE includes the `YAML_Inputs_provider` class, 
+found in the `yaml_inputs_provider.py` module, which reads YAML input files and 
+converts them into dictionaries. This class features various methods to validate
+user-entered values and to identify any anomalies present. 
+
+Additionally, the `Weather_data` class processes weather data provided in CSV 
+format, converting it into Pandas DataFrames or importing it through the 
+[PVGIS](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/getting-started-pvgis/api-non-interactive-service_en) class based on user-defined location and time parameters. 
+The resulting weather DataFrames are organized in a dictionary by year. 
+Since the [PVGIS](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/getting-started-pvgis/api-non-interactive-service_en) class does not supply rainfall and air vapor pressure 
+data, users must provide a separate daily data file for these parameters if 
+they are needed for the simulations. 
+
+See the wiki page on [Daily weather files](https://gitlab.uliege.be/deal-public/pase/-/wikis/documentation/tutorial#daily-weather-files---precipitation-and-vapour-pressure-data) 
+for more information on the contents and structure of the data file for precipitation and vapor pressure.
 
 #### Agrivoltaic System Configuration Module:
 
-The agrivoltaic system configuration module in PASE 1.0 utilizes the PyVista library, which is a Python wrapper for VTK, to create 3D scenes primarily featuring photovoltaic (PV) installations and the ground. [PyVista]([https://docs.pyvista.org/](https://docs.pyvista.org/)) employs a PolyData object for creating 3D geometries by defining vertex coordinates and assembling them into faces. It also supports importing 3D geometry from various formats, such as .obj, .ply, and .stl, which can be created using Computer-Aided Design (CAD) software. The `PV_Configuration_3D` class is constructing the 3D PV geometry, starting with the basic component, which is a rectangular PV module. These modules can be specified with a thickness and are arranged in a grid to form a block, which is then rotated to achieve the desired tilt. The entire PV plant is generated by repeating this process and adjusting the orientation around the zenith axis for proper azimuth alignment.
+The agrivoltaic system configuration module in PASE utilizes the PyVista library, which is a Python wrapper for VTK, to create 3D scenes primarily featuring photovoltaic (PV) installations and the ground. [PyVista]([https://docs.pyvista.org/](https://docs.pyvista.org/)) employs a PolyData object for creating 3D geometries by defining vertex coordinates and assembling them into faces. It also supports importing 3D geometry from various formats, such as .obj, .ply, and .stl, which can be created using Computer-Aided Design (CAD) software. The `PV_Configuration_3D` class is constructing the 3D PV geometry, starting with the basic component, which is a rectangular PV module. These modules can be specified with a thickness and are arranged in a grid to form a block, which is then rotated to achieve the desired tilt. The entire PV plant is generated by repeating this process and adjusting the orientation around the zenith axis for proper azimuth alignment.
 
-PASE 1.0 enables the creation of PV plants that can utilize sun-tracking and back-tracking algorithms based on NREL's methodologies. Users can easily create the PV system by completing parameter files located in designated folders, namely AV_CENTRAL and PV_MODULES. However, there is currently no user-friendly method for importing 3D geometry files for other structures due to varying conventions, including differences in reference frames, drawing scales, and file extensions, necessitating individual adjustments for each case. Consequently, in PASE 1.0, only the PV modules are created as geometric elements within the scene using PyVista.
+PASE enables the creation of PV plants that can utilize sun-tracking and 
+back-tracking algorithms based on NREL's methodologies. 
+Users can easily create the PV system by completing parameter files located in 
+designated folders, namely AV_CENTRAL and PV_MODULES. However, there is 
+currently no user-friendly method for importing 3D geometry files for other 
+structures due to varying conventions, including differences in reference 
+frames, drawing scales, and file extensions, necessitating individual 
+adjustments for each case. 
+Consequently, in PASE, only the PV modules are created as geometric elements 
+within the scene using PyVista.
 
 ### 2. Microclimate Modeling
 
@@ -122,9 +173,17 @@ The **Wind Module** calculates wind speed at different heights based on a logari
 
 #### Photovoltaic Module Description
 
-The `PV_Production` class calculates the plane of array (POA) irradiance on photovoltaic (PV) module faces, including bifacial modules, to determine their productivity. Key loss factors considered during this process are mutual shading and thermal losses. A PV module's temperature exceeding the standard test conditions (STC) of 25°C reduces conversion efficiency, and PASE 1.0 implements the PVsyst cell temperature model to account for this.
+The `PV_Production` class calculates the plane of array (POA) irradiance on 
+photovoltaic (PV) module faces, including bifacial modules, to determine their 
+productivity. Key loss factors considered during this process are mutual shading
+and thermal losses. A PV module's temperature exceeding the standard test 
+conditions (STC) of 25°C reduces conversion efficiency, and PASE implements the
+PVsyst cell temperature model to account for this.
 
-Heat loss calculations are based on typical conditions for free-standing modules, with a constant heat transfer component of 25 W/m²·K and a convective heat transfer component of 1.2 W·s/m³·K. The default wind speed for calculations is set at 10 m but can be adjusted.
+Heat loss calculations are based on typical conditions for free-standing 
+modules, with a constant heat transfer component of 25 W/m²·K and a 
+convective heat transfer component of 1.2 W·s/m³·K. 
+The default wind speed for calculations is set at 10 m but can be adjusted.
 
 The power generated by a PV module is computed using the formula: 
 
@@ -147,7 +206,10 @@ This formula illustrates how various factors influence the overall power output 
 
 #### Agronomic Module Description
 
-The agronomic module in PASE 1.0 consists of three sub-modules for integrated crop models: SIMPLE, Gras-Sim, and STICS. SIMPLE and Gras-Sim are implemented in Python, while STICS uses data management functions for compatibility with the JavaStics executable, allowing co-simulation.
+The agronomic module in PASE consists of three sub-modules for integrated 
+crop models: SIMPLE, Gras-Sim, and STICS. SIMPLE and Gras-Sim are implemented 
+in Python, while STICS uses data management functions for compatibility with 
+the JavaStics executable, allowing co-simulation.
 
 1. **SIMPLE Module:**
    

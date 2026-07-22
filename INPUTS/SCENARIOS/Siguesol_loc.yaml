@@ -11,13 +11,13 @@ Latitude:
    Type: float
    Limit: [-90, 90]
    Unit: degrés décimaux [-]
-   Definition: Latitude of the location
+   Definition: Latitude of the location, used for PVGIS weather data and sun position computation
 Longitude:
    Value: 5.677
    Type: float
    Limit: [-180, 180]
    Unit: degrés décimaux [-]
-   Definition: Longitude of the location
+   Definition: Longitude of the location, used for PVGIS weather data and sun position computation
 Altitude:
    Value: 433
    Type: float
@@ -39,13 +39,13 @@ DailyWeatherFileName:
    Type: string
    Definition: Name of the daily weather data csv file with precipitation and vapour pressure (pay attention to the format it should have) if WeatherDataOption is 1 (PVGis used)
 SimulationStartingYear:
-   Value: 2008
+   Value: 2005
    Type: integer
    Limit: [1900, SimulationEndingYear]
    Unit: dimensionless [-]
    Definition: Starting year of the simulation, PvGis has data from 2005 to 2016 comprise
 SimulationEndingYear:
-   Value: 2010
+   Value: 2006
    Type: integer
    Limit: [SimulationStartingYear, 2023]
    Unit: dimensionless [-]
@@ -71,6 +71,14 @@ FibonacciSamples:
    Type: integer
    Limit: [1,100000]
    Definition: Samples in the Fibonacci sky subdivision scheme.
+DiffuseSkyType:
+   Value: From weather data
+   Type: string
+   Possibilities: [From weather data, Uniform]
+   Definition: Determine how to compute sky diffuse radiance distribution. 
+               "From weather data" uses a simplified implementation of Igawa (2014) 
+               to derive the sky type from weather data.
+               "Uniform" assumes uniform radiance distribution (faster but less accurate).
 Xmin_InterestZone:
    Value: -4
    Type: float
@@ -107,3 +115,18 @@ dY_InterestZone:
    Limit: [-2000, 2000]
    Unit: meters [m]
    Definition: Increment in the y coordinates of the zone of interest for the light and crop modelling
+InterestZoneOrientationMode:
+  Value: custom
+  Type: string
+  Possibilities: [default, auto, custom]
+  Definition: Orientation mode for the interest zone.
+    - default  aligned to North (0°)
+    - auto aligned with PV azimuth
+    - custom use InterestZoneCustomAngle
+InterestZoneCustomAngle:
+  Value: 60
+  Type: float
+  Limit: [0, 360]
+  Unit: degrees [°]
+  Definition: Custom orientation angle for the interest zone. Starting from the north in a clockwise direction
+    (used only if InterestZoneOrientationMode = "custom")
