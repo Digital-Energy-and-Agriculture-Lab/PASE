@@ -65,6 +65,7 @@ def default_series_input():
                       default_parameters['DiffuseSkyType'])
     return default_Sun_positions,default_Light,default_WD
 
+@pytest.mark.network
 @pytest.mark.parametrize("AlbedoOptionAndName",
                          [(1,"Non_existant_file_to_test_function_call"),
                           (2,"albedo_colza")]
@@ -101,6 +102,7 @@ def test_get_several_years_of_electricity_production(default_PV_Central,
             "GTI front is constant, Albedo is likely constant and " \
             "AlbedoDataOption is 2"
 
+@pytest.mark.network
 @pytest.mark.parametrize("freq", ["h", "15min"])
 def test_get_several_years_of_electricity_production_nominal(default_PV_Central,freq):
     albedo=default_PV_Central.get_n_years_albedo_from_csvfile(
@@ -135,6 +137,7 @@ def test_get_several_years_of_electricity_production_nominal(default_PV_Central,
         assert "2020-12-31 23:00" in albedo2020.index, \
             "End timestamp '2020-12-31 23:00' not in albedo_colza series."
 
+@pytest.mark.network
 def test_get_several_years_of_electricity_production_hors_periode(default_PV_Central):
     albedo=default_PV_Central.get_n_years_albedo_from_csvfile(
         "albedo_colza",
