@@ -14,16 +14,14 @@ Every merge request should add its entry under `## [Unreleased]`; when a release
 is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 
 ## [Unreleased]
+- (empty)
 
-> The changes below constitute the upcoming **2.0.0** release — the first release cut from the new pipeline and the catch-up for the `v1.3.0..develop`
-> backlog. The major bump reflects breaking changes since v1.3.0 (see #256, #199, #117, #184).
-> On release, retitle this section to `## [2.0.0] - YYYY-MM-DD`.
-
+## [2.0.0] - 2026-07-22
 ### For users
 
 #### Added
 - Far/distant shadings: the scene can now account for shading cast by distant objects (terrain, remote obstacles) beyond the immediate PV array. (#105)
-- Lenticular diffuser modeling via BSDF, letting simulations represent light-diffusing sheets on panels. (#168)
+- Lenticular diffuser modeling via BSDF, letting simulations represent light-diffusing sheets between PV panels. (#168)
 - Multiple sky models, with Perez now the default anisotropic diffuse sky model. Sky type derived from weather data per timestep. (#117)
 - Daily sky-type classification (clear/intermediate/overcast per day). (#158)
 - STICS crop model support through co-simulation with pySTICS. (#135)
