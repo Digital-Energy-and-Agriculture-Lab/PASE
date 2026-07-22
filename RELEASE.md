@@ -88,39 +88,37 @@ On a pushed tag matching `vX.Y.Z`:
 
 ## Release checklist
 
-1. **Land all changes on `develop`** and make sure its pipeline is green.
-2. **Finalize the changelog.** In `CHANGELOG.md`, retitle `## [Unreleased]` to
-   `## [X.Y.Z] - YYYY-MM-DD`, resolve any "Needs human triage" items, and add a
-   fresh empty `## [Unreleased]` above it. Commit on `develop` (via MR).
-3. **Cut the release branch** off `develop` and open an MR into `main`:
-   ```bash
-   git switch develop && git pull
-   git switch -c release-vX.Y.Z
-   # push, open MR release-vX.Y.Z -> main, get one Owner approval, merge
-   ```
-4. **Tag on `main`** (the merge commit) and push the tag:
-   ```bash
-   git switch main && git pull
-   git tag vX.Y.Z          # annotated is fine: git tag -a vX.Y.Z -m "vX.Y.Z"
-   git push <remote> vX.Y.Z
-   ```
-   Build from a clean tree so setuptools-scm emits `X.Y.Z` (no `.dev`/`+`).
-5. **Dry-run to TestPyPI.** In the tag pipeline, run the manual `publish_testpypi`
-   job. Optionally verify:
-   ```bash
-   pip install -i https://test.pypi.org/simple/ \
-       --extra-index-url https://pypi.org/simple/ pase-agrivoltaics
-   ```
-6. **Publish.** `publish_pypi` runs automatically on the final tag. Confirm the
-   release at <https://pypi.org/project/pase-agrivoltaics/> and in a clean venv:
+The release runs through the normal GitLab workflow: **open an issue, then create
+the branch and merge request from it in the GitLab UI** (favour the UI over the
+CLI throughout).
+
+1. **Prep `develop`.** Ensure all changes are on `develop` and its pipeline is green.
+2. **Open a release issue** — e.g. `[release] vX.Y.Z` — as the anchor for the
+   branch and MR.
+3. **Create the release branch + MR from the issue (GitLab UI).** From the issue,
+   use *Create merge request*; set the branch **off `develop`**, name it
+   `release-vX.Y.Z`, and **target `main`**.
+4. **Finalize the changelog on the release branch.** In `CHANGELOG.md`, retitle
+   `## [Unreleased]` → `## [X.Y.Z] - YYYY-MM-DD`, resolve any "Needs human triage"
+   items, and add a fresh empty `## [Unreleased]` above it. Commit to
+   `release-vX.Y.Z` (so it travels to `main` and, later, back to `develop`).
+5. **Merge the MR into `main`** once it has one Owner approval and a green pipeline. **Do not delete the release branch yet !**
+6. **Tag on `main` (GitLab UI).** Repository → Tags → *New tag*: `vX.Y.Z`, created
+   from `main` (the merge commit). This fires the tag pipeline. The tree is clean
+   at the tag, so setuptools-scm emits `X.Y.Z` (no `.dev`/`+`).
+7. **TestPyPI dry-run.** In the tag pipeline, run the manual `publish_testpypi`
+   job — recommended whenever anything about packaging changed.
+8. **Publish.** `publish_pypi` runs automatically on the final tag. Confirm at
+   <https://pypi.org/project/pase-agrivoltaics/> and in a clean venv:
    ```bash
    pip install pase-agrivoltaics
    python -c "import pase; print(pase.__version__)"
    ```
-7. **Publish the GitLab Release** for the tag, pasting the changelog section as
-   the release notes.
-8. **Back-merge `main` into `develop`** if the release branch received fixes, so
-   the two branches don't diverge.
+9. **Publish the GitLab Release** for the tag, pasting the `CHANGELOG.md` section
+   as the release notes.
+10. **Back-merge the release branch into `develop`.** Open an MR
+    `release-vX.Y.Z → develop` (GitLab UI) and merge it, so the release commits
+    (notably the changelog retitle) land on `develop`. This MR can delete the release branch after the merge.
 
 ---
 
@@ -132,14 +130,11 @@ SemVer: the backlog carries breaking changes since v1.3.0 — the Python-floor b
 (#256), the GRASSIM input-layout change (#199), the default sky-model change
 (#117), and the `MultiBlock_PASE` removal (#184). `main` is far behind `develop`;
 we do **not** reconstruct the intermediate releases — a single
-`release-v2.0.0 -> main -> tag v2.0.0` brings `main` current in one clean,
-auditable step and proves the pipeline end to end.
+`release-v2.0.0 → main → tag v2.0.0` (via the checklist above) brings `main`
+current in one clean, auditable step and proves the pipeline end to end.
 
-Before tagging `v2.0.0`, smoke-test the pipeline with a throwaway pre-release
-tag (goes to TestPyPI only, never PyPI):
-
-```bash
-git tag v0.0.0rc1 && git push <remote> v0.0.0rc1
-# run the manual publish_testpypi job; then delete the throwaway tag:
-git push <remote> :refs/tags/v0.0.0rc1 && git tag -d v0.0.0rc1
-```
+The pipeline has already been smoke-tested end to end with throwaway `v1.4.0rc*`
+tags that built and uploaded to TestPyPI. To repeat a dry run for a future
+release, create a throwaway pre-release tag in the UI (Repository → Tags → *New
+tag*, e.g. `vX.Y.Zrc1`), run the manual `publish_testpypi` job, then delete the
+tag in the UI. `rc` tags go to TestPyPI only, never PyPI.
