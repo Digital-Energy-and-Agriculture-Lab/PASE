@@ -55,7 +55,6 @@ def structure_inputs():
         "Height": 2.0,
         "PoleSpacingX": 1.0,
         "TiltY": 15.0,
-        "PanelOffset": 0.5,
         "DiagonalEpsilon": 0.000001,
         "RepetitionDistanceGroupYMode": "manual",
     }
