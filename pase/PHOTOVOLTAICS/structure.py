@@ -66,9 +66,8 @@ def build_structure(config_dict, ground=None, x_center=0.0, y_center=0.0,
     struct_type = struct_type.lower()
 
     # Shared z_world helper function for standardizing global evaluation
-    import math as _math
-    _az = _math.radians(azimuth_deg)
-    _cos_az, _sin_az = _math.cos(_az), _math.sin(_az)
+    _az = math.radians(azimuth_deg)
+    _cos_az, _sin_az = math.cos(_az), math.sin(_az)
 
     # Instead of _z relying on a captured variable 'x_center', we define it clearly
     def _z_world(x_pre: float, y_pre: float) -> float:
