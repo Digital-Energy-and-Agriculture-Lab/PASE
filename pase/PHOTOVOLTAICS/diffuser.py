@@ -142,8 +142,10 @@ class Diffuser:
 class LenticularDiffuser(Diffuser):
     """
     Specific class that inherits from the Diffuser class. Adds the transfer function specific to lenticular diffusers
-
-    Omega = Lens aperture angle in degrees
+    Inputs:
+        azimuth_lens (foat) = Azimuth of the lenses relative to the flat diffuser (before any rotation related to the \
+        configuration). 0 corresponds to lenses aligned with the y-axis (N-S), 90 to those aligned with the x-axis (E-W).
+        Omega (float)= Lens aperture angle in degrees
     """
 
     def __init__(self, azimuth_lens, azimuth_diff, elevation_diff, omega=30, res=0.1, **kwargs):
