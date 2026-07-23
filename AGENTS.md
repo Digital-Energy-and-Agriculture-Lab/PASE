@@ -77,7 +77,7 @@ Each YAML parameter has `Type/Value/Limits/Unit/Definition` fields. `InputsEvalu
 - No bare `except:`
 - American English only (code, comments, commits) — no other languages
 - Unit tests rely on pytest only (no unittest)
-- No lazy imports
+- No lazy imports for common libraries, OK for optional backends 
 
 ## Remote Repo & Branching
 
