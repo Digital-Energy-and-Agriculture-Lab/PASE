@@ -11,9 +11,24 @@ Covers the configuration-level integration of the Ground abstraction:
 
 import numpy as np
 import pytest
+import pyvista as pv
 
-from pase.ENVIRONMENT.ground import Ground, SlopedGround
-from pase.PHOTOVOLTAICS.configuration import PVConfiguration3D
+from pase.ENVIRONMENT.ground import Ground, SlopedGround, DEMGround
+from pase.PHOTOVOLTAICS.configuration import (PVConfiguration3D,
+                                              _assert_layout_within_ground)
+
+
+def _flat_dem_ground(extent_x=20.0, extent_y=None, n=21):
+    """A small synthetic flat DEMGround spanning [-extent_x, extent_x] x
+    [-extent_y, extent_y] (square when ``extent_y`` is omitted)."""
+    if extent_y is None:
+        extent_y = extent_x
+    xs = np.linspace(-extent_x, extent_x, n)
+    ys = np.linspace(-extent_y, extent_y, n)
+    xx, yy = np.meshgrid(xs, ys)
+    zz = np.zeros_like(xx)
+    surf = pv.StructuredGrid(xx, yy, zz).extract_surface(algorithm=None).triangulate()
+    return DEMGround(surf.compute_normals(consistent_normals=True))
 
 
 def _base_config(**overrides):
@@ -90,3 +105,50 @@ def test_sloped_block_is_lifted_relative_to_flat():
     z_flat = np.concatenate([p[:, 2] for p in _block_points(flat)])
     z_sloped = np.concatenate([p[:, 2] for p in _block_points(sloped)])
     assert z_sloped.min() > z_flat.min() + 1e-6
+
+
+# ── Layout-within-ground coverage check (issue #248) ───────────────────────────
+
+class TestAssertLayoutWithinGround:
+    """_assert_layout_within_ground delegates to ground.assert_covers."""
+
+    def test_layout_within_dem_ok(self):
+        """A layout well inside the DEM extent must not raise."""
+        g = _flat_dem_ground(extent_x=20.0)
+        centers = np.array([[0.0, 0.0, 0.0]])
+        _assert_layout_within_ground(g, centers, 3.0, 3.0, azimuth_deg=0.0)
+
+    def test_layout_exceeds_dem_raises_actionable(self):
+        """A footprint spilling past the DEM raises the actionable error."""
+        g = _flat_dem_ground(extent_x=20.0)
+        centers = np.array([[0.0, 0.0, 0.0]])
+        with pytest.raises(ValueError, match="TerrainExtentRadius"):
+            _assert_layout_within_ground(g, centers, 50.0, 3.0, azimuth_deg=0.0)
+
+    def test_azimuth_is_applied_to_footprint(self):
+        """The footprint bbox is rotated by the azimuth before the check.
+
+        On a wide-but-shallow DEM (x +/-30, y +/-10), a footprint 25 m long in X
+        fits at azimuth 0 but, rotated 90 degrees, its long axis falls along the
+        shallow +/-10 Y extent and overruns it. A raise only at 90 degrees proves
+        the azimuth is genuinely applied (not ignored).
+        """
+        g = _flat_dem_ground(extent_x=30.0, extent_y=10.0)
+        centers = np.array([[0.0, 0.0, 0.0]])
+        # azimuth 0: long axis along X (+/-25 within +/-30), short along Y -> ok.
+        _assert_layout_within_ground(g, centers, 25.0, 3.0, azimuth_deg=0.0)
+        # azimuth 90: long axis now along Y (+/-25 beyond +/-10) -> raises.
+        with pytest.raises(ValueError, match="TerrainExtentRadius"):
+            _assert_layout_within_ground(g, centers, 25.0, 3.0, azimuth_deg=90.0)
+
+    def test_unbounded_grounds_are_noop(self):
+        """Flat and sloped (infinite) grounds never raise, whatever the layout."""
+        centers = np.array([[0.0, 0.0, 0.0]])
+        _assert_layout_within_ground(Ground(), centers, 1e6, 1e6, 0.0)
+        _assert_layout_within_ground(SlopedGround(180, 80), centers, 1e6, 1e6, 0.0)
+
+    def test_empty_or_none_centers_noop(self):
+        """No block centers -> nothing to check, even on a bounded DEM."""
+        g = _flat_dem_ground(extent_x=20.0)
+        _assert_layout_within_ground(g, None, 3.0, 3.0, 0.0)
+        _assert_layout_within_ground(g, np.empty((0, 3)), 3.0, 3.0, 0.0)
