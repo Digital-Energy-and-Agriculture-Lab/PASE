@@ -52,6 +52,7 @@ def build_terrain_surface(
     cache_dir: str = None,
     force_download: bool = False,
     z_exaggeration: float = Z_EXAGGERATION,
+    center_lonlat: tuple = None,
 ) -> pv.PolyData:
     """
     Download (once) and convert SRTM data to a triangulated PyVista surface.
@@ -68,6 +69,14 @@ def build_terrain_surface(
         Re-download and reproject even when cached files exist.
     z_exaggeration : float
         Vertical scale factor for visualization (1.0 = real scale).
+    center_lonlat : tuple of float, optional
+        ``(lon, lat)`` of the scenario location in WGS84. When given, the mesh
+        is centred so this point maps to X=Y=0, keeping the terrain aligned with
+        the PV layout (which sits at the origin). Because the download box is
+        symmetric in *degrees* while UTM is metric, the raster centroid does not
+        coincide with the location, so relying on the grid mean introduces a
+        horizontal offset (a z error on slopes). Falls back to the grid centroid
+        when omitted.
 
     Returns
     -------
@@ -143,6 +152,7 @@ def build_terrain_surface(
 
         x_coords = src.transform[2] + np.arange(src.width)  * src.transform[0]
         y_coords = src.transform[5] + np.arange(src.height) * src.transform[4]
+        utm_crs = src.crs
 
         if not np.any(np.isfinite(elev)):
             raise ValueError(
@@ -159,8 +169,18 @@ def build_terrain_surface(
               f"elevation: {np.nanmin(elev):.0f}–{np.nanmax(elev):.0f} m")
 
     # ── 4. Build PyVista surface ──────────────────────────────────────────────
-    x_centered = x_coords - x_coords.mean()
-    y_centered = y_coords - y_coords.mean()
+    # Centre on the scenario location (so the terrain aligns with the PV layout
+    # at the origin) when known, else on the raster centroid.
+    if center_lonlat is not None:
+        from pyproj import Transformer
+        lon0, lat0 = center_lonlat
+        transformer = Transformer.from_crs("EPSG:4326", utm_crs, always_xy=True)
+        x_origin, y_origin = transformer.transform(lon0, lat0)
+    else:
+        x_origin, y_origin = x_coords.mean(), y_coords.mean()
+
+    x_centered = x_coords - x_origin
+    y_centered = y_coords - y_origin
 
     xx, yy = np.meshgrid(x_centered, y_centered)
     zz = elev * z_exaggeration

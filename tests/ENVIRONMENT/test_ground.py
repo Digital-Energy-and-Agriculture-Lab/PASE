@@ -183,7 +183,7 @@ class TestGroundFromConfig:
         surf = _make_dem_surface()
         monkeypatch.setattr(
             'pase.ENVIRONMENT.terrain_pipeline.build_terrain_surface',
-            lambda bounds: surf,
+            lambda bounds, center_lonlat=None: surf,
         )
         g = ground_from_config(
             {'TerrainSource': 'srtm'},

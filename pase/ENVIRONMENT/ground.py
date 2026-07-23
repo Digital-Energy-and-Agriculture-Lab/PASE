@@ -416,7 +416,7 @@ def _dem_ground_from_config(cfg: dict) -> "DEMGround":
     bounds = bounds_around(lat, lon, radius)
 
     from pase.ENVIRONMENT.terrain_pipeline import build_terrain_surface
-    surface = build_terrain_surface(bounds=bounds)
+    surface = build_terrain_surface(bounds=bounds, center_lonlat=(lon, lat))
     return DEMGround(surface)
 
 
