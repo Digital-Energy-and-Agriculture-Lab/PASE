@@ -173,11 +173,17 @@ def test_agrivoltaic_fence_accepts_minimal_config(structure_inputs):
 
 # ── Ground-aware structure tests ───────────────────────────────────────────────
 
-def test_flat_ground_produces_identical_output(structure_inputs):
+@pytest.mark.parametrize("structure_cls, overrides", [
+    (PVTable, {}),
+    (HSATS, {}),
+    # AgrivoltaicFence requires the panels to fit within one group (one panel in Y).
+    (AgrivoltaicFence, {"NumberOfPanelsY": 1}),
+])
+def test_flat_ground_produces_identical_output(structure_inputs, structure_cls, overrides):
     """Building with explicit Ground() must match the default (no ground argument)."""
-    cfg = structure_inputs()
-    built_default = PVTable(cfg).build_structure()
-    built_flat = PVTable(cfg, ground=Ground()).build_structure()
+    cfg = structure_inputs(**overrides)
+    built_default = structure_cls(cfg).build_structure()
+    built_flat = structure_cls(cfg, ground=Ground()).build_structure()
 
     pts_default = np.sort(built_default.points, axis=0)
     pts_flat = np.sort(built_flat.points, axis=0)
