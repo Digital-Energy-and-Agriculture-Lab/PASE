@@ -263,10 +263,17 @@ class DEMGround(Ground):
     Elevation is queried by vertical ray-casting; normal and gradient are
     derived from the per-point normals stored on the mesh.
 
+    The terrain z-coordinates must be at real scale: elevation is ray-cast off
+    the geometry to place pole feet, so any vertical exaggeration (a
+    visualization-only device on ``terrain_pipeline``) would corrupt the
+    physics. Surfaces stamped with a ``z_exaggeration`` field-data value other
+    than 1.0 are rejected.
+
     Raises
     ------
     ValueError
-        When (x, y) is **outside** the terrain bounding box.
+        When (x, y) is **outside** the terrain bounding box, or when the terrain
+        carries a ``z_exaggeration`` field-data value other than 1.0.
     """
 
     #: Real terrain can peak inside a footprint, not only at its corners, so we
@@ -274,6 +281,14 @@ class DEMGround(Ground):
     footprint_samples: int = 5
 
     def __init__(self, terrain: pv.PolyData):
+        exaggeration = terrain.field_data.get("z_exaggeration")
+        if exaggeration is not None and not np.isclose(float(exaggeration[0]), 1.0):
+            raise ValueError(
+                f"DEMGround requires real-scale terrain, but the surface was "
+                f"built with z_exaggeration={float(exaggeration[0])}. Rebuild "
+                "the terrain with z_exaggeration=1.0 for simulation "
+                "(exaggeration is a visualization-only device)."
+            )
         if "Normals" not in terrain.point_data:
             terrain = terrain.compute_normals(consistent_normals=True)
         self._terrain = terrain

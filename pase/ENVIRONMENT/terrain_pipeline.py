@@ -68,7 +68,10 @@ def build_terrain_surface(
     force_download : bool
         Re-download and reproject even when cached files exist.
     z_exaggeration : float
-        Vertical scale factor for visualization (1.0 = real scale).
+        Vertical scale factor for **visualization only** (1.0 = real scale).
+        Must be left at 1.0 for any surface fed to ``DEMGround`` / simulation,
+        which rejects exaggerated terrain (the applied value is stamped on the
+        returned surface's field data).
     center_lonlat : tuple of float, optional
         ``(lon, lat)`` of the scenario location in WGS84. When given, the mesh
         is centred so this point maps to X=Y=0, keeping the terrain aligned with
@@ -189,6 +192,9 @@ def build_terrain_surface(
     surface = terrain.extract_surface().triangulate()
     surface = surface.compute_normals(consistent_normals=True)
     surface["Elevation"] = surface.points[:, 2] / z_exaggeration
+    # Record the applied exaggeration so DEMGround can reject non-real-scale
+    # terrain (elevation is ray-cast off this geometry to place pole feet).
+    surface.field_data["z_exaggeration"] = np.array([float(z_exaggeration)])
 
     print(f"  Mesh: {surface.n_points} points, {surface.n_cells} triangles")
     return surface
@@ -213,7 +219,10 @@ def load_terrain_from_file(
     filepath : str
         Path to the raster DEM file.
     z_exaggeration : float
-        Vertical scale factor for visualisation (1.0 = real scale).
+        Vertical scale factor for **visualisation only** (1.0 = real scale).
+        Must be left at 1.0 for any surface fed to ``DEMGround`` / simulation,
+        which rejects exaggerated terrain (the applied value is stamped on the
+        returned surface's field data).
 
     Returns
     -------
@@ -297,6 +306,9 @@ def load_terrain_from_file(
         surface = terrain.extract_surface().triangulate()
         surface = surface.compute_normals(consistent_normals=True)
         surface["Elevation"] = surface.points[:, 2] / z_exaggeration
+        # Record the applied exaggeration so DEMGround can reject non-real-scale
+        # terrain (elevation is ray-cast off this geometry to place pole feet).
+        surface.field_data["z_exaggeration"] = np.array([float(z_exaggeration)])
 
         print(f"  Mesh: {surface.n_points} points, {surface.n_cells} triangles")
         return surface
