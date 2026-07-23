@@ -1,15 +1,23 @@
 from pase.PHOTOVOLTAICS.diffuser import LenticularDiffuser, rotation_coordinate
 from pase.ENVIRONMENT.sky_model import ReinhartSky
 import numpy as np
-
 az = [0, 45, 90, 135, 180, 225, 270, 315] # some azimuth angles
 ti = [-90, -45, 0, 45, 90] # some elevation angles
-Diffusers = [LenticularDiffuser(azi, tii, omega = 30) for azi in az for tii in ti] # some diffusers with different orientations
+Diffusers = [LenticularDiffuser(90, azi, tii, omega = 30) for azi in az for tii in ti] # some diffusers with different orientations
 def test_LenticularDiffuser_configuration():
-    """test orthogonality between diffuser normal and diffuser lens direction"""
-    for D in Diffusers:
+    """test orthogonality between diffuser normal and diffuser lens direction plus rotations applied to them"""
+    normals = list()
+    lens = list()
+    for i, azi in enumerate(az):
+        azi = -azi
+        for j, tij in enumerate(ti):
+            lens.append([np.cos(np.radians(tij))*np.cos(np.radians(azi)), np.cos(np.radians(tij))*np.sin(np.radians(azi)), -np.sin(np.radians(tij))])
+            normals.append([np.sin(np.radians(tij))*np.cos(np.radians(azi)), np.sin(np.radians(tij))*np.sin(np.radians(azi)), np.cos(np.radians(tij))])
+    for i, D in enumerate(Diffusers):
             assert np.isclose(np.sum(D.len_vector*D.normal), 0, rtol=1e-08)
-
+            print(D.len_vector, lens[i])
+            assert np.allclose(D.len_vector, lens[i], rtol=1e-08)
+            assert np.allclose(D.normal, normals[i], rtol=1e-08)
 suns  = [np.array([i, j, 1]).reshape((1,3))/np.sqrt(i**2+j**2+1) for i in range(-1, 2, 1) for j in range(-1, 2, 1)] # some sun positions
 def test_LenticularDiffuser_beta_gamma():
     """Test the values of the beta and gamma angles (i.e., angles defining the direction of the transmitted rays).
@@ -23,10 +31,11 @@ def test_LenticularDiffuser_beta_gamma():
             cross_gl = np.array([sun[0,1]*D.len_vector[2] - sun[0,2]*D.len_vector[1], # cross product between sun vector
                                  sun[0,2]*D.len_vector[0] - sun[0,0]*D.len_vector[2], # and len vector
                                  sun[0,0]*D.len_vector[1] - sun[0,1]*D.len_vector[0]])
-            dot_cgl_n = np.sum(cross_gl*D.normal)#inner prod. between the previous cross product and the diffuser normal
-            div = np.sqrt(np.sum(cross_gl*cross_gl)) if np.sqrt(np.sum(cross_gl*cross_gl)) !=0 else 1 # norm of cross_gl
-            cos_b = max(min(dot_cgl_n/div, 1), -1) # cos angle generate by the inner product cross_gl and the normal
-            b =np.arccos(cos_b)
+            lenv = D.len_vector / np.linalg.norm(D.len_vector)
+            b = np.arctan2(
+                np.dot(np.cross(cross_gl, D.normal), lenv),
+                np.dot(cross_gl, D.normal)
+            )
             beta_comp = b + np.arange(-D.omega+0.1/2, D.omega + 0.1/2, 0.1) # rays repartition within the diffuser aperture
             cos_gamma = max(min(dot_gl, 1), -1) # beta ground truth
             g = np.arccos(cos_gamma)
