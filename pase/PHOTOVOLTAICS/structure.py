@@ -104,8 +104,6 @@ def build_structure(config_dict, ground=None, x_center=0.0, y_center=0.0,
         z_center=z_center,
     )
 
-    raise ValueError(f"Unsupported StructureType '{struct_type}'")
-
 
 def compute_flush_panel_offset(config: dict, thickness: float) -> float:
     """Compute the panel z-offset that places the panel back face flush on the purlin.
