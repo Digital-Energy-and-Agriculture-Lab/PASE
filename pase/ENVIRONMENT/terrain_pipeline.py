@@ -18,10 +18,13 @@ Notes:
     - SRTM coverage: 60°N to 56°S.
 """
 
+import logging
 import os
 import numpy as np
 import pyvista as pv
 from scipy import ndimage
+
+logger = logging.getLogger(__name__)
 
 Z_EXAGGERATION = 1.0
 
@@ -100,22 +103,22 @@ def build_terrain_surface(
     # ── 1. Download SRTM ──────────────────────────────────────────────────────
     if force_download or not os.path.exists(output_raw):
         import elevation
-        print("Downloading SRTM data (cached after first run)...")
+        logger.info("Downloading SRTM data (cached after first run)...")
         elevation.clip(
             bounds=(west, south, east, north),
             output=output_raw,
             product='SRTM1',
         )
-        print(f"  DEM saved to {output_raw}")
+        logger.info(f"  DEM saved to {output_raw}")
     else:
-        print(f"  Using cached DEM: {output_raw}")
+        logger.info(f"  Using cached DEM: {output_raw}")
 
     # ── 2. Reproject WGS84 → UTM ──────────────────────────────────────────────
     if force_download or not os.path.exists(output_utm):
         import rasterio
         from rasterio.warp import calculate_default_transform, reproject, Resampling
 
-        print("Reprojecting to UTM...")
+        logger.info("Reprojecting to UTM...")
         with rasterio.open(output_raw) as src:
             center_lon = (src.bounds.left + src.bounds.right) / 2
             center_lat = (src.bounds.bottom + src.bounds.top) / 2
@@ -140,14 +143,14 @@ def build_terrain_surface(
                     dst_crs=dst_crs,
                     resampling=Resampling.bilinear,
                 )
-        print(f"  UTM DEM saved to {output_utm} (CRS: {dst_crs})")
+        logger.info(f"  UTM DEM saved to {output_utm} (CRS: {dst_crs})")
     else:
-        print(f"  Using cached UTM DEM: {output_utm}")
+        logger.info(f"  Using cached UTM DEM: {output_utm}")
 
     # ── 3. Read UTM DEM ───────────────────────────────────────────────────────
     import rasterio
 
-    print("Building 3D mesh...")
+    logger.info("Building 3D mesh...")
     with rasterio.open(output_utm) as src:
         elev = src.read(1).astype(np.float64)
         if src.nodata is not None:
@@ -167,9 +170,9 @@ def build_terrain_surface(
         # Fill any remaining nodata gaps so the mesh stays finite everywhere.
         elev = _fill_nodata(elev)
 
-        print(f"  Grid: {src.width} × {src.height} px  |  "
-              f"pixel size: {src.transform[0]:.1f} m  |  "
-              f"elevation: {np.nanmin(elev):.0f}–{np.nanmax(elev):.0f} m")
+        logger.info(f"  Grid: {src.width} × {src.height} px  |  "
+                    f"pixel size: {src.transform[0]:.1f} m  |  "
+                    f"elevation: {np.nanmin(elev):.0f}–{np.nanmax(elev):.0f} m")
 
     # ── 4. Build PyVista surface ──────────────────────────────────────────────
     # Centre on the scenario location (so the terrain aligns with the PV layout
@@ -196,7 +199,7 @@ def build_terrain_surface(
     # terrain (elevation is ray-cast off this geometry to place pole feet).
     surface.field_data["z_exaggeration"] = np.array([float(z_exaggeration)])
 
-    print(f"  Mesh: {surface.n_points} points, {surface.n_cells} triangles")
+    logger.info(f"  Mesh: {surface.n_points} points, {surface.n_cells} triangles")
     return surface
 
 
@@ -237,7 +240,7 @@ def load_terrain_from_file(
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"DEM file not found: {filepath}")
 
-    print(f"Loading terrain from file: {filepath}")
+    logger.info(f"Loading terrain from file: {filepath}")
 
     _tmp_file = None
     try:
@@ -276,7 +279,7 @@ def load_terrain_from_file(
                         resampling=Resampling.bilinear,
                     )
                 work_file = _tmp_file
-                print(f"  Reprojected to {dst_crs}")
+                logger.info(f"  Reprojected to {dst_crs}")
 
         with rasterio.open(work_file) as src:
             elev = src.read(1).astype(np.float64)
@@ -292,9 +295,9 @@ def load_terrain_from_file(
             x_coords = src.transform[2] + np.arange(src.width)  * src.transform[0]
             y_coords = src.transform[5] + np.arange(src.height) * src.transform[4]
 
-            print(f"  Grid: {src.width} × {src.height} px  |  "
-                  f"pixel size: {abs(src.transform[0]):.1f} m  |  "
-                  f"elevation: {np.nanmin(elev):.0f}–{np.nanmax(elev):.0f} m")
+            logger.info(f"  Grid: {src.width} × {src.height} px  |  "
+                        f"pixel size: {abs(src.transform[0]):.1f} m  |  "
+                        f"elevation: {np.nanmin(elev):.0f}–{np.nanmax(elev):.0f} m")
 
         x_centered = x_coords - x_coords.mean()
         y_centered = y_coords - y_coords.mean()
@@ -310,7 +313,7 @@ def load_terrain_from_file(
         # terrain (elevation is ray-cast off this geometry to place pole feet).
         surface.field_data["z_exaggeration"] = np.array([float(z_exaggeration)])
 
-        print(f"  Mesh: {surface.n_points} points, {surface.n_cells} triangles")
+        logger.info(f"  Mesh: {surface.n_points} points, {surface.n_cells} triangles")
         return surface
 
     finally:
