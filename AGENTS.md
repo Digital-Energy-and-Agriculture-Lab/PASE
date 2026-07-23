@@ -118,4 +118,6 @@ The message should inform on:
 
 Flag agent-assisted commits with a `Co-Authored-By:` trailer so the reviewer can stay vigilant and not accept nice-looking code without analyzing it in depth.
 
+Mention the associated issue number in the trailer, with the issue marker (e.g.: "#248")
+
 Write the commit message to a `commit.txt` file in the working subdirectory so it can be copy/pasted into the IDE's commit text box.
