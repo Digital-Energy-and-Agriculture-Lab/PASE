@@ -102,8 +102,8 @@ def merge_polydata(datasets: List[pyv.PolyData], *, extract_surface: bool = True
     if isinstance(merged, pyv.PolyData):
         return merged
 
-    geom = merged.extract_geometry()
-    return geom.extract_surface() if extract_surface else geom
+    geom = merged.extract_surface(algorithm=None)
+    return geom.extract_surface(algorithm='dataset_surface') if extract_surface else geom
 
 
 def name_matches_flag(
@@ -575,7 +575,7 @@ class PVConfiguration3D(MultiBlockPASE):
         # Validation/conversion PolyData
         if not isinstance(geometry, pyv.PolyData):
             try:
-                geometry = geometry.extract_surface().triangulate()
+                geometry = geometry.extract_surface(algorithm="dataset_surface").triangulate()
             except Exception as e:
                 raise TypeError("`geometry` is not a pv.PolyData and could not be converted.") from e
 

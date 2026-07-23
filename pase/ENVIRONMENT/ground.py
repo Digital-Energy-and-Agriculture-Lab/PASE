@@ -249,7 +249,7 @@ class SlopedGround(Ground):
         ys = np.arange(y_range[0], y_range[1] + resolution, resolution)
         xx, yy = np.meshgrid(xs, ys)
         zz = self.elevation(xx, yy)
-        return pv.StructuredGrid(xx, yy, zz).extract_surface().triangulate()
+        return pv.StructuredGrid(xx, yy, zz).extract_surface(algorithm='dataset_surface').triangulate()
 
 
 # ── Real DEM terrain ──────────────────────────────────────────────────────────
