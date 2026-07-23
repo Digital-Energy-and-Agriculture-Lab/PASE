@@ -353,7 +353,11 @@ class DEMGround(Ground):
     # ── normal ────────────────────────────────────────────────────────────────
 
     def normal(self, x: float, y: float) -> np.ndarray:
-        """Return the interpolated unit normal at (x, y)."""
+        """Return the unit normal of the nearest mesh vertex at (x, y).
+
+        Uses the terrain point closest to the queried location (nearest-point,
+        not interpolation).
+        """
         self._check(x, y)
         z   = self.elevation(x, y)
         idx = self._terrain.find_closest_point([x, y, z])
