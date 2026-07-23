@@ -21,8 +21,28 @@ Notes:
 import os
 import numpy as np
 import pyvista as pv
+from scipy import ndimage
 
 Z_EXAGGERATION = 1.0
+
+
+def _fill_nodata(elev: np.ndarray) -> np.ndarray:
+    """Replace NaN gaps with the nearest finite elevation.
+
+    SRTM (and user-provided) rasters contain nodata voids, common over water
+    and steep terrain. Filling each void with its nearest valid pixel avoids the
+    artificial pits, cliffs, and bogus surface normals that a constant
+    global-minimum fill produces. Returns ``elev`` unchanged when it holds no
+    NaNs; callers are expected to reject entirely-nodata rasters beforehand.
+    """
+    nan_mask = np.isnan(elev)
+    if not nan_mask.any():
+        return elev
+    # Index of the nearest non-NaN pixel for every position, then gather.
+    nearest = ndimage.distance_transform_edt(
+        nan_mask, return_distances=False, return_indices=True
+    )
+    return elev[tuple(nearest)]
 
 
 # ── Pipeline function ─────────────────────────────────────────────────────────
@@ -132,8 +152,7 @@ def build_terrain_surface(
                 "call build_terrain_surface(..., force_download=True)."
             )
         # Fill any remaining nodata gaps so the mesh stays finite everywhere.
-        if np.any(np.isnan(elev)):
-            elev = np.where(np.isnan(elev), np.nanmin(elev), elev)
+        elev = _fill_nodata(elev)
 
         print(f"  Grid: {src.width} × {src.height} px  |  "
               f"pixel size: {src.transform[0]:.1f} m  |  "
@@ -234,8 +253,12 @@ def load_terrain_from_file(
             elev = src.read(1).astype(np.float64)
             if src.nodata is not None:
                 elev[elev == src.nodata] = np.nan
-            if np.any(np.isnan(elev)):
-                elev = np.where(np.isnan(elev), np.nanmin(elev), elev)
+            if not np.any(np.isfinite(elev)):
+                raise ValueError(
+                    f"No valid elevation data in {filepath} (the raster is "
+                    "entirely nodata)."
+                )
+            elev = _fill_nodata(elev)
 
             x_coords = src.transform[2] + np.arange(src.width)  * src.transform[0]
             y_coords = src.transform[5] + np.arange(src.height) * src.transform[4]
