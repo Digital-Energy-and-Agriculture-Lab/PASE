@@ -28,13 +28,13 @@ TerrainSource:
    Value: srtm
    Type: string
    Possibilities: [flat, sloped, srtm]
-   Definition: Source du terrain. flat = sol plat ; sloped = plan incliné (TerrainSlopeAngle/TerrainSlopeAspect) ; srtm = relief réel téléchargé (SRTM) autour de la location.
+   Definition: Terrain source. flat = flat ground ; sloped = tilted plane (TerrainSlopeAngle/TerrainSlopeAspect) ; srtm = real relief downloaded (SRTM) around the location.
 TerrainExtentRadius:
    Value: 500
    Type: float
    Limit: [50, 20000]
    Unit: meters [m]
-   Definition: Demi-côté de l'emprise carrée du terrain autour de la location, en mètres. Sert au téléchargement SRTM et à la vérification que la centrale tient dans le terrain.
+   Definition: Half-side of the square terrain extent around the location, in meters. Used for the SRTM download and to verify the PV central fits within the terrain.
 WeatherDataOption:
    Value: 1
    Type: integer

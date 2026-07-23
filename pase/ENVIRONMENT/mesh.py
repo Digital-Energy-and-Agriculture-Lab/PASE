@@ -129,12 +129,12 @@ class Mesh:
         zcoord: float = 0.0,
         ground=None,
     ) -> int:
-        """Créer une surface rectangulaire au sol orientée par un azimut.
+        """Create an azimuth-oriented rectangular ground surface.
 
-        Cette méthode maintient le concept de ``zone_azimut`` : si aucun azimut
-        n'est fourni, on utilise l'orientation par défaut définie pour la zone
-        d'intérêt. Les paramètres ``X_increment`` et ``Y_increment`` sont
-        convertis en une densité minimale pour générer le maillage.
+        This method preserves the ``zone_azimut`` concept: when no azimuth is
+        provided, the default orientation defined for the interest zone is used.
+        The ``X_increment`` and ``Y_increment`` parameters are converted into a
+        minimum density to generate the mesh.
 
         Parameters
         ----------
