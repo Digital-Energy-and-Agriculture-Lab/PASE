@@ -152,3 +152,30 @@ class TestAssertLayoutWithinGround:
         g = _flat_dem_ground(extent_x=20.0)
         _assert_layout_within_ground(g, None, 3.0, 3.0, 0.0)
         _assert_layout_within_ground(g, np.empty((0, 3)), 3.0, 3.0, 0.0)
+
+
+# ── End-to-end build on a DEMGround (issue #248) ───────────────────────────────
+
+class TestBuildOnDEMGround:
+    """create_regular_central against a bounded DEMGround."""
+
+    def test_build_within_dem_matches_flat(self):
+        """A flat DEM (z=0) build reproduces the analytic flat-ground build.
+
+        This exercises the real DEMGround elevation path (vertical ray-cast)
+        end to end: querying a z=0 surface must yield the same panel geometry as
+        the analytic flat Ground().
+        """
+        dem = _build(ground=_flat_dem_ground(extent_x=20.0))
+        flat = _build(ground=Ground())
+
+        assert dem.n_blocks == flat.n_blocks and dem.n_blocks > 0
+        for pts_d, pts_f in zip(_block_points(dem), _block_points(flat)):
+            np.testing.assert_allclose(np.sort(pts_d, axis=0),
+                                       np.sort(pts_f, axis=0), atol=1e-6)
+
+    def test_build_exceeding_dem_raises_actionable(self):
+        """A layout larger than the DEM extent fails fast during the build."""
+        with pytest.raises(ValueError, match="TerrainExtentRadius"):
+            _build(ground=_flat_dem_ground(extent_x=3.0),
+                   NumberOfPVBlocksX=3, NumberOfPVBlocksY=3)
