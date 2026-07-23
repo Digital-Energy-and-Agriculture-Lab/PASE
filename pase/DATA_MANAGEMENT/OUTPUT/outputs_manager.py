@@ -99,7 +99,6 @@ class OutputsManager:
         "results": "4-results",
     }
 
-    CACHE_DIR = Path(__file__).parents[3] / 'OUTPUTS' / '_cache'
     REGISTRY_FILE = "variants.json"
     LATEST_LINK = "latest"
 
@@ -267,12 +266,17 @@ class OutputsManager:
     def _path(self, sub: str, filename: str) -> Path:
         return (self.variant_root / self.SUBDIRS[sub] / filename).resolve()
 
+    @property
+    def CACHE_DIR(self) -> Path:
+        return self.root / 'OUTPUTS' / '_cache'
+
     def _cache_path(self, filename: str) -> Path:
         return (self.CACHE_DIR / filename).resolve()
 
     def set_pase_root(self):
-        local_dir = Path(__file__)
-        return local_dir.parents[3]
+        # Outputs and cache follow the caller's working directory, never the
+        # package directory, which is read-only or shared once pip-installed.
+        return Path.cwd()
 
     def get_project_name(self, location_name, sim_start_year, sim_end_year):
         return (location_name
@@ -294,7 +298,9 @@ class OutputsManager:
             return default
 
     def save_json_to_cache(self, name: str, data: Any):
-        self._cache_path(name).write_text(json.dumps(data, indent=2))
+        path = self._cache_path(name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data, indent=2))
 
     def load_json_from_cache(self, name: str, default=None):
         path = self._cache_path(name)

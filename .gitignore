@@ -3,6 +3,11 @@
 *.egg-info
 .coverage
 
+# Build artifacts (wheel/sdist + setuptools-scm generated version file)
+dist/
+build/
+pase/_version.py
+
 # pytest
 .coverage
 htmlcov/*
