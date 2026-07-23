@@ -436,6 +436,15 @@ class PVStructure(ABC):
         purlins) and the panel grid carried by the block.  It is used by the
         caller to anchor the block at the highest terrain elevation under its
         full footprint on sloped ground.
+
+        The block-reference sampling window is symmetric about the block centre,
+        but ``make_elementary_group`` translates each pole by ``-purlin_length/2``
+        along Y, so the actual pole feet reach beyond a naive half-extent.  The
+        Y half-extent is therefore padded by ``purlin_length/2`` so every pole
+        position queried in ``build_structure`` stays inside the sampled window
+        (and inside the ``assert_covers`` check on a bounded ``DEMGround``);
+        otherwise a pole could be dragged below grade or trigger a spurious
+        out-of-bounds error on the uphill side of a slope.
         """
         panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
                         + self.panel_height)
@@ -445,6 +454,7 @@ class PVStructure(ABC):
                          * self.repetition_distance_group_Y / 2.0)
         half_x = max(self._structure_half_x(), panel_span_x / 2.0)
         half_y = max(half_y_struct, panel_span_y / 2.0)
+        half_y += getattr(self, 'purlin_length', 0.0) / 2.0
         return half_x, half_y
     
     def get_characteristic_dim(self, part_type):
