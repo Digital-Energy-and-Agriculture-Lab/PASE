@@ -20,6 +20,7 @@ Notes:
 
 import logging
 import os
+from typing import Optional
 import numpy as np
 import pyvista as pv
 from scipy import ndimage
@@ -52,10 +53,11 @@ def _fill_nodata(elev: np.ndarray) -> np.ndarray:
 
 def build_terrain_surface(
     bounds: tuple,
-    cache_dir: str = None,
+    cache_dir: Optional[str] = None,
     force_download: bool = False,
     z_exaggeration: float = Z_EXAGGERATION,
-    center_lonlat: tuple = None,
+    center_lonlat: Optional[tuple] = None,
+    product: str = 'SRTM1',
 ) -> pv.PolyData:
     """
     Download (once) and convert SRTM data to a triangulated PyVista surface.
@@ -83,6 +85,9 @@ def build_terrain_surface(
         coincide with the location, so relying on the grid mean introduces a
         horizontal offset (a z error on slopes). Falls back to the grid centroid
         when omitted.
+    product : str
+        DEM product passed to ``elevation.clip`` (default ``'SRTM1'``, ~30 m).
+        Part of the cache key, so switching products does not reuse stale tiles.
 
     Returns
     -------
@@ -96,7 +101,7 @@ def build_terrain_surface(
         cache_dir = os.path.expanduser("~/.cache/pase/dem/")
     os.makedirs(cache_dir, exist_ok=True)
 
-    slug = f"w{west:.4f}_s{south:.4f}_e{east:.4f}_n{north:.4f}"
+    slug = f"{product}_w{west:.4f}_s{south:.4f}_e{east:.4f}_n{north:.4f}"
     output_raw = os.path.join(cache_dir, f"{slug}_raw.tif")
     output_utm = os.path.join(cache_dir, f"{slug}_utm.tif")
 
@@ -107,7 +112,7 @@ def build_terrain_surface(
         elevation.clip(
             bounds=(west, south, east, north),
             output=output_raw,
-            product='SRTM1',
+            product=product,
         )
         logger.info(f"  DEM saved to {output_raw}")
     else:
@@ -171,7 +176,7 @@ def build_terrain_surface(
         elev = _fill_nodata(elev)
 
         logger.info(f"  Grid: {src.width} × {src.height} px  |  "
-                    f"pixel size: {src.transform[0]:.1f} m  |  "
+                    f"pixel size: {abs(src.transform[0]):.1f} m  |  "
                     f"elevation: {np.nanmin(elev):.0f}–{np.nanmax(elev):.0f} m")
 
     # ── 4. Build PyVista surface ──────────────────────────────────────────────
