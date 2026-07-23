@@ -26,6 +26,12 @@ DiffuserDimensionY:
    Limit: [0, 100]
    Unit: meters [m]
    Definition: size as defined by manufacturer
+LensAzimuth:
+   Value: 90
+   Type: float
+   Limit: [0, 180]
+   Unit: degrees [°]
+   Definition: Azimuth of the lens on the diffuser before any rotation of the diffuser itself or the central. 0 is N-S, 90 is E-W.
 Resolution:
    Value: 0.1
    Type: float

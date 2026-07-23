@@ -35,7 +35,7 @@ class Diffuser:
         self.x_dr = None
         self.z_dr = None
         self.y_dr = None
-        self.azimuth_diff = -np.radians(azimuth-90)
+        self.azimuth_diff = -np.radians(azimuth)
         self.elevation_diff = np.radians(elevation)
 
     def generate_direction_diffuser_referential(self, vect_sun, angle_discr):
@@ -62,9 +62,13 @@ class Diffuser:
         y_vector = np.array([0, 1, 0])
         z_vector = np.array([0, 0, 1])
         vect_0 = np.array([self.x_dr, self.y_dr, self.z_dr])
-        vect_1 = rotation_coordinate(vect_0, z_vector, self.azimuth_diff)
+        if hasattr(self, 'azimuth_lens'):
+            vect_1 = rotation_coordinate(vect_0, z_vector, self.azimuth_lens)
+        else:
+            vect_1 = vect_0
         vect_2 = rotation_coordinate(vect_1, y_vector, self.elevation_diff)
-        self.x_sr, self.y_sr, self.z_sr = vect_2
+        vect_3 = rotation_coordinate(vect_2, z_vector, self.azimuth_diff)
+        self.x_sr, self.y_sr, self.z_sr = vect_3
 
     def get_light_direction(self, vect_sun, discr, sigma, angle_discr):
         """
@@ -142,12 +146,14 @@ class LenticularDiffuser(Diffuser):
     Omega = Lens aperture angle in degrees
     """
 
-    def __init__(self, azimuth_diff, elevation_diff, omega=30, res=0.1, **kwargs):
+    def __init__(self, azimuth_lens, azimuth_diff, elevation_diff, omega=30, res=0.1, **kwargs):
         super().__init__(azimuth_diff, elevation_diff)
+        self.azimuth_lens = -np.radians(azimuth_lens)
         self.omega = np.deg2rad(omega)  # aperture angle
         l = np.array([[[0,1,0],[0,0,1]]]).T
-        l = rotation_coordinate(l,np.array([0,0,1]), self.azimuth_diff)
+        l = rotation_coordinate(l, np.array([0, 0, 1]), self.azimuth_lens)
         l = rotation_coordinate(l, np.array([0, 1, 0]), self.elevation_diff)
+        l = rotation_coordinate(l, np.array([0, 0, 1]), self.azimuth_diff)
         self.len_vector = l[:, 0,0]
         self.normal =l[:,1,0]
         self.res=res
@@ -194,8 +200,11 @@ class LenticularDiffuser(Diffuser):
         norm_psl = np.linalg.norm(plan_sunl, axis=1)
         ind = np.where(np.linalg.norm(plan_sunl, axis=1) == 0)
         norm_psl[ind] = 1
-        cos_beta = np.clip(np.dot(plan_sunl, self.normal) / (norm_psl * np.linalg.norm(self.normal)), -1, 1)
-        beta = np.arccos(cos_beta)
+        a = self.len_vector / np.linalg.norm(self.len_vector)
+        beta = np.arctan2(
+            np.dot(np.cross(plan_sunl, self.normal), a),
+            np.dot(plan_sunl, self.normal)
+        )
         beta_t = np.arange(-self.omega+angle_res/2, self.omega + angle_res/2, angle_res)
         beta = beta[:, np.newaxis] + beta_t
         return beta
