@@ -108,7 +108,7 @@ When writing code, adopt a test-driven development cycle:
 ## Writing Commit Messages
 
 The standard commit structure is:
-- a title line with the type of commit in square brackets, e.g. `[feature]`
+- a title line with the type of commit in square brackets, e.g. `[feature]`. Accepted categories are: feature, fix, chore, cleanup, refactor, docs, doc, style, test, perf, ci, build, revert
 - followed by a blank line
 - followed by the body of the commit message
 
