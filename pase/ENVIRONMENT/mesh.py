@@ -43,7 +43,7 @@ class Mesh:
         self.metadata = pd.DataFrame(
             columns=["id", "name", "type", "parameters"], dtype=object
         )
-        # Orientation par défaut de la zone d'intérêt ("zone_azimut")
+        # Default orientation of the interest zone ("zone_azimut")
         self.default_azimut = default_azimut
 
     # ======================================================================
@@ -287,13 +287,13 @@ class Mesh:
     def set_interest_zone_orientation(
         self, Loc_1: Dict[str, object], AV_1: Dict[str, object]
     ) -> float:
-        """Définir l'orientation par défaut (zone_azimut) de la zone d'intérêt.
+        """Define the default orientation (zone_azimut) of the interest zone.
 
-        Modes disponibles dans ``Loc_1['InterestZoneOrientationMode']`` :
+        Modes available in ``Loc_1['InterestZoneOrientationMode']``:
 
-        - ``default`` : azimut = 0°
-        - ``auto`` : azimut = ``AV_1['CentralAzimut']``
-        - ``custom`` : azimut = ``Loc_1['InterestZoneCustomAngle']``
+        - ``default``: azimuth = 0°
+        - ``auto``: azimuth = ``AV_1['CentralAzimut']``
+        - ``custom``: azimuth = ``Loc_1['InterestZoneCustomAngle']``
         """
 
         try:
