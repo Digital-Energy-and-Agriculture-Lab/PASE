@@ -23,6 +23,7 @@ from pase.ENVIRONMENT.sky_model import ReinhartSky, fibonacci_half_sphere
 from pase.ENVIRONMENT.sky_model import CIEStandardSky
 from pase.user_support_tools import PASE_Logger
 from pase.ENVIRONMENT.shading import Horizon
+from pase.DATA_MANAGEMENT.visualization_in_3D import compute_ground_extent
 
 logger = logging.getLogger(__name__)
 
@@ -1317,10 +1318,11 @@ class Ray_casting_scene:
 
         plotter.add_mesh(self.geometry.polydata_by_property(property_dict={'Type':['PV']}), color='black')
         plotter.add_mesh(self.geometry.polydata_by_property(property_dict={'Type':['Diffuser']}), color='skyblue')
-        ground = np.array([[-200, 200, 0],
-                           [200, 200, 0],
-                           [-200, -200, 0],
-                           [200, -200, 0]])
+        x_min, x_max, y_min, y_max = compute_ground_extent(self.geometry.polydata_by_property(property_dict={'Type':['PV']}))
+        ground = np.array([[x_min, y_max, 0],
+                           [x_max, y_max, 0],
+                           [x_min, y_min, 0],
+                           [x_max, y_min, 0]])
 
         ground_m = np.hstack([[3, 0, 1, 2],
                               [3, 1, 2, 3], ])
