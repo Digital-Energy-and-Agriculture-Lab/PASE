@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 import pyvista as pv
 
+from pase.ENVIRONMENT.ground import Ground, SlopedGround
 from pase.ENVIRONMENT.mesh import Mesh
 
 
@@ -202,3 +203,45 @@ class TestSetInterestZoneOrientation:
                 {"InterestZoneOrientationMode": "diagonal"},
                 {"CentralAzimut": 0.0},
             )
+
+
+# ── Ground-aware ground mesh (issue #248) ──────────────────────────────────────
+
+class TestGroundMeshFollowsTerrain:
+    """add_oriented_plane_ground_mesh should place source points on the ground."""
+
+    def test_flat_default_sourcepoints_at_zero(self):
+        """Without a ground, source points sit on the z=0 plane."""
+        mesh = Mesh()
+        mesh.add_oriented_plane_ground_mesh(
+            -5.0, 5.0, -5.0, 5.0, 1.0, 1.0, azimuth_deg=0.0, flag="crop",
+        )
+        sp = mesh.get_sourcepoints()
+        assert sp.shape[0] > 0
+        np.testing.assert_allclose(sp[:, 2], 0.0, atol=1e-9)
+
+    def test_explicit_flat_ground_matches_default(self):
+        """An explicit Ground() reproduces the flat default (z=0 everywhere)."""
+        mesh = Mesh()
+        mesh.add_oriented_plane_ground_mesh(
+            -5.0, 5.0, -5.0, 5.0, 1.0, 1.0, azimuth_deg=0.0, flag="crop",
+            ground=Ground(),
+        )
+        sp = mesh.get_sourcepoints()
+        assert sp.shape[0] > 0
+        np.testing.assert_allclose(sp[:, 2], 0.0, atol=1e-9)
+
+    def test_sloped_sourcepoints_lie_on_ground_plane(self):
+        """On a sloped ground, every source point z equals the ground elevation."""
+        slope = SlopedGround(180, 80)  # ~10 deg south-facing slope
+        mesh = Mesh()
+        mesh.add_oriented_plane_ground_mesh(
+            -5.0, 5.0, -5.0, 5.0, 1.0, 1.0, azimuth_deg=0.0, flag="crop",
+            ground=slope,
+        )
+        sp = mesh.get_sourcepoints()
+        assert sp.shape[0] > 0
+        expected_z = slope.elevation(sp[:, 0], sp[:, 1])
+        np.testing.assert_allclose(sp[:, 2], expected_z, atol=1e-9)
+        # A genuine slope: the source points must span a range of elevations.
+        assert np.ptp(sp[:, 2]) > 0.1

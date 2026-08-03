@@ -43,7 +43,7 @@ class Mesh:
         self.metadata = pd.DataFrame(
             columns=["id", "name", "type", "parameters"], dtype=object
         )
-        # Orientation par défaut de la zone d'intérêt ("zone_azimut")
+        # Default orientation of the interest zone ("zone_azimut")
         self.default_azimut = default_azimut
 
     # ======================================================================
@@ -127,20 +127,36 @@ class Mesh:
         azimuth_deg: Optional[float] = None,
         flag: str = "ground",
         zcoord: float = 0.0,
+        ground=None,
     ) -> int:
-        """Créer une surface rectangulaire au sol orientée par un azimut.
+        """Create an azimuth-oriented rectangular ground surface.
 
-        Cette méthode maintient le concept de ``zone_azimut`` : si aucun azimut
-        n'est fourni, on utilise l'orientation par défaut définie pour la zone
-        d'intérêt. Les paramètres ``X_increment`` et ``Y_increment`` sont
-        convertis en une densité minimale pour générer le maillage.
+        This method preserves the ``zone_azimut`` concept: when no azimuth is
+        provided, the default orientation defined for the interest zone is used.
+        The ``X_increment`` and ``Y_increment`` parameters are converted into a
+        minimum density to generate the mesh.
+
+        Parameters
+        ----------
+        ground : Ground, optional
+            Ground object used to derive center elevation and surface normal.
+            When provided, ``zcoord`` is ignored and the mesh is oriented to
+            match the ground plane at the mesh center.
         """
 
         azimuth_to_use = self.default_azimut if azimuth_deg is None else azimuth_deg
 
         width = X_max - X_min
         height = Y_max - Y_min
-        center = ((X_min + X_max) / 2.0, (Y_min + Y_max) / 2.0, zcoord)
+        cx = (X_min + X_max) / 2.0
+        cy = (Y_min + Y_max) / 2.0
+
+        if ground is not None:
+            center = (cx, cy, float(ground.elevation(cx, cy)))
+            normal = tuple(float(v) for v in ground.normal(cx, cy))
+        else:
+            center = (cx, cy, zcoord)
+            normal = (0.0, 0.0, 1.0)
 
         density = min(X_increment, Y_increment)
         theta = math.radians(azimuth_to_use)
@@ -152,7 +168,7 @@ class Mesh:
             density=density,
             name=flag,
             center=center,
-            normal=(0.0, 0.0, 1.0),
+            normal=normal,
             reference_direction=reference_direction,
             face_type="triangle",
         )
@@ -271,13 +287,13 @@ class Mesh:
     def set_interest_zone_orientation(
         self, Loc_1: Dict[str, object], AV_1: Dict[str, object]
     ) -> float:
-        """Définir l'orientation par défaut (zone_azimut) de la zone d'intérêt.
+        """Define the default orientation (zone_azimut) of the interest zone.
 
-        Modes disponibles dans ``Loc_1['InterestZoneOrientationMode']`` :
+        Modes available in ``Loc_1['InterestZoneOrientationMode']``:
 
-        - ``default`` : azimut = 0°
-        - ``auto`` : azimut = ``AV_1['CentralAzimut']``
-        - ``custom`` : azimut = ``Loc_1['InterestZoneCustomAngle']``
+        - ``default``: azimuth = 0°
+        - ``auto``: azimuth = ``AV_1['CentralAzimut']``
+        - ``custom``: azimuth = ``Loc_1['InterestZoneCustomAngle']``
         """
 
         try:

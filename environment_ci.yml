@@ -26,3 +26,6 @@ dependencies:
   - yaml
   - pytest==9.0.2
   - pytest-cov
+  - rasterio
+  - pyproj
+  - elevation
