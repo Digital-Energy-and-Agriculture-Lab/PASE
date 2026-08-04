@@ -14,7 +14,63 @@ Every merge request should add its entry under `## [Unreleased]`; when a release
 is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 
 ## [Unreleased]
-- (empty)
+### For users
+
+#### Added
+- Sloped and real-terrain support: a scene can now sit on inclined ground or on real
+  SRTM topography instead of a horizontal plane. Driven by new **optional** terrain
+  parameters, readable from either the scenario or the central AV file —
+  `TerrainSource` (`flat` | `sloped` | `srtm`, default `flat`), `TerrainSlopeAngle`,
+  `TerrainSlopeAspect`, and `TerrainExtentRadius`. Existing input files are
+  unaffected and keep running on flat ground. (#248)
+  - PV blocks, mounting structures and support poles follow the terrain: each block
+    is anchored at the maximum elevation of its footprint, and the table diagonal is
+    kept clear of sloped ground.
+  - The ground sampling mesh is tilted to the terrain normal.
+  - Two new examples demonstrate the modes: `example_sloped_terrain.py` and
+    `example_dem_terrain.py`.
+  - Real DEMs are handled defensively: nodata voids are filled from the nearest
+    valid elevation, an entirely-nodata tile is rejected with an actionable message
+    rather than producing a broken mesh, the terrain is centered on the scenario
+    location, and vertically exaggerated terrain (`z_exaggeration != 1.0`) is
+    refused for simulation because the exaggeration would distort the physics.
+  - The structure footprint is padded by the purlin half-length along Y, keeping
+    support poles inside it.
+  - The `srtm` mode needs the optional geospatial stack (`rasterio`, `pyproj`,
+    `elevation`), included in the conda environment files, and downloads ~25 MB of
+    SRTM tiles on first use (cached in `~/.cache/pase/dem/`).
+
+#### Changed
+- Diffuse irradiation is computed substantially faster on large grids (vectorized
+  `compute_daily_diff_irradiation`). Results are unchanged — an equivalence test
+  pins this. (#258)
+
+### For developers
+
+#### Build & packaging
+- The environment files (unix, windows, CI) gained the geospatial dependencies
+  `rasterio`, `pyproj` and `elevation` for the DEM terrain path. (#248)
+- Resolved the PyVista `extract_surface()` deprecation warning.
+- Updated authors and maintainers in `pyproject.toml`.
+
+#### Internal (refactors, tests, architecture)
+- New `pase/ENVIRONMENT/ground.py` — a `Ground` / `SlopedGround` / `DEMGround`
+  hierarchy plus `ground_from_config()` — and `pase/ENVIRONMENT/terrain_pipeline.py`,
+  which turns a GPS bounding box into a PyVista terrain surface via a cached SRTM
+  download. (#248)
+- Tests: ground-aware panel placement, the layout-within-ground coverage check,
+  ground mesh source points following the terrain, an end-to-end build against a
+  bounded `DEMGround`, and the flat-ground regression extended to HSATS and the
+  fence structure. (#248)
+- Removed dead `PanelOffset` references and an unreachable `raise` in
+  `build_structure`. (#248)
+- Translated the remaining French text in `mesh.py` and the terrain modules to
+  English; `terrain_pipeline` now logs instead of printing. (#248)
+- `AGENTS.md`: pinned down the allowed commit categories, required the issue ID in
+  commit messages, and allowed lazy imports for optional backends.
+- Stopped tracking `logging_file.log` and `dev_script_outputs_manager.py`, and
+  gitignored `.claude/` — agent working documents (plans, notes, commit drafts) stay
+  local and are never committed. (#276)
 
 ## [2.0.0] - 2026-07-22
 ### For users
