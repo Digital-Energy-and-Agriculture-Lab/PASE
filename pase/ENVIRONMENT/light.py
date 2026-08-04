@@ -291,11 +291,9 @@ class Light:
         Ai[ind_ai_too_big] = 1
 
         if len(ind_ai_too_big[0]) > 5:
-            print(
-                "\u001B[38;5;208mWarning: BHI exceeds top of atmosphere "
-                "radiation {0} times : check weather data location and "
-                "input location coherence\u001B[0m".format(
-                str(len(ind_ai_too_big[0]))))
+            logger.warning(f"Warning: BHI exceeds top of atmosphere "
+                f"radiation at {len(ind_ai_too_big[0])} occurrences : check weather data location and "
+                "input location coherence.")
 
         return Ai
 
