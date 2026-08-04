@@ -48,3 +48,7 @@ TEMPORARY_FILES/
 
 # Claude Code user-local settings (never commit)
 .claude/settings.local.json
+.claude/
+
+# Local development scratch scripts (not part of the distribution)
+dev_script_outputs_manager.py
