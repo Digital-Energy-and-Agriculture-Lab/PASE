@@ -45,6 +45,15 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
   `compute_daily_diff_irradiation`). Results are unchanged — an equivalence test
   pins this. (#258)
 
+#### Fixed
+- The crop-model orchestrator (`run_crop_simu`) can again be imported from a
+  `pip`-installed PASE, so the SIMPLE and Gras-Sim crop models are usable without a
+  source checkout: the STICS backends, which are not distributed with PASE, are no
+  longer required just to import the module. Selecting a crop model whose backend is
+  missing now fails with a message naming the backend and its setup instructions, and
+  an unrecognized `CropModel` value is rejected instead of silently producing no
+  agronomic results. (#271)
+
 ### For developers
 
 #### Build & packaging
@@ -66,6 +75,10 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
   `build_structure`. (#248)
 - Translated the remaining French text in `mesh.py` and the terrain modules to
   English; `terrain_pipeline` now logs instead of printing. (#248)
+- The crop backends are imported through a `_CROP_BACKENDS` registry when their
+  `CropModel` is selected, instead of at `run_crop_simulations` import time. Tests
+  reproduce the installed-package situation in-process by making `pase.CROPS.STICS`
+  unimportable, so they need no built wheel. (#271)
 - `AGENTS.md`: pinned down the allowed commit categories, required the issue ID in
   commit messages, and allowed lazy imports for optional backends.
 - Stopped tracking `logging_file.log` and `dev_script_outputs_manager.py`, and
