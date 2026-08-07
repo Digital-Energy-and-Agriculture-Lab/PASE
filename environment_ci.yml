@@ -28,4 +28,3 @@ dependencies:
   - pytest-cov
   - rasterio
   - pyproj
-  - elevation

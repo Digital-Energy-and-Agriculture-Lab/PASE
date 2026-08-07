@@ -29,16 +29,17 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
   - The ground sampling mesh is tilted to the terrain normal.
   - Two new examples demonstrate the modes: `example_sloped_terrain.py` and
     `example_dem_terrain.py`.
-  - Real DEMs are handled defensively: nodata voids are filled from the nearest
+  - Real DEMs (SRTM1) are handled defensively: nodata voids are filled from the nearest
     valid elevation, an entirely-nodata tile is rejected with an actionable message
     rather than producing a broken mesh, the terrain is centered on the scenario
     location, and vertically exaggerated terrain (`z_exaggeration != 1.0`) is
     refused for simulation because the exaggeration would distort the physics.
   - The structure footprint is padded by the purlin half-length along Y, keeping
     support poles inside it.
-  - The `srtm` mode needs the optional geospatial stack (`rasterio`, `pyproj`,
-    `elevation`), included in the conda environment files, and downloads ~25 MB of
-    SRTM tiles on first use (cached in `~/.cache/pase/dem/`).
+  - The `srtm` mode needs the optional geospatial stack (`rasterio`, `pyproj`),
+    included in the conda environment files, and downloads ~25 MB of SRTM tiles on
+    first use (cached in `~/.cache/pase/dem/`). PASE fetches those tiles itself, so
+    the mode runs wherever PASE does. (#286)
 
 #### Changed
 - Diffuse irradiation is computed substantially faster on large grids (vectorized
@@ -58,7 +59,7 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 
 #### Build & packaging
 - The environment files (unix, windows, CI) gained the geospatial dependencies
-  `rasterio`, `pyproj` and `elevation` for the DEM terrain path. (#248)
+  `rasterio` and `pyproj` for the DEM terrain path. (#248)
 - Resolved the PyVista `extract_surface()` deprecation warning.
 - Updated authors and maintainers in `pyproject.toml`.
 
@@ -75,6 +76,9 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
   `build_structure`. (#248)
 - Translated the remaining French text in `mesh.py` and the terrain modules to
   English; `terrain_pipeline` now logs instead of printing. (#248)
+- New `pase/ENVIRONMENT/srtm.py`: SRTM tiles are fetched, decoded and mosaicked in
+  Python (standard library + numpy, rasterio only for the GeoTIFF write). Samples are placed on the global 1/3600° lattice, so
+  mosaicking is exact array copying. Only `SRTM1` is supported (#286).
 - The crop backends are imported through a `_CROP_BACKENDS` registry when their
   `CropModel` is selected, instead of at `run_crop_simulations` import time. Tests
   reproduce the installed-package situation in-process by making `pase.CROPS.STICS`

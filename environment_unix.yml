@@ -28,4 +28,3 @@ dependencies:
   - unidecode
   - rasterio
   - pyproj
-  - elevation

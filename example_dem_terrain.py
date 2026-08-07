@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-#Copyright (c) 2020-2024 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
+#Copyright (c) 2020-2026 - University of Liège - Digital Energy and Agriculture Lab (DEAL)
 #Author : Selim Grote (selim.grote@uliege.be)
 #This file is part of the PASE software, and is distributed under the MIT license.
 
