@@ -2,7 +2,7 @@
 Pipeline: GPS bounding box → SRTM DEM → 3D terrain surface in PyVista.
 
 Dependencies:
-    pip install elevation rasterio pyproj pyvista numpy
+    pip install rasterio pyproj pyvista numpy
 
 Usage (as module):
     from pase.ENVIRONMENT.terrain_pipeline import build_terrain_surface
@@ -15,7 +15,10 @@ Notes:
     - First run downloads SRTM tiles (~25 MB per tile); subsequent runs use the
       disk cache in ``cache_dir`` (default: ~/.cache/pase/dem/).
     - Requires an internet connection on first run only.
-    - SRTM coverage: 60°N to 56°S.
+    - Tiles come from the public AWS mirror via :mod:`pase.ENVIRONMENT.srtm`,
+      which covers the whole globe: outside SRTM's own 60°N–56°S footprint the
+      data comes from other datasets, and sea tiles carry bathymetry (negative
+      elevations) rather than nodata.
 """
 
 import logging
@@ -24,6 +27,8 @@ from typing import Optional
 import numpy as np
 import pyvista as pv
 from scipy import ndimage
+
+from pase.ENVIRONMENT import srtm
 
 logger = logging.getLogger(__name__)
 
@@ -86,8 +91,9 @@ def build_terrain_surface(
         horizontal offset (a z error on slopes). Falls back to the grid centroid
         when omitted.
     product : str
-        DEM product passed to ``elevation.clip`` (default ``'SRTM1'``, ~30 m).
-        Part of the cache key, so switching products does not reuse stale tiles.
+        DEM product passed to :func:`pase.ENVIRONMENT.srtm.fetch_srtm_clip`.
+        Only ``'SRTM1'`` (1 arc-second, ~30 m) is served by the mirror; it is
+        part of the cache key, so switching products cannot reuse stale tiles.
 
     Returns
     -------
@@ -107,11 +113,12 @@ def build_terrain_surface(
 
     # ── 1. Download SRTM ──────────────────────────────────────────────────────
     if force_download or not os.path.exists(output_raw):
-        import elevation
         logger.info("Downloading SRTM data (cached after first run)...")
-        elevation.clip(
+        srtm.fetch_srtm_clip(
             bounds=(west, south, east, north),
             output=output_raw,
+            cache_dir=cache_dir,
+            force_download=force_download,
             product=product,
         )
         logger.info(f"  DEM saved to {output_raw}")
@@ -168,9 +175,9 @@ def build_terrain_surface(
         if not np.any(np.isfinite(elev)):
             raise ValueError(
                 f"No valid elevation data in {output_utm} (the DEM is entirely "
-                "nodata). This usually means a corrupt SRTM tile in the cache. "
-                "Clear ~/.cache/elevation and ~/.cache/pase/dem and retry, or "
-                "call build_terrain_surface(..., force_download=True)."
+                "nodata). This usually means the mirror serves no tile for this "
+                f"extent, or a corrupt tile in {cache_dir}. Clear that cache and "
+                "retry, or call build_terrain_surface(..., force_download=True)."
             )
         # Fill any remaining nodata gaps so the mesh stays finite everywhere.
         elev = _fill_nodata(elev)

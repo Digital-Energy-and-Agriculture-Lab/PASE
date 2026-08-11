@@ -420,7 +420,7 @@ def _dem_ground_from_config(cfg: dict) -> "DEMGround":
 
     Requires ``Latitude`` / ``Longitude`` (from the scenario YAML) and uses
     ``TerrainExtentRadius`` [m] for the download box.  Imports the SRTM pipeline
-    lazily so the optional ``elevation`` / ``rasterio`` deps are only needed for
+    lazily so the geospatial deps (``rasterio`` / ``pyproj``) are only needed for
     this mode.
     """
     if 'Latitude' not in cfg or 'Longitude' not in cfg:
