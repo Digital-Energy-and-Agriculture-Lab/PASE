@@ -984,7 +984,7 @@ class PVConfiguration3D(MultiBlockPASE):
         azimuth_deg        = float(config["CentralAzimut"])
         tilt_deg           = float(config["TiltY"])
         hinge_style        = config["Hinge"]
-        panel_offset       = float(config["PanelOffset"])
+        panel_offset       = compute_flush_panel_offset(config, thickness)
 
         if any(n < 1 for n in [panels_per_block_x, panels_per_block_y, num_blocks_x, num_blocks_y]):
             logger.warning(
