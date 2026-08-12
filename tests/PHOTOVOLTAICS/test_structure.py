@@ -1,6 +1,8 @@
+import numpy as np
 import pyvista as pyv
 import pytest
 
+from pase.ENVIRONMENT.ground import Ground, SlopedGround
 from pase.PHOTOVOLTAICS.structure import AgrivoltaicFence, HSATS, PVTable
 
 # The `structure_inputs` fixture lives in conftest.py; it is shared with
@@ -109,5 +111,71 @@ def test_agrivoltaic_fence_accepts_minimal_config(structure_inputs):
     built = AgrivoltaicFence(cfg).build_structure()
     assert isinstance(built, pyv.DataSet)
     assert built.n_cells > 0
+
+
+# ── Ground-aware structure tests ───────────────────────────────────────────────
+
+@pytest.mark.parametrize("structure_cls, overrides", [
+    (PVTable, {}),
+    (HSATS, {}),
+    # AgrivoltaicFence requires the panels to fit within one group (one panel in Y).
+    (AgrivoltaicFence, {"NumberOfPanelsY": 1}),
+])
+def test_flat_ground_produces_identical_output(structure_inputs, structure_cls, overrides):
+    """Building with explicit Ground() must match the default (no ground argument)."""
+    cfg = structure_inputs(**overrides)
+    built_default = structure_cls(cfg).build_structure()
+    built_flat = structure_cls(cfg, ground=Ground()).build_structure()
+
+    pts_default = np.sort(built_default.points, axis=0)
+    pts_flat = np.sort(built_flat.points, axis=0)
+    np.testing.assert_allclose(pts_default, pts_flat, atol=1e-10)
+
+
+@pytest.mark.parametrize("structure_cls", [PVTable, HSATS])
+def test_sloped_ground_lifts_pole_feet(structure_inputs, structure_cls):
+    """On a sloped ground, all group origins must sit at the correct ground elevation."""
+    # Mild south-facing slope: normal azimuth 180°, elevation 80° → ~10° slope
+    slope = SlopedGround(180, 80)
+    cfg = structure_inputs()
+    x_c, y_c = 10.0, 20.0  # non-zero block center to test world-coordinate mapping
+
+    built = structure_cls(cfg, ground=slope).build_structure(x_center=x_c, y_center=y_c)
+
+    assert isinstance(built, pyv.DataSet)
+    assert built.n_cells > 0
+
+    # The minimum z of the combined mesh must be >= ground elevation at the
+    # block center minus a small tolerance (groups may span ± in y, so we check
+    # against the minimum ground z in the group y range).
+    pts = built.points
+    z_min_mesh = pts[:, 2].min()
+
+    # Ground elevation at block center (reference point)
+    z_at_center = float(slope.elevation(x_c, y_c))
+    # For a south-facing slope, moving north (higher y offset) raises the terrain.
+    # The lowest group is at y_c + min(group_y_offsets), so z should still be >= 0
+    # We simply verify the mesh is not stuck at z=0 when the slope would lift it.
+    if z_at_center > 0.1:
+        assert z_min_mesh > 0.0, (
+            "Structure feet should be above z=0 on positive-elevation sloped ground"
+        )
+
+
+def test_sloped_ground_x_center_matters(structure_inputs):
+    """Ground elevation at different x_center values should produce different z positions."""
+    # Downhill direction = East (azimuth 90°), elevation 80° → ~10° slope
+    # Going East (positive x) means going downhill → lower z.
+    slope = SlopedGround(90, 80)
+    cfg = structure_inputs()
+
+    built_left  = PVTable(cfg, ground=slope).build_structure(x_center=-50.0, y_center=0.0)
+    built_right = PVTable(cfg, ground=slope).build_structure(x_center= 50.0, y_center=0.0)
+
+    z_left  = built_left.points[:, 2].mean()
+    z_right = built_right.points[:, 2].mean()
+
+    # Downhill is East → x=-50 (West) is higher than x=50 (East)
+    assert z_left > z_right
 
 

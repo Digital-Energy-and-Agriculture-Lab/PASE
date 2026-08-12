@@ -13,6 +13,82 @@ Each release is split into two audiences:
 Every merge request should add its entry under `## [Unreleased]`; when a release
 is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 
+## [Unreleased]
+### For users
+
+#### Added
+- Sloped and real-terrain support: a scene can now sit on inclined ground or on real
+  SRTM topography instead of a horizontal plane. Driven by new **optional** terrain
+  parameters, readable from either the scenario or the central AV file —
+  `TerrainSource` (`flat` | `sloped` | `srtm`, default `flat`), `TerrainSlopeAngle`,
+  `TerrainSlopeAspect`, and `TerrainExtentRadius`. Existing input files are
+  unaffected and keep running on flat ground. (#248)
+  - PV blocks, mounting structures and support poles follow the terrain: each block
+    is anchored at the maximum elevation of its footprint, and the table diagonal is
+    kept clear of sloped ground.
+  - The ground sampling mesh is tilted to the terrain normal.
+  - Two new examples demonstrate the modes: `example_sloped_terrain.py` and
+    `example_dem_terrain.py`.
+  - Real DEMs (SRTM1) are handled defensively: nodata voids are filled from the nearest
+    valid elevation, an entirely-nodata tile is rejected with an actionable message
+    rather than producing a broken mesh, the terrain is centered on the scenario
+    location, and vertically exaggerated terrain (`z_exaggeration != 1.0`) is
+    refused for simulation because the exaggeration would distort the physics.
+  - The structure footprint is padded by the purlin half-length along Y, keeping
+    support poles inside it.
+  - The `srtm` mode needs the optional geospatial stack (`rasterio`, `pyproj`),
+    included in the conda environment files, and downloads ~25 MB of SRTM tiles on
+    first use (cached in `~/.cache/pase/dem/`). PASE fetches those tiles itself, so
+    the mode runs wherever PASE does. (#286)
+
+#### Changed
+- Diffuse irradiation is computed substantially faster on large grids (vectorized
+  `compute_daily_diff_irradiation`). Results are unchanged — an equivalence test
+  pins this. (#258)
+
+#### Fixed
+- The crop-model orchestrator (`run_crop_simu`) can again be imported from a
+  `pip`-installed PASE, so the SIMPLE and Gras-Sim crop models are usable without a
+  source checkout: the STICS backends, which are not distributed with PASE, are no
+  longer required just to import the module. Selecting a crop model whose backend is
+  missing now fails with a message naming the backend and its setup instructions, and
+  an unrecognized `CropModel` value is rejected instead of silently producing no
+  agronomic results. (#271)
+
+### For developers
+
+#### Build & packaging
+- The environment files (unix, windows, CI) gained the geospatial dependencies
+  `rasterio` and `pyproj` for the DEM terrain path. (#248)
+- Resolved the PyVista `extract_surface()` deprecation warning.
+- Updated authors and maintainers in `pyproject.toml`.
+
+#### Internal (refactors, tests, architecture)
+- New `pase/ENVIRONMENT/ground.py` — a `Ground` / `SlopedGround` / `DEMGround`
+  hierarchy plus `ground_from_config()` — and `pase/ENVIRONMENT/terrain_pipeline.py`,
+  which turns a GPS bounding box into a PyVista terrain surface via a cached SRTM
+  download. (#248)
+- Tests: ground-aware panel placement, the layout-within-ground coverage check,
+  ground mesh source points following the terrain, an end-to-end build against a
+  bounded `DEMGround`, and the flat-ground regression extended to HSATS and the
+  fence structure. (#248)
+- Removed dead `PanelOffset` references and an unreachable `raise` in
+  `build_structure`. (#248)
+- Translated the remaining French text in `mesh.py` and the terrain modules to
+  English; `terrain_pipeline` now logs instead of printing. (#248)
+- New `pase/ENVIRONMENT/srtm.py`: SRTM tiles are fetched, decoded and mosaicked in
+  Python (standard library + numpy, rasterio only for the GeoTIFF write). Samples are placed on the global 1/3600° lattice, so
+  mosaicking is exact array copying. Only `SRTM1` is supported (#286).
+- The crop backends are imported through a `_CROP_BACKENDS` registry when their
+  `CropModel` is selected, instead of at `run_crop_simulations` import time. Tests
+  reproduce the installed-package situation in-process by making `pase.CROPS.STICS`
+  unimportable, so they need no built wheel. (#271)
+- `AGENTS.md`: pinned down the allowed commit categories, required the issue ID in
+  commit messages, and allowed lazy imports for optional backends.
+- Stopped tracking `logging_file.log` and `dev_script_outputs_manager.py`, and
+  gitignored `.claude/` — agent working documents (plans, notes, commit drafts) stay
+  local and are never committed. (#276)
+  
 ## [2.0.1] - 2026-08-12
 ### For users
 

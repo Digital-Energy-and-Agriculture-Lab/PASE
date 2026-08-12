@@ -3,14 +3,60 @@ import logging
 import math
 import numpy as np
 import pyvista as pyv
+from pase.ENVIRONMENT.ground import Ground, block_reference_elevation
 
 pyv.global_theme.allow_empty_mesh = True
 
 logger = logging.getLogger(__name__)
 
-def build_structure(config_dict):
+
+def compute_structure_footprint_half_extent(config_dict, ground=None):
+    """Return ``(half_x, half_y)`` of one block's footprint, or ``None`` when
+    no ``StructureType`` is configured.
+
+    Intended for callers (e.g. ``PVConfiguration3D.create_regular_central``)
+    that need to anchor panels and structure at a common terrain reference
+    elevation derived from the block's full footprint.
+    """
+    struct_type = (config_dict.get('StructureType')
+                   or config_dict.get('Structype'))
+    if not struct_type:
+        return None
+
+    struct_type = struct_type.lower()
+    if struct_type == 'agrivoltaic fence':
+        return AgrivoltaicFence(config_dict, ground=ground).get_footprint_half_extent()
+    if struct_type == 'pv table':
+        return PVTable(config_dict, ground=ground).get_footprint_half_extent()
+    if struct_type == 'hsats':
+        return HSATS(config_dict, ground=ground).get_footprint_half_extent()
+    raise ValueError(f"Unsupported StructureType '{struct_type}'")
+
+
+def build_structure(config_dict, ground=None, x_center=0.0, y_center=0.0,
+                    azimuth_deg=0.0, z_center=None):
     """
     Factory that selects the appropriate PV structure from the configuration.
+
+    Parameters
+    ----------
+    config_dict : dict
+        Structure configuration parameters.
+    ground : Ground, optional
+        Ground object used to compute pole foot elevations.
+        Defaults to a flat ``Ground()`` (z = 0 everywhere).
+    x_center : float
+        World X coordinate of the block center (pre-rotation, used with ``ground``).
+    y_center : float
+        World Y coordinate of the block center (pre-rotation, used with ``ground``).
+    azimuth_deg : float
+        CentralAzimut rotation applied after building (degrees, clockwise from North).
+        Used to compute terrain elevation at the correct post-rotation world positions.
+    z_center : float, optional
+        Reference Z elevation at which the block is anchored.  When omitted, it
+        is computed as the maximum terrain elevation over the block's footprint
+        (so the structure stays above ground everywhere within its extent on a
+        slope, instead of dipping below it on the uphill side).
     """
     struct_type = (config_dict.get('StructureType')
                    or config_dict.get('Structype'))
@@ -19,14 +65,44 @@ def build_structure(config_dict):
 
     struct_type = struct_type.lower()
 
-    if struct_type == 'agrivoltaic fence':
-        return AgrivoltaicFence(config_dict).build_structure()
-    if struct_type == 'pv table':
-        return PVTable(config_dict).build_structure()
-    if struct_type == 'hsats':
-        return HSATS(config_dict).build_structure()
+    # Shared z_world helper function for standardizing global evaluation
+    _az = math.radians(azimuth_deg)
+    _cos_az, _sin_az = math.cos(_az), math.sin(_az)
 
-    raise ValueError(f"Unsupported StructureType '{struct_type}'")
+    # Instead of _z relying on a captured variable 'x_center', we define it clearly
+    def _z_world(x_pre: float, y_pre: float) -> float:
+        x_w = x_pre * _cos_az + y_pre * _sin_az
+        y_w = -x_pre * _sin_az + y_pre * _cos_az
+        if ground is not None:
+            return float(ground.elevation(x_w, y_w))
+        return 0.0
+
+    if struct_type == 'agrivoltaic fence':
+        cls = AgrivoltaicFence
+    elif struct_type == 'pv table':
+        cls = PVTable
+    elif struct_type == 'hsats':
+        cls = HSATS
+    else:
+        raise ValueError(f"Unsupported StructureType '{struct_type}'")
+
+    instance = cls(config_dict, ground=ground)
+    if z_center is None:
+        if ground is None:
+            z_center = 0.0
+        else:
+            half_x, half_y = instance.get_footprint_half_extent()
+            z_center = block_reference_elevation(
+                ground, x_center, y_center, half_x, half_y, azimuth_deg,
+                samples=getattr(ground, 'footprint_samples', 2),
+            )
+
+    return instance.build_structure(
+        x_center=x_center,
+        y_center=y_center,
+        _z_world=_z_world,
+        z_center=z_center,
+    )
 
 
 def compute_flush_panel_offset(config: dict, thickness: float) -> float:
@@ -253,8 +329,9 @@ _BASE_REQUIRED: list = [
 
 class PVStructure(ABC):
     """Abstract interface describing the common parameters of PV structures."""
-    def __init__(self, PV_i):
+    def __init__(self, PV_i, ground=None):
         """Load common geometric, spacing, and material parameters for the PV layout."""
+        self.ground = ground if ground is not None else Ground()
         params = load_params(PV_i, self.REQUIRED, self.OPTIONAL)
 
         self.number_of_structure_groups = params['NumberOfStructureGroups']
@@ -340,6 +417,42 @@ class PVStructure(ABC):
         Abstract method overridden in inherited classes.
         """
         pass
+
+    def _structure_half_x(self) -> float:
+        """Half-extent of the structure along X in the pre-rotation frame.
+
+        Default 0.0 for thin single-pole structures (e.g. fences).  Overridden
+        by table/tracker subclasses that span a non-trivial X distance.
+        """
+        return 0.0
+
+    def get_footprint_half_extent(self) -> tuple[float, float]:
+        """Return ``(half_x, half_y)`` of one block's footprint in the pre-rotation frame.
+
+        The footprint encloses both the structural elements (poles, rafters,
+        purlins) and the panel grid carried by the block.  It is used by the
+        caller to anchor the block at the highest terrain elevation under its
+        full footprint on sloped ground.
+
+        The block-reference sampling window is symmetric about the block centre,
+        but ``make_elementary_group`` translates each pole by ``-purlin_length/2``
+        along Y, so the actual pole feet reach beyond a naive half-extent.  The
+        Y half-extent is therefore padded by ``purlin_length/2`` so every pole
+        position queried in ``build_structure`` stays inside the sampled window
+        (and inside the ``assert_covers`` check on a bounded ``DEMGround``);
+        otherwise a pole could be dragged below grade or trigger a spurious
+        out-of-bounds error on the uphill side of a slope.
+        """
+        panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
+                        + self.panel_height)
+        panel_span_y = ((self.panels_per_block_y - 1) * self.panel_spacing_y
+                        + self.panel_width)
+        half_y_struct = (self.number_of_structure_groups
+                         * self.repetition_distance_group_Y / 2.0)
+        half_x = max(self._structure_half_x(), panel_span_x / 2.0)
+        half_y = max(half_y_struct, panel_span_y / 2.0)
+        half_y += getattr(self, 'purlin_length', 0.0) / 2.0
+        return half_x, half_y
     
     def get_characteristic_dim(self, part_type):
         """
@@ -451,24 +564,41 @@ class PVStructure(ABC):
         
         return combined
     
-    def make_diagonal(self):
+    def make_diagonal(self, dz_left: float = 0.0, dz_right: float = 0.0):
         """
         Build a diagonal brace connecting the two poles with the correct slope.
+
+        ``dz_left`` / ``dz_right`` are the drops from the block anchor elevation
+        (local ``z = 0``) down to the terrain surface under the left / right
+        pole, so the ground sits at local ``z = -dz`` there.  The diagonal's
+        lower endpoint is clamped to ``terrain surface + DiagonalGroundGuard``
+        (``DiagonalGroundGuard = 0`` → resting on the ground) so it never dips
+        below grade.  Referencing the terrain *surface* — not the poles'
+        embedded feet at ``pole_ground_positioning`` — is what keeps the brace
+        from being dragged ``PoleGroundPositioning`` metres into the soil on a
+        slope.  On flat ground (``dz = 0``) this reduces to the historical
+        ``min(DiagonalGroundGuard, ...)`` behaviour.
         """
 
-        left_pole_height = self.base_height + self.height_offset
-        right_pole_height = self.base_height - self.height_offset
+        left_pole_top = self.base_height + self.height_offset
+        right_pole_top = self.base_height - self.height_offset
 
-        if left_pole_height <= right_pole_height:
+        # Local z of the terrain surface under each pole (0 on flat ground).
+        left_ground = -dz_left
+        right_ground = -dz_right
+
+        if left_pole_top <= right_pole_top:
             high_x = -self.half_span
-            high_z = left_pole_height
+            high_z = left_pole_top
             low_x = self.half_span
+            low_z_limit = right_ground + self.diagonal_ground_guard
         else:
             high_x = self.half_span
-            high_z = right_pole_height
+            high_z = right_pole_top
             low_x = -self.half_span
+            low_z_limit = left_ground + self.diagonal_ground_guard
 
-        low_z = min(self.diagonal_ground_guard, high_z - self.diagonal_epsilon)
+        low_z = min(low_z_limit, high_z - self.diagonal_epsilon)
 
         vertical_span = high_z - low_z
         horizontal_span = abs(high_x - low_x)
@@ -480,7 +610,7 @@ class PVStructure(ABC):
                             height=self.diagonal_height,
                             radius=self.diagonal_radius,
                             side=self.diagonal_side,
-                            positioning=self.pole_ground_positioning)
+                            positioning=0) # Positioning doesn't apply to diagonal natively
 
         angle = math.degrees(math.atan2(horizontal_span, vertical_span))
         if high_x < low_x:
@@ -517,9 +647,9 @@ class AgrivoltaicFence(PVStructure):
         'RepetitionDistanceGroupY': None,
     }
 
-    def __init__(self, PV_i, **kwargs):
+    def __init__(self, PV_i, ground=None, **kwargs):
         """Initialize agrivoltaic fence parameters from aggregated PV inputs."""
-        super().__init__(PV_i, **kwargs)
+        super().__init__(PV_i, ground=ground)
 
         # Derive horizontal bar positions from Height (center of panel group),
         # analogous to how PVTable derives pole heights from tilt geometry.
@@ -549,16 +679,16 @@ class AgrivoltaicFence(PVStructure):
                 f"'NumberOfStructureGroups' or 'RepetitionDistanceGroupY'."
             )
 
-    def make_elementary_group(self) -> pyv.PolyData:
+    def make_elementary_group(self, dz: float = 0.0) -> pyv.PolyData:
         """Create a fence group by combining one post and two horizontal bars."""
 
         pole = Pole(self.pole_shape,
-                    length=self.top_bar_height - self.pole_ground_positioning,
+                    length=self.top_bar_height - self.pole_ground_positioning + dz,
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
                     radius=self.pole_radius,
-                    positioning=self.pole_ground_positioning)
+                    positioning=self.pole_ground_positioning - dz)
         pole.polydata.translate((0, -self.purlin_length/2, 0), inplace=True)
 
         horizontal_bar_top = HorizontalBar(self.purlin_shape,
@@ -592,10 +722,14 @@ class AgrivoltaicFence(PVStructure):
 
         return combined
 
-    def build_structure(self) -> pyv.MultiBlock:
+    def build_structure(self, x_center=0.0, y_center=0.0, _z_world=None, z_center=0.0) -> pyv.MultiBlock:
         """
         Assemble all fence groups along Y and add a terminal post.
         """
+        if _z_world is None:
+            _z_world = lambda x_pre, y_pre: float(self.ground.elevation(x_pre, y_pre))
+            z_center = float(self.ground.elevation(x_center, y_center))
+
         half_span = (self.number_of_structure_groups - 1) * self.repetition_distance_group_Y / 2
         group_y_offsets = [
             -half_span + idx * self.repetition_distance_group_Y
@@ -605,22 +739,27 @@ class AgrivoltaicFence(PVStructure):
         blocks = pyv.MultiBlock()
 
         for offy in group_y_offsets:
-            g = self.make_elementary_group()
-            g.translate((0, offy, 0), inplace=True)
+            pole_y = y_center + offy - self.purlin_length / 2
+            z_ground = _z_world(x_center, pole_y)
+            dz = z_center - z_ground
+            g = self.make_elementary_group(dz=dz)
+            g.translate((0, offy, z_center), inplace=True)
             blocks.append(g)
 
+        end_y = group_y_offsets[-1] + self.repetition_distance_group_Y / 2
+        pole_y = y_center + end_y
+        z_end = _z_world(x_center, pole_y)
+        dz_end = z_center - z_end
+
         end_pole = Pole(self.pole_shape,
-                        length=self.top_bar_height - self.pole_ground_positioning,
+                        length=self.top_bar_height - self.pole_ground_positioning + dz_end,
                         width=self.pole_width,
                         height=self.pole_height,
                         side=self.pole_side,
                         radius=self.pole_radius,
-                        positioning=self.pole_ground_positioning)
+                        positioning=self.pole_ground_positioning - dz_end)
 
-        end_pole.polydata.translate((0,
-                                     group_y_offsets[-1] + self.repetition_distance_group_Y / 2,
-                                     0.0),
-                                    inplace=True)
+        end_pole.polydata.translate((0, end_y, z_center), inplace=True)
         blocks.append(end_pole.polydata)
         combined_blocks = blocks.combine()
         combined_blocks.user_dict = {'Material': self.material}
@@ -631,6 +770,9 @@ class PVTable(PVStructure):
     """
     Fixed tilted table with posts, rafters, and diagonal bracing.
     """
+
+    def _structure_half_x(self) -> float:
+        return self.half_span
 
     REQUIRED: list = _BASE_REQUIRED + ['PoleSpacingX', 'TiltY', 'DiagonalEpsilon', 'DiagonalGroundGuard']
     OPTIONAL: dict = {
@@ -646,11 +788,11 @@ class PVTable(PVStructure):
         'RepetitionDistanceGroupY': None,
     }
 
-    def __init__(self, PV_i, **kwargs):
+    def __init__(self, PV_i, ground=None, **kwargs):
         """
         Derive span, tilt, and minimum rafter length for the table geometry.
         """
-        super().__init__(PV_i, **kwargs)
+        super().__init__(PV_i, ground=ground)
 
         self.tilt_rad = math.radians(self.tilt)
         self.half_span = self.pole_spacing/2
@@ -688,9 +830,9 @@ class PVTable(PVStructure):
                              f"This results in the structure extending {abs(self.base_height - self.height_offset):.2f}m "
                              "below ground level. Please increase 'Height' or 'PoleSpacingX' or decrease 'TiltY'.")
 
-    def make_elementary_group(self) -> pyv.PolyData:
+    def make_elementary_group(self, dz_left: float = 0.0, dz_right: float = 0.0) -> pyv.PolyData:
         """Build one table group with poles, rafters, diagonals, and purlins."""
-        pole_and_rafter_group = self.make_start_and_end_block()
+        pole_and_rafter_group = self.make_start_and_end_block(dz_left, dz_right)
         purlin_group = self.make_structure_part_group("purlin",
                                             self.numbers_of_purlin,
                                             self.rafter_length)
@@ -699,29 +841,29 @@ class PVTable(PVStructure):
 
         return combined
 
-    def make_start_and_end_block(self) -> pyv.PolyData:
+    def make_start_and_end_block(self, dz_left: float = 0.0, dz_right: float = 0.0) -> pyv.PolyData:
         """
             PR is for Pole and rafter
         """
         pole = Pole(self.pole_shape,
-                    length=(self.base_height + self.height_offset - self.pole_ground_positioning),
+                    length=(self.base_height + self.height_offset - self.pole_ground_positioning + dz_left),
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
                     radius=self.pole_radius,
-                    positioning=self.pole_ground_positioning)
+                    positioning=self.pole_ground_positioning - dz_left)
         pole.polydata.translate((-self.half_span, 
                                  -self.purlin_length/2,
                                  0), 
                                 inplace=True)
 
         pole_2 = Pole(self.pole_shape,
-                      length=(self.base_height - self.height_offset - self.pole_ground_positioning),
+                      length=(self.base_height - self.height_offset - self.pole_ground_positioning + dz_right),
                       width=self.pole_width,
                       height=self.pole_height,
                       side=self.pole_side,
                       radius=self.pole_radius,
-                      positioning=self.pole_ground_positioning)
+                      positioning=self.pole_ground_positioning - dz_right)
         pole_2.polydata.translate((self.half_span,
                                    -self.purlin_length/2,
                                    0),
@@ -731,13 +873,13 @@ class PVTable(PVStructure):
                         panel_tilt_y=self.tilt, radius=self.rafter_radius,
                         side=self.rafter_side, width=self.rafter_width,
                         height=self.rafter_height,
-                        positioning=self.pole_ground_positioning)
+                        positioning=0) # positioning doesn't apply to rafters natively
         rafter.polydata.translate((0,
                                    -self.purlin_length/2,
                                    self.base_height),
                                   inplace=True)
         
-        diagonal = self.make_diagonal()
+        diagonal = self.make_diagonal(dz_left, dz_right)
 
         combine = (pole.polydata
                    + pole_2.polydata
@@ -746,9 +888,12 @@ class PVTable(PVStructure):
 
         return combine
 
-    def build_structure(self) -> pyv.MultiBlock :
-        """Replicate groups across the Y grid and cap with an end group."""
-
+    def build_structure(self, x_center=0.0, y_center=0.0, _z_world=None, z_center=0.0) -> pyv.MultiBlock:
+        """Replicate groups across the Y grid and cap with an end group.
+        """
+        if _z_world is None:
+            _z_world = lambda x_pre, y_pre: float(self.ground.elevation(x_pre, y_pre))
+            z_center = float(self.ground.elevation(x_center, y_center))
         # group positions centered around 0, spaced by repetition_distance_group_Y
         half_span = (self.number_of_structure_groups - 1) * self.repetition_distance_group_Y / 2
         group_y_offsets = [
@@ -759,16 +904,27 @@ class PVTable(PVStructure):
         blocks = pyv.MultiBlock()
 
         for offy in group_y_offsets:
-            g = self.make_elementary_group()
-            g.translate((0, offy, 0), inplace=True)
+            pole_y = y_center + offy - self.purlin_length / 2
+            
+            z_ground_left = _z_world(x_center - self.half_span, pole_y)
+            z_ground_right = _z_world(x_center + self.half_span, pole_y)
+            dz_left = z_center - z_ground_left
+            dz_right = z_center - z_ground_right
+            
+            g = self.make_elementary_group(dz_left, dz_right)
+            g.translate((0, offy, z_center), inplace=True)
             blocks.append(g)
 
-        end_pole = self.make_start_and_end_block()
-        end_pole.translate((0,
-                            offy + self.repetition_distance_group_Y,
-                            0.0),
-                            inplace=True)
-        
+        end_pole_y = y_center + offy + self.repetition_distance_group_Y / 2
+        z_end_left = _z_world(x_center - self.half_span, end_pole_y)
+        z_end_right = _z_world(x_center + self.half_span, end_pole_y)
+        dz_end_left = z_center - z_end_left
+        dz_end_right = z_center - z_end_right
+
+        end_pole = self.make_start_and_end_block(dz_end_left, dz_end_right)
+        end_y = offy + self.repetition_distance_group_Y
+        end_pole.translate((0, end_y, z_center), inplace=True)
+
         blocks.append(end_pole)
 
         combined_blocks = blocks.combine()
@@ -781,6 +937,9 @@ class HSATS(PVStructure):
     """
     HSATS: horizontal single-axis tracker managing purlins and tilted rafters.
     """
+
+    def _structure_half_x(self) -> float:
+        return self.rafter_length / 2.0
 
     REQUIRED: list = _BASE_REQUIRED + ['PoleSpacingX', 'TiltY', 'NumberOfRafters']
     OPTIONAL: dict = {
@@ -798,9 +957,9 @@ class HSATS(PVStructure):
         'HsatsOverhangTolFactor': 0.1,
     }
 
-    def __init__(self, PV_i, **kwargs):
+    def __init__(self, PV_i, ground=None, **kwargs):
         """Initialize HSATS with common PV inputs."""
-        super().__init__(PV_i, **kwargs)
+        super().__init__(PV_i, ground=ground)
 
         panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
                         + self.panel_height)
@@ -826,18 +985,18 @@ class HSATS(PVStructure):
                 f"'NumberOfStructureGroups' or 'RepetitionDistanceGroupY'."
             )
 
-    def make_elementary_group(self) -> pyv.PolyData:
+    def make_elementary_group(self, dz: float = 0.0) -> pyv.PolyData:
         """
         Create the tracker group with central post plus purlin and rafter groups.
         """
 
         pole = Pole(self.pole_shape,
-                    length=self.base_height - self.pole_ground_positioning,
+                    length=self.base_height - self.pole_ground_positioning + dz,
                     width=self.pole_width,
                     height=self.pole_height,
                     side=self.pole_side,
                     radius=self.pole_radius,
-                    positioning=self.pole_ground_positioning)
+                    positioning=self.pole_ground_positioning - dz)
 
         purlin_group = self.make_structure_part_group("purlin", 
                                                       self.numbers_of_purlin,
@@ -851,8 +1010,13 @@ class HSATS(PVStructure):
 
         return combine
     
-    def build_structure(self):
-        """Return the assembled HSATS group (single-axis tracker)."""
+    def build_structure(self, x_center=0.0, y_center=0.0, _z_world=None, z_center=0.0):
+        """Return the assembled HSATS group (single-axis tracker).
+        """
+        if _z_world is None:
+            _z_world = lambda x_pre, y_pre: float(self.ground.elevation(x_pre, y_pre))
+            z_center = float(self.ground.elevation(x_center, y_center))
+            
         half_span = (self.number_of_structure_groups - 1) * self.repetition_distance_group_Y / 2
         group_y_offsets = [
             -half_span + idx * self.repetition_distance_group_Y
@@ -862,8 +1026,11 @@ class HSATS(PVStructure):
         blocks = pyv.MultiBlock()
 
         for offy in group_y_offsets:
-            group = self.make_elementary_group()
-            group.translate((0.0, offy, 0.0), inplace=True)
+            pole_y = y_center + offy
+            z_ground = _z_world(x_center, pole_y)
+            dz = z_center - z_ground
+            group = self.make_elementary_group(dz=dz)
+            group.translate((0.0, offy, z_center), inplace=True)
             blocks.append(group)
 
         combined = blocks.combine()

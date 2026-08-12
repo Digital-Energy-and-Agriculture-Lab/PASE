@@ -15,11 +15,16 @@ license-files = ["LICENSE", "LICENSE-3RD-PARTY"]
 authors = [
     { name = "Roxane Bruhwyler", email = "roxane.bruhwyler@uliege.be" },
     { name = "Arnaud Bouvry", email = "abouvry@uliege.be" },
-    { name = "Louis Lemaire", email = "louis.lemaire@uliege.be" },
-    { name = "Julien Philippart", email = "jphilippart@uliege.be" },
+    { name = "Joran Dartevelle", email = "joran.dartevelle@uliege.be" },
+    { name = "Nicolas De Cock", email = "Nicolas.Decock1@gmail.com" },
     { name = "Selim Grote", email = "Selim.Grote@uliege.be" },
     { name = "Frédéric Lebeau", email = "f.lebeau@uliege.be" },
+    { name = "Louis Lemaire", email = "louis.lemaire@uliege.be" },
+    { name = "Julien Philippart", email = "jphilippart@uliege.be" },
     { name = "University of Liège - Digital Energy and Agriculture Lab (DEAL)" },
+]
+maintainers = [
+  {name = "Arnaud Bouvry", email = "abouvry@uliege.be"}
 ]
 keywords = [
     "agrivoltaics",
