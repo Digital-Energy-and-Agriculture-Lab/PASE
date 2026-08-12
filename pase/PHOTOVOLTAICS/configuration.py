@@ -875,7 +875,6 @@ class PVConfiguration3D(MultiBlockPASE):
         config.setdefault("MeshConfig", False)
         config.setdefault("RotationAxisNumber", 0)
         config.setdefault("CentralAzimut", 0)
-        config.setdefault("PanelOffset", 0.0)
         struct_type = (config.get("StructureType") or "")
         hinge_default = "top" if struct_type.lower() == "agrivoltaic fence" else "center"
         config.setdefault("Hinge", hinge_default)
