@@ -13,12 +13,13 @@ Each release is split into two audiences:
 Every merge request should add its entry under `## [Unreleased]`; when a release
 is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 
-## [2.0.1] - 2026-08-dd
+## [2.0.1] - 2026-08-12
 ### For users
 
 #### Fixed
 - PV panels rest flush on their mounting structure again on PV Table and HSATS centrals. They were being placed at the rafter axis instead of on top of the purlins, so every panel sat inside the structure rather than on it, displacing the whole array by the rafter + purlin offset and distorting the scene geometry the shading computation runs on. (#299)
-- Parameter value `TiltY` in `Example5_PVTable.yaml` raised an error, the default value is now within bounds to generate a valid PV configuration. 
+- Parameter value `TiltY` in `Example5_PVTable.yaml` raised an error, the default value is now within bounds to generate a valid PV configuration.
+- Tolerance factor added in structure.py for the HSATS structure type (`self.OPTIONAL['HsatsOverhangTolFactor']`) to allow HSATS geometries with `RafterLength = 0`.
 
 #### Changed
 - `Example5_PVTable.yaml` now uses a 35° tilt (was 80°), a realistic value for a fixed table. (#299)
