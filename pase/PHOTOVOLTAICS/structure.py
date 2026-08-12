@@ -954,6 +954,7 @@ class HSATS(PVStructure):
         'DiagonalWidth': 0.0, 'DiagonalHeight': 0.0, 'DiagonalSide': 0.0,
         'DiagonalRadius': 0.0, 'DiagonalEpsilon': 1e-6, 'DiagonalGroundGuard': 0.0,
         'RepetitionDistanceGroupY': None,
+        'HsatsOverhangTolFactor': 0.1,
     }
 
     def __init__(self, PV_i, ground=None, **kwargs):
@@ -962,7 +963,7 @@ class HSATS(PVStructure):
 
         panel_span_x = ((self.panels_per_block_x - 1) * self.panel_spacing_x
                         + self.panel_height)
-        if panel_span_x > self.rafter_length + 2*self.panel_height:
+        if panel_span_x > self.rafter_length + 2 *(1 + self.OPTIONAL['HsatsOverhangTolFactor'])*self.panel_height:
             raise ValueError(
                 f"Invalid HSATS configuration: The total panel height in X "
                 f"({panel_span_x:.2f}m) far exceeds the rafter length "

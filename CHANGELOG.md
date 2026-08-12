@@ -88,6 +88,24 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 - Stopped tracking `logging_file.log` and `dev_script_outputs_manager.py`, and
   gitignored `.claude/` — agent working documents (plans, notes, commit drafts) stay
   local and are never committed. (#276)
+  
+## [2.0.1] - 2026-08-12
+### For users
+
+#### Fixed
+- PV panels rest flush on their mounting structure again on PV Table and HSATS centrals. They were being placed at the rafter axis instead of on top of the purlins, so every panel sat inside the structure rather than on it, displacing the whole array by the rafter + purlin offset and distorting the scene geometry the shading computation runs on. (#299)
+- Parameter value `TiltY` in `Example5_PVTable.yaml` raised an error, the default value is now within bounds to generate a valid PV configuration.
+- Tolerance factor added in structure.py for the HSATS structure type (`self.OPTIONAL['HsatsOverhangTolFactor']`) to allow HSATS geometries with `RafterLength = 0`.
+
+#### Changed
+- `Example5_PVTable.yaml` now uses a 35° tilt (was 80°), a realistic value for a fixed table. (#299)
+
+### For developers
+
+#### Internal (refactors, tests, architecture)
+- Added panel-on-structure placement tests (`tests/PHOTOVOLTAICS/test_panel_structure_placement.py`), covering an interface that had no coverage: no test built panels and a structure together, so the #299 misplacement went undetected. The flush contract is asserted on the built geometry, measured along the panel normal — an axis-aligned bounding-box check cannot express it, since a tilted rafter's box contains the panels even when placement is correct. (#299)
+- Removed the dead `PanelOffset` default from `PVConfiguration3D._apply_defaults`. Nothing read the key and no input file defines it, so it silently supplied `0.0` to the call site that #299 clobbered instead of raising. (#299)
+- Moved the `structure_inputs` fixture to `tests/PHOTOVOLTAICS/conftest.py` to share it across structure and placement tests. (#299)
 
 ## [2.0.0] - 2026-07-22
 ### For users

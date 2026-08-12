@@ -1012,6 +1012,7 @@ class PVConfiguration3D(MultiBlockPASE):
         azimuth_deg        = float(config["CentralAzimut"])
         tilt_deg           = float(config["TiltY"])
         hinge_style        = config["Hinge"]
+
         # Panels are mounted flush on the structure; the offset is derived from
         # the rafter/purlin/panel geometry.
         panel_offset       = compute_flush_panel_offset(config, thickness)
