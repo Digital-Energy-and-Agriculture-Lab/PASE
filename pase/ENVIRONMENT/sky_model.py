@@ -343,13 +343,20 @@ class ReinhartSky:
     def get_patches_xyz(self):
         """
         Compute xyz coords of the sky patches on the sky dome (i.e. upper
-        half-sphere)
+        half-sphere), in the PASE world frame: East = X, North = Y, Zenith = Z.
+
+        The 'az' column holds compass azimuths (0 deg = North, positive clockwise
+        towards East), as read by the CIE radiance model and by the horizon mask.
+        sph_to_cart expects the trigonometric convention (0 deg = East, positive
+        counterclockwise), so the azimuth is converted here: az_trig = 90 - az.
+        Feeding the compass value in directly would place each patch at the
+        heading 90 - az, a reflection about the north-east diagonal (issue #300).
         """
 
         (self.reinhart_patches['x'],
          self.reinhart_patches['y'],
          self.reinhart_patches['z']) = sph_to_cart(units='deg',
-                                                   azimut=self.reinhart_patches['az'],
+                                                   azimut=90.0 - self.reinhart_patches['az'],
                                                    elev=self.reinhart_patches['el'])
 
     def compute_cos_zenith(self):
