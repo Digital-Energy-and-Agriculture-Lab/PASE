@@ -33,19 +33,13 @@ TiltY:
    Type: float
    Limit: [-90, 90]
    Unit: degree [°]
-   Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation
+   Definition: Tilt of the photovoltaic block around the y axis which would be the potential main axis of rotation. The magnitude is the tilt from horizontal. The sign sets which way the panels face - positive tilts them towards CentralAzimut plus 90, negative towards CentralAzimut minus 90. See DOCUMENTATION/angle_conventions.md. The behaviour of the CentralAzimut and TiltY combination is documented with figures in the project wiki, page documentation/tutorial.
 Height:
    Value: 1.22
    Type: float
    Limit: [0.1, 20]
    Unit: meters [m]
    Definition: Height from the ground to the main axis of the block of panels
-Hinge:
-   Value: Center
-   Type: string
-   Possibilities: [Center, Top]
-   Definition: Do the panels rotate about the axis going through their center or
-      the top of the panels (e.g. free-hanging panels) ?
 NumberOfPVBlocksX:
    Value: 1
    Type: integer
@@ -81,7 +75,7 @@ CentralAzimut:
    Type: float
    Limit: [0,360]
    Unit: degrees [°]
-   Definition: Rotation angle of the central around the z axis. 0 is N ; 90 is E ; 180 is S ; 270 is W
+   Definition: Rotation angle of the central around the z axis. This is the compass azimuth of the row axis - 0 is N ; 90 is E ; 180 is S ; 270 is W. It is not the direction the panels face; they face this azimuth plus 90 when TiltY is positive and minus 90 when it is negative, so a south-facing array is CentralAzimut 90 with a positive TiltY. See DOCUMENTATION/angle_conventions.md. The behaviour of the CentralAzimut and TiltY combination is documented with figures in the project wiki, page documentation/tutorial.
 DiffusersBetweenPanels:
    Value: True
    Type: boolean
