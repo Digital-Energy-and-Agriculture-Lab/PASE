@@ -6,6 +6,7 @@ import pytest
 
 import pyvista as pv
 
+from pase.conversion_functions import unit_vector_to_compass_deg
 from pase.ENVIRONMENT.ground import (Ground, SlopedGround, DEMGround,
                                      rotation_from_z_to_normal,
                                      ground_from_config, bounds_around,
@@ -86,6 +87,27 @@ class TestSlopedGround:
         g = SlopedGround(90, 60)
         n = g.normal(0, 0)
         assert n[2] > 0
+
+    def test_east_facing_slope(self):
+        # Normal azimuth 90° (East), elevation 80° → ~10° slope toward East.
+        # Nothing else in this class pins the East-West axis: the N/S tests above
+        # would survive an exchange of the x and y components (issue #300 was
+        # exactly that exchange, elsewhere in the codebase).
+        g = SlopedGround(90, 80)
+        assert g.elevation(-100, 0) > 0.0   # uphill to the West
+        assert g.elevation(100, 0) < 0.0    # downhill to the East
+
+    @pytest.mark.parametrize('aspect', [0.0, 90.0, 137.5, 180.0, 270.0])
+    def test_normal_heading_matches_the_declared_aspect(self, aspect):
+        """
+        `terrain_normal_azimuth` is a compass azimuth, and the normal's horizontal
+        projection must point that way. Read through the shared helper, so the
+        terrain and the sky speak the same vocabulary
+        (DOCUMENTATION/angle_conventions.md).
+        """
+        n = SlopedGround(aspect, 80).normal(0, 0)
+        assert unit_vector_to_compass_deg(n[0], n[1]) == pytest.approx(aspect % 360.0,
+                                                                      abs=1e-9)
 
     def test_gradient_constant(self):
         g = SlopedGround(180, 80)
