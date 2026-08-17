@@ -51,6 +51,22 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 - Diffuse irradiation is computed substantially faster on large grids (vectorized
   `compute_daily_diff_irradiation`). Results are unchanged — an equivalence test
   pins this. (#258)
+- Angle inputs now say what they mean. Every angle-bearing key in the input files states
+  its convention in its `Definition` field, so you no longer have to infer it from the
+  code. In particular `CentralAzimut` is the compass azimuth of the **row axis**, not the
+  direction the panels face: they face `CentralAzimut + 90` when `TiltY` is positive and
+  `CentralAzimut - 90` when it is negative, which makes a south-facing array
+  `CentralAzimut 90` with a positive tilt. The definitions point at the wiki page that
+  illustrates the combination with figures. No key was renamed and no value changed, so
+  existing input files keep working and results are unaffected. (#301)
+- The `Hinge` parameter is gone from the `INPUTS/AV_CENTRAL/` files. It stopped being a
+  user-facing choice when panel placement was reworked — it is now derived from
+  `StructureType` — and the leftover entries could still override that derivation. Most
+  of them already agreed with the derived value, but `Example1_AV.yaml` carried
+  `Hinge: Top` against a derived `center`, so that example's array now sits centred on
+  the axis height it declares, moving down by 1.37 m (z-range [1.55, 2.46] becomes
+  [0.77, 1.68]). If you had copied that example as a starting point, expect the same
+  shift. (#301)
 
 #### Fixed
 - The crop-model orchestrator (`run_crop_simu`) can again be imported from a
@@ -133,6 +149,29 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 - `CIEStandardSky.compute_rel_radiance()` now honours its `az`/`el` arguments under a
   uniform sky (type 5), where it returned an array shaped like the instance's own
   patches regardless of what was asked. (#300)
+- Angles have a normative vocabulary: `DOCUMENTATION/angle_conventions.md`, with the short
+  version in `AGENTS.md`. Two azimuth frames are named rather than implied — **compass**
+  (0 = North, clockwise, `(sin A, cos A)`) and **trigonometric** (0 = East,
+  counterclockwise, `(cos A, sin A)`) — along with the `90 - A` involution between them,
+  its fixed points at NE and SW, the naming grammar `<quantity>_<frame>_<unit>`, and a
+  table resolving the legacy names still in circulation. It also separates two conversions
+  that were nowhere distinguished: relabelling a direction between frames (`90 - A`) and
+  rotating a scene by a compass azimuth (`rotate_z(-A)`). (#301)
+- `sph_to_cart` and `cart_to_sph` require a keyword-only `frame=` (`COMPASS` or
+  `TRIGONOMETRIC`) with no default, so an undeclared frame raises `TypeError` instead of
+  silently picking one — the mechanism that would have caught #300 at its call site. Frame
+  crossings go through `compass_to_unit_vector`, `unit_vector_to_compass_deg` and
+  `compass_to_trig` rather than inline arithmetic. `sph_to_cart`'s misspelled `azimut`
+  parameter is now `azimuth`, and `Mesh.default_azimut` is `default_zone_az_trig_deg`.
+  Behaviour is unchanged throughout. (#301)
+- `tests/test_angle_conventions.py` witnesses the frames with **absolute** assertions
+  (north → `(0,1,0)`) instead of round-trips. A round-trip between `sph_to_cart` and
+  `cart_to_sph` is frame-blind — it holds in either convention — which is why the suite
+  stayed green throughout #300. It also pins `compass_to_unit_vector` against
+  `get_sun_vector`, the two independent implementations of the compass frame whose drift
+  was that defect. (#301)
+- `TEMPORARY_FILES/sky_subdivision.py` no longer calls a zenith angle an elevation, and
+  drops a local `cart_to_sph` that shadowed the package one with a wrong formula. (#301)
   
 ## [2.0.1] - 2026-08-12
 ### For users
