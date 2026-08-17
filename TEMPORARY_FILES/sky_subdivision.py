@@ -11,7 +11,8 @@ from matplotlib import pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
 
-from pase.conversion_functions import sph_to_cart
+from pase.conversion_functions import (TRIGONOMETRIC, cart_to_sph,
+                                       compass_to_unit_vector)
 
 VERBOSE = False
 compare_fhs = False
@@ -172,9 +173,9 @@ sum_solid_angles_div_pi = sum_solid_angles/np.pi
 print(f'Sum of solid angles = {sum_solid_angles_div_pi:.4g} * pi')
 
 # Compute xyz coords on a unit sphere (actually half sphere since it's the sky dome)
-reinhart_patches['x'], reinhart_patches['y'], reinhart_patches['z'] = sph_to_cart(units='deg',
-                                                                                  azimut=reinhart_patches['az'],
-                                                                                  elev=reinhart_patches['el'])
+reinhart_patches['x'], reinhart_patches['y'], reinhart_patches['z'] = compass_to_unit_vector(
+    az_compass_deg=reinhart_patches['az'],
+    el_deg=reinhart_patches['el'])
 
 if compare_fhs:
     # Compare with Fibonacci half sphere
@@ -234,7 +235,9 @@ if compare_fhs:
     elevations = []
     for xyz in fhs:
         x, y, z = xyz
-        az, elev = cart_to_sph(x, y, z)
+        # NB: cart_to_sph returns (azimuth, zenith angle), so the second value is a
+        # zenith angle despite the variable name kept here.
+        az, elev = cart_to_sph(x, y, z, frame=TRIGONOMETRIC)
         azimuts.append(az)
         elevations.append(elev)
 

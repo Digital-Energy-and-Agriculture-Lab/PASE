@@ -428,7 +428,12 @@ class PVConfiguration3D(MultiBlockPASE):
     - Input angles (azimuth, tilt) are in **degrees**.
     - PyVista rotations use degrees internally.
     - Panels are named "PV_<ObjectID>".
-    - Azimuth rotates around +Z axis (``rotate_z(-az_deg, ...)``).
+    - Azimuth is a **compass** azimuth: 0 = North, positive clockwise towards East.
+      ``rotate_z`` turns counterclockwise, so placing a block at azimuth ``az_deg``
+      is ``rotate_z(-az_deg, ...)``. Note this sign flip is *not* the
+      compass-to-trigonometric conversion (``90 - az``), which relabels a
+      direction rather than rotating a scene — see
+      DOCUMENTATION/angle_conventions.md.
 
     Tracking support
     ----------------
@@ -1009,6 +1014,9 @@ class PVConfiguration3D(MultiBlockPASE):
         num_blocks_x       = int(config["NumberOfPVBlocksX"])
         num_blocks_y       = int(config["NumberOfPVBlocksY"])
         base_height        = float(config["Height"])
+        # Compass azimuth: 0 = North, positive clockwise. pyvista's rotate_z turns
+        # counterclockwise, hence the negated argument at the rotate_z calls below.
+        # See DOCUMENTATION/angle_conventions.md.
         azimuth_deg        = float(config["CentralAzimut"])
         tilt_deg           = float(config["TiltY"])
         hinge_style        = config["Hinge"]
@@ -1215,6 +1223,8 @@ class PVConfiguration3D(MultiBlockPASE):
         block_spacing_x = float(pv_config["RepetitionDistanceOfPVBlocksX"])  # block pitch X
         block_spacing_y = float(pv_config["RepetitionDistanceOfPVBlocksY"])  # block pitch Y
         base_height = float(pv_config["Height"])  # elevation
+        # Compass azimuth (0 = North, clockwise); rotate_z turns counterclockwise,
+        # hence the negation below. See DOCUMENTATION/angle_conventions.md.
         azimuth_deg = float(pv_config["CentralAzimut"])  # degrees
         tilt_deg = float(pv_config["TiltY"])
         if diff_dimZ > 0.0:
@@ -1539,6 +1549,10 @@ class PV_Configuration_3D(PVConfiguration3D):
                 continue
             c = centers[panel.field_data["ObjectID"][0]]
 
+            # Tilt about the row axis by conjugation: rotate the panel back to the
+            # unrotated frame, tilt about y there, then rotate it out again. Doing
+            # the tilt about the global y axis after the azimuth spin instead would
+            # tilt every panel due East whatever its azimuth.
             panel.rotate_z(azimuth_deg, point=(0.0, 0.0, 0.0),inplace=True).rotate_y(tilt_deg, point=c, inplace=True).rotate_z(-azimuth_deg, point=(0.0, 0.0, 0.0),inplace=True)
 
         return temp if return_multiblock else merge_polydata(temp)

@@ -21,7 +21,7 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
 
-from pase.conversion_functions import sph_to_cart
+from pase.conversion_functions import compass_to_unit_vector
 from pase.paths import static_data_path
 
 logger = logging.getLogger(__name__)
@@ -346,18 +346,17 @@ class ReinhartSky:
         half-sphere), in the PASE world frame: East = X, North = Y, Zenith = Z.
 
         The 'az' column holds compass azimuths (0 deg = North, positive clockwise
-        towards East), as read by the CIE radiance model and by the horizon mask.
-        sph_to_cart expects the trigonometric convention (0 deg = East, positive
-        counterclockwise), so the azimuth is converted here: az_trig = 90 - az.
-        Feeding the compass value in directly would place each patch at the
-        heading 90 - az, a reflection about the north-east diagonal (issue #300).
+        towards East) — the same frame the CIE radiance model and the horizon mask
+        read it in. compass_to_unit_vector names that frame, so these directions
+        cannot silently end up mirrored again as they were in issue #300; the
+        pairing is witnessed by TestSkyPatchAzimuthPairing.
         """
 
         (self.reinhart_patches['x'],
          self.reinhart_patches['y'],
-         self.reinhart_patches['z']) = sph_to_cart(units='deg',
-                                                   azimut=90.0 - self.reinhart_patches['az'],
-                                                   elev=self.reinhart_patches['el'])
+         self.reinhart_patches['z']) = compass_to_unit_vector(
+            az_compass_deg=self.reinhart_patches['az'],
+            el_deg=self.reinhart_patches['el'])
 
     def compute_cos_zenith(self):
         """
