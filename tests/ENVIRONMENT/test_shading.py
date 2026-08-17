@@ -246,3 +246,55 @@ def test_horizon_diffuse_irradiance_cos2_fraction_via_scene():
         f"expected {expected:.3f} W·h/m², got {result_Wh:.4f}. "
         f"Horizon mask may not propagate correctly through diffuse irradiance computation."
     )
+
+
+# ─────────────────────────────────────────────
+# Horizon against the patch ray directions (issue #300)
+# ─────────────────────────────────────────────
+
+def _make_hill_horizon(height=20.0, az_start=90.0, az_stop=180.0):
+    """
+    Return a Horizon whose profile is azimuth-dependent: a hill of a given height
+    between two compass azimuths, a clear horizon elsewhere.
+
+    A flat profile — what every other horizon test here uses — cannot detect an
+    azimuth defect, since it masks the same elevations in every direction.
+    """
+    h = Horizon(lat=50.0, lon=4.0)
+    azimuths = np.arange(0.0, 361.0)
+    elevations = np.where((azimuths >= az_start) & (azimuths <= az_stop), height, 0.0)
+    h.interp_func = interp1d(azimuths, elevations, kind='linear',
+                             fill_value="extrapolate")
+    return h
+
+
+def test_horizon_hides_the_patches_whose_rays_it_occludes():
+    """
+    The horizon mask is indexed by the sky patches' 'az' column (light.py, in
+    get_diffuse_mask) and the result is combined index by index with the
+    geometric visibility of rays cast towards the 'x'/'y'/'z' columns. Both must
+    therefore describe the same direction, or the composed mask no longer
+    describes a single physical direction.
+
+    Independent of sky type: this witness never mentions one.
+    """
+    patches = ReinhartSky(MF=1).reinhart_patches
+    hill = _make_hill_horizon()
+
+    az = patches['az'].to_numpy()
+    el = patches['el'].to_numpy()
+    ray_heading = np.degrees(np.arctan2(patches['x'].to_numpy(),
+                                        patches['y'].to_numpy())) % 360.0
+
+    as_wired = np.asarray(hill.get_horizon_mask(az, el))
+    physical = np.asarray(hill.get_horizon_mask(ray_heading, el))
+
+    disagreeing = int((as_wired != physical).sum())
+    assert disagreeing == 0, (
+        f"{disagreeing} of {len(patches)} patches "
+        f"({100 * disagreeing / len(patches):.1f}% of the dome) get a visibility "
+        f"that does not match the direction their ray leaves towards: "
+        f"{int((~as_wired & physical).sum())} hidden although their ray misses the "
+        f"hill, {int((as_wired & ~physical).sum())} kept although their ray "
+        f"crosses it."
+    )

@@ -2,6 +2,7 @@ import math
 import numpy as np
 import pytest
 
+from pase.ENVIRONMENT.light import get_sun_vector
 from pase.ENVIRONMENT.sky_model import ReinhartSky, CIEStandardSky
 
 sky = ReinhartSky()
@@ -179,3 +180,154 @@ class TestCIEStandardSky:
         assert sky_integral > 0, (
             f"sky_type={sky_type}: sky_integral={sky_integral:.4f} is not positive"
         )
+
+
+# ---------------------------------------------------------------------------
+# Sky patch azimuth pairing (issue #300)
+# ---------------------------------------------------------------------------
+
+def _compass_heading(x, y):
+    """
+    Compass heading of a horizontal direction: 0 deg = North, positive clockwise
+    towards East, in the PASE world frame (East = X, North = Y, Zenith = Z).
+
+    :param x: East component(s)
+    :param y: North component(s)
+    :return: heading(s) in [0, 360) [deg]
+    """
+    return np.degrees(np.arctan2(x, y)) % 360.0
+
+
+def _wrapped_gap(a, b):
+    """Absolute angular difference between two headings [deg], wrap-aware."""
+    return np.abs((np.asarray(a) - np.asarray(b) + 180.0) % 360.0 - 180.0)
+
+
+class TestSkyPatchAzimuthPairing:
+    """
+    The discrete sky carries each patch direction twice: as the 'az'/'el' columns,
+    read as compass angles by the CIE radiance model and by the horizon mask, and
+    as the 'x'/'y'/'z' columns, used as ray directions by the diffuse ray casting
+    and by the diffuser map. The two must describe the same direction.
+
+    The sun azimuths below are all at least 45 deg away from both 45 deg and
+    225 deg. Those two headings are the fixed points of the reflection that
+    issue #300 introduces, so a sun placed there cannot see the defect.
+    """
+
+    SUN_AZ = (90.0, 135.0, 180.0, 270.0, 315.0)
+    SUN_EL = (10.0, 30.0, 60.0)
+    ANISOTROPIC_SKY_TYPES = (7, 8, 11, 12, 13, 15)
+
+    # Measured post-fix bounds over the grid below, at MF 1 and 2:
+    #   angle(brightest patch, solar vector)  <= 27.0 deg  (>= 40.1 deg mirrored)
+    #   radiance(patch nearest the sun)/peak  >= 0.755     (<= 0.376 mirrored)
+    # The thresholds sit in those gaps. They are not tight bounds on the physics:
+    # under a strongly graded sky the brightest patch is genuinely not always the
+    # one nearest the sun, so the assertions below deliberately do not require it.
+    MAX_ANGLE_TO_SUN_DEG = 35.0
+    MIN_NEAREST_RADIANCE_RATIO = 0.5
+
+    @pytest.fixture(scope='class')
+    def patches(self):
+        return ReinhartSky(MF=1).reinhart_patches
+
+    @pytest.mark.parametrize('mf', [1, 2, 4])
+    def test_patch_heading_matches_declared_azimuth(self, mf):
+        """
+        The heading a patch is drawn at must be the compass azimuth it declares.
+
+        This is the single invariant behind issue #300: every downstream consumer
+        pairs the 'az' column with the cartesian columns by index, so if these two
+        disagree the radiance, the horizon visibility and the ray direction of a
+        given patch describe three different points of the sky.
+
+        The zenith cap is excluded: it has no horizontal heading.
+        """
+        patches = ReinhartSky(MF=mf).reinhart_patches
+        off_zenith = patches['el'].to_numpy() < 90.0
+        drawn = _compass_heading(patches['x'].to_numpy()[off_zenith],
+                                 patches['y'].to_numpy()[off_zenith])
+        declared = patches['az'].to_numpy()[off_zenith]
+        gap = _wrapped_gap(drawn, declared)
+        assert gap.max() < 1e-6, (
+            f"MF={mf}: {int((gap > 1e-6).sum())} of {off_zenith.sum()} off-zenith "
+            f"patches are drawn away from their declared azimuth, by up to "
+            f"{gap.max():.3f} deg. Worst patch: az column "
+            f"{declared[int(np.argmax(gap))]:.1f} deg drawn at "
+            f"{drawn[int(np.argmax(gap))]:.1f} deg."
+        )
+
+    @pytest.mark.parametrize('mf', [1, 2, 4])
+    def test_zenith_patch_points_to_zenith(self, mf):
+        """
+        The zenith cap must point straight up, which is what makes it legitimate
+        to exclude it from the heading invariant above.
+        """
+        patches = ReinhartSky(MF=mf).reinhart_patches
+        cap = patches.loc[patches['el'] >= 90.0]
+        assert len(cap) == 1, f"MF={mf}: expected exactly one zenith cap, got {len(cap)}"
+        np.testing.assert_allclose(
+            cap[['x', 'y', 'z']].to_numpy()[0], [0.0, 0.0, 1.0], atol=1e-9
+        )
+
+    @pytest.mark.parametrize('mf', [1, 2])
+    def test_patch_directions_are_unit_vectors(self, mf):
+        """Patch directions must be unit vectors, whatever the convention."""
+        patches = ReinhartSky(MF=mf).reinhart_patches
+        norms = np.linalg.norm(patches[['x', 'y', 'z']].to_numpy(), axis=1)
+        np.testing.assert_allclose(norms, 1.0, atol=1e-9)
+
+    @pytest.mark.parametrize('sky_type', ANISOTROPIC_SKY_TYPES)
+    @pytest.mark.parametrize('sun_az', SUN_AZ)
+    def test_brightest_patch_lies_towards_the_sun(self, patches, sky_type, sun_az):
+        """
+        The most radiant patch of an anisotropic sky must lie in the direction of
+        the sun, where the direction is taken from the cartesian columns and the
+        sun from get_sun_vector -- so this crosses the radiance model's azimuth
+        convention with the ray directions' one.
+
+        Not asserted: that the brightest patch *is* the patch nearest the sun.
+        Under a steep gradation the horizon rows can outshine the circumsolar
+        region by a patch or two, which is physical.
+        """
+        directions = patches[['x', 'y', 'z']].to_numpy()
+        for sun_el in self.SUN_EL:
+            sun = get_sun_vector(np.array([sun_el]), np.array([sun_az]))[0]
+            radiance = np.asarray(CIEStandardSky(patches, sun_az, sun_el,
+                                                 sky_type=sky_type)
+                                  .rel_radiance_distribution)
+            brightest = int(np.argmax(radiance))
+            angle = np.degrees(np.arccos(
+                np.clip(float(directions[brightest] @ sun), -1.0, 1.0)))
+            assert angle <= self.MAX_ANGLE_TO_SUN_DEG, (
+                f"sky_type={sky_type}, sun az={sun_az} el={sun_el}: the brightest "
+                f"patch (index {brightest}, az column "
+                f"{patches['az'].iloc[brightest]:.1f} deg, drawn at heading "
+                f"{_compass_heading(*directions[brightest][:2]):.1f} deg) sits "
+                f"{angle:.1f} deg from the solar vector."
+            )
+
+    @pytest.mark.parametrize('sky_type', ANISOTROPIC_SKY_TYPES)
+    @pytest.mark.parametrize('sun_az', SUN_AZ)
+    def test_patch_nearest_the_sun_carries_near_peak_radiance(self, patches,
+                                                              sky_type, sun_az):
+        """
+        Converse of the previous witness: the patch geometrically nearest the
+        solar vector must be one of the bright ones. It catches the same defect
+        from the other end -- under the mirror it carries a few percent of the
+        peak.
+        """
+        directions = patches[['x', 'y', 'z']].to_numpy()
+        for sun_el in self.SUN_EL:
+            sun = get_sun_vector(np.array([sun_el]), np.array([sun_az]))[0]
+            nearest = int(np.argmax(directions @ sun))
+            radiance = np.asarray(CIEStandardSky(patches, sun_az, sun_el,
+                                                 sky_type=sky_type)
+                                  .rel_radiance_distribution)
+            ratio = float(radiance[nearest] / radiance.max())
+            assert ratio >= self.MIN_NEAREST_RADIANCE_RATIO, (
+                f"sky_type={sky_type}, sun az={sun_az} el={sun_el}: the patch "
+                f"nearest the solar vector (index {nearest}) carries {ratio:.3f} "
+                f"of the peak radiance."
+            )

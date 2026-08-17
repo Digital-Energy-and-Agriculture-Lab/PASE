@@ -40,6 +40,12 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
     included in the conda environment files, and downloads ~25 MB of SRTM tiles on
     first use (cached in `~/.cache/pase/dem/`). PASE fetches those tiles itself, so
     the mode runs wherever PASE does. (#286)
+- `CIEStandardSky.plot_radiance_map()` draws the radiance (or luminance) distribution
+  of a CIE standard sky as a continuous polar or cartesian map. It is evaluated on its
+  own azimuth-elevation grid rather than on the Reinhart patches, so the sky model can
+  be inspected independently of how finely the dome is discretized, either relative to
+  the zenith or scaled by an absolute zenith radiance, and the figure is labelled with
+  the CIE description of the sky type. (#300)
 
 #### Changed
 - Diffuse irradiation is computed substantially faster on large grids (vectorized
@@ -54,6 +60,31 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
   missing now fails with a message naming the backend and its setup instructions, and
   an unrecognized `CropModel` value is rejected instead of silently producing no
   agronomic results. (#271)
+- Diffuse light now reaches the scene from the right part of the sky. The discretized
+  sky held every patch direction twice — as a compass azimuth, read by the sky radiance
+  model and by the horizon mask, and as a 3D vector, used as the ray direction — and
+  the two disagreed: each patch was placed at the heading `90 − azimuth`, a mirror
+  image about the north-east diagonal. North and east were interchanged, as were south
+  and west, and south-east and north-west ended up half a turn apart; the north-east
+  and south-west directions happened to fall on the mirror and were unaffected. (#300)
+  - Under a non-uniform sky (`sky_type_source='From weather data'`), the bright
+    circumsolar region was applied more than 130° away from the sun for a south-east
+    sun, while the patch actually facing the sun received a tenth of the radiance it
+    should have.
+  - With a far-horizon profile loaded — on any sky, the uniform default included — 22%
+    of the sky dome received the visibility belonging to another direction: patches
+    hidden although nothing occludes them, patches lit although the relief blocks them.
+  - Runs using lenticular diffusers were affected too, on any sky and with no horizon
+    profile needed.
+  - Runs on the uniform default sky with no horizon profile keep essentially the same
+    totals, moving by well under a percent, because the diffuse weighting depends only
+    on elevation. That insensitivity is why the defect went unnoticed for ten months.
+  - Results computed before this fix no longer match for the affected cases: cached
+    runs under `OUTPUTS/` should be recomputed.
+- Sky dome figures are no longer point-reflected. `ReinhartSky.patch_plot_value` drew
+  each patch half a turn away from the direction its own compass labels announce, so a
+  patch due east appeared where the plot reads west. Every sky figure produced with it
+  was mirrored; the underlying radiance values were correct. (#300)
 
 ### For developers
 
@@ -88,6 +119,20 @@ is cut, that section is retitled `## [X.Y.Z] - YYYY-MM-DD` (see `RELEASE.md`).
 - Stopped tracking `logging_file.log` and `dev_script_outputs_manager.py`, and
   gitignored `.claude/` — agent working documents (plans, notes, commit drafts) stay
   local and are never committed. (#276)
+- Witnesses for the sky patch azimuth pairing. `TestSkyPatchAzimuthPairing`
+  (`tests/ENVIRONMENT/test_sky_model.py`) crosses the `az` column with the cartesian
+  columns of the same patches, and asserts that the brightest patch of an anisotropic
+  sky lies towards the solar vector and that the patch nearest the sun carries
+  near-peak radiance. `tests/ENVIRONMENT/test_shading.py` gained an azimuth-dependent
+  horizon profile helper and a witness that the relief hides the patches whose rays it
+  occludes. Nothing in the suite crossed those two representations before, and every
+  horizon test used a flat profile, which masks the same elevations in all directions
+  and so cannot see an azimuth defect. The sun azimuths are deliberately kept away from
+  the north-east and south-west diagonals, the fixed points of the reflection, where
+  the defect is invisible. (#300)
+- `CIEStandardSky.compute_rel_radiance()` now honours its `az`/`el` arguments under a
+  uniform sky (type 5), where it returned an array shaped like the instance's own
+  patches regardless of what was asked. (#300)
   
 ## [2.0.1] - 2026-08-12
 ### For users
