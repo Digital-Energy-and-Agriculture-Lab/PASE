@@ -200,54 +200,26 @@ if compare_fhs:
         return np.column_stack([xp, zp, yp])
 
 
-    def cart_to_sph(x, y, z):
-        r = np.sqrt(x ** 2 + y ** 2 + z ** 2)
-
-        if z > 0:
-            elev = np.arctan((x ** 2 + y ** 2) / z)
-        elif z < 0:
-            raise NotImplementedError('Not done yet')
-        elif (z == 0) and (np.sqrt(x ** 2 + y ** 2) != 0):
-            elev = np.pi / 2
-
-        elev = np.pi / 2 - elev
-
-        if x > 0:
-            az = np.arctan(y / x)
-        elif (x < 0) and (y >= 0):
-            az = np.arctan(y / x) + np.pi
-        elif (x < 0) and (y < 0):
-            az = np.arctan(y / x) - np.pi
-        elif (x == 0) and (y > 0):
-            az = np.pi / 2
-        elif (x == 0) and (y < 0):
-            az = -np.pi / 2
-        elif (x == 0) and (y == 0):
-            az = np.nan
-
-        return az, elev
-
-
     N = reinhart_num_total
     fhs = fibonacci_half_sphere(N)
 
-    azimuts = []
-    elevations = []
+    # cart_to_sph returns (azimuth, zenith angle), both in radians
+    azimuths_trig = []
+    zeniths = []
     for xyz in fhs:
         x, y, z = xyz
-        # NB: cart_to_sph returns (azimuth, zenith angle), so the second value is a
-        # zenith angle despite the variable name kept here.
-        az, elev = cart_to_sph(x, y, z, frame=TRIGONOMETRIC)
-        azimuts.append(az)
-        elevations.append(elev)
+        az_trig, zenith = cart_to_sph(x, y, z, frame=TRIGONOMETRIC)
+        azimuths_trig.append(az_trig)
+        zeniths.append(zenith)
 
-    azimuts[0] = 0
+    azimuths_trig[0] = 0
+    elevations = 90 - np.degrees(zeniths)  # [deg] to compare against the 'el' column
 
     #  Plot vs Fibonacci half sphere
     fig = plt.figure()
 
     plt.plot(reinhart_patches['az'], reinhart_patches['el'], 'x', label='Reinhart')
-    plt.plot(np.degrees(azimuts)+180, np.degrees(elevations), '+', label='Fibonacci hs')
+    plt.plot(np.degrees(azimuths_trig)+180, elevations, '+', label='Fibonacci hs')
 
     plt.xlabel('Azimuth [°]')
     plt.ylabel('Elevation [°]')
