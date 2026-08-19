@@ -159,7 +159,7 @@ Still in circulation. Resolve them here rather than guessing:
 | `Z`, `Z_s` | `CIEStandardSky` | zenith angle / degrees |
 | `CentralAzimut` | YAML input | compass / degrees |
 | `TerrainSlopeAspect` | YAML input | compass / degrees, downhill direction |
-| `azimuth_diff` | `LenticularDiffuser.__init__` | **trap**: the argument is a compass azimuth in degrees, the attribute stores a trigonometric angle in radians |
+| `azimuth_diff` | previously `Diffuser.__init__` / `LenticularDiffuser.__init__` | resolved (issue #261): the input is now named `az_compass_deg`, and the attribute it fed is `az_rotation_rad` -- a rotation angle, not an azimuth in either frame, same pattern as `zone_azimut` below |
 | `zone_azimut` | `Mesh.set_interest_zone_orientation` | a counterclockwise *rotation angle*, i.e. a negated compass azimuth — not an azimuth |
 
 ## YAML inputs
