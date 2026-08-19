@@ -226,11 +226,11 @@ class LenticularDiffuser(Diffuser):
         Output:
             beta (nSolPos, Nvec): beta angle in radians
         """
-        plan_sun_lens = np.cross(vect_sun, self.lens_vector) # Plan (defined by its normal vector) build from the \
+        plane_sun_lens = np.cross(vect_sun, self.lens_vector) # Plane (defined by its normal vector) build from the \
                                                              # sun vector and the lens vector
         beta = np.arctan2(
-            np.dot(np.cross(plan_sun_lens, self.normal), self.lens_vector),
-            np.dot(plan_sun_lens, self.normal)
+            np.dot(np.cross(plane_sun_lens, self.normal), self.lens_vector),
+            np.dot(plane_sun_lens, self.normal)
         )
         beta_t = np.arange(-self.omega+angle_res/2, self.omega + angle_res/2, angle_res)
         beta = beta[:, np.newaxis] + beta_t
