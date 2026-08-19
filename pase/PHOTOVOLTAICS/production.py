@@ -19,7 +19,9 @@ class PV_Production:
         
         self.bifaciality = inputs['Bifaciality']
         self.bifaciality_factor = inputs['Bifaciality_factor']
-        self.azimut = inputs['CentralAzimut']*np.pi/180
+        # Compass azimuth of the central, in radians (0 = North, clockwise).
+        # See DOCUMENTATION/angle_conventions.md.
+        self.az_compass_rad = inputs['CentralAzimut']*np.pi/180
         panel_peak_power = inputs['Panel_Peak_Power']
         self.panel_area = inputs['PanelDimensionX']*inputs['PanelDimensionY']
         self.panel_efficiency = panel_peak_power/(self.panel_area*1000)
@@ -215,7 +217,7 @@ class PV_Production:
         panels_tilt_rad = np.zeros((len(sun_vect[:,0]),1))
         panels_tilt_rad[:,0] = tiltY*np.pi/180
         rotation_vector1 = panels_tilt_rad*rot_axis_init
-        rotation_vector2 = -self.azimut*zenith
+        rotation_vector2 = -self.az_compass_rad*zenith
         rotation1 = R.from_rotvec(rotation_vector1)
         rotation2 = R.from_rotvec(rotation_vector2)
         panels_normal = rotation2.apply(rotation1.apply(panels_normal_init))
@@ -286,11 +288,11 @@ class PV_Production:
         # rotation axis (see the previous framework to complete)
         sun_vect_CC = np.zeros((len(sun_vect[:,0]),3))
             
-        sun_vect_CC[:,0] = sun_vect[:,0]*np.cos(self.azimut)\
-            - sun_vect[:,1]*np.sin(self.azimut)                                               
+        sun_vect_CC[:,0] = sun_vect[:,0]*np.cos(self.az_compass_rad)\
+            - sun_vect[:,1]*np.sin(self.az_compass_rad)                                               
                                                      
-        sun_vect_CC[:,1] = sun_vect[:,0]*np.sin(self.azimut)\
-            + sun_vect[:,1]*np.cos(self.azimut)
+        sun_vect_CC[:,1] = sun_vect[:,0]*np.sin(self.az_compass_rad)\
+            + sun_vect[:,1]*np.cos(self.az_compass_rad)
                                                        
         sun_vect_CC[:,2] = sun_vect[:,2]
         

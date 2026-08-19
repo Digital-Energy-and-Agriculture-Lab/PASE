@@ -8,7 +8,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
-from pase.conversion_functions import sph_to_cart
+from pase.conversion_functions import TRIGONOMETRIC, sph_to_cart
 from pase.ENVIRONMENT.sky_model import ReinhartSky
 
 logger = logging.getLogger(__name__)
@@ -276,9 +276,14 @@ def plot_3D(sky, rel_lum):
     grid_scalar.cell_data["Luminance relative to zenith"] = np.array(
         rel_lum.reshape(az_meshgrid.shape)).swapaxes(-2, -1).ravel("C")
 
-    # Prepare the Sun
-    xyz_sun = sph_to_cart('deg', azimut=az_s, elev=el_s, zenith_angle=None,
-                          dist=RADIUS)
+    # Prepare the Sun.
+    # pv.grid_from_sph_coords above reads its first argument as a longitude
+    # measured counterclockwise from +x, and it is fed the compass 'az' column, so
+    # the whole picture sits in the trigonometric frame. The Sun is placed in that
+    # same frame to stay consistent with the grid: the plot is therefore mirrored
+    # with respect to true compass headings, but internally coherent.
+    xyz_sun = sph_to_cart('deg', azimuth=az_s, elev=el_s, zenith_angle=None,
+                          dist=RADIUS, frame=TRIGONOMETRIC)
     sun_mesh = pv.Sphere(radius=RADIUS / 20, center=xyz_sun)
 
     # Make a plot

@@ -11,7 +11,8 @@ from matplotlib import pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
 
-from pase.conversion_functions import sph_to_cart
+from pase.conversion_functions import (TRIGONOMETRIC, cart_to_sph,
+                                       compass_to_unit_vector)
 
 VERBOSE = False
 compare_fhs = False
@@ -172,9 +173,9 @@ sum_solid_angles_div_pi = sum_solid_angles/np.pi
 print(f'Sum of solid angles = {sum_solid_angles_div_pi:.4g} * pi')
 
 # Compute xyz coords on a unit sphere (actually half sphere since it's the sky dome)
-reinhart_patches['x'], reinhart_patches['y'], reinhart_patches['z'] = sph_to_cart(units='deg',
-                                                                                  azimut=reinhart_patches['az'],
-                                                                                  elev=reinhart_patches['el'])
+reinhart_patches['x'], reinhart_patches['y'], reinhart_patches['z'] = compass_to_unit_vector(
+    az_compass_deg=reinhart_patches['az'],
+    el_deg=reinhart_patches['el'])
 
 if compare_fhs:
     # Compare with Fibonacci half sphere
@@ -199,52 +200,26 @@ if compare_fhs:
         return np.column_stack([xp, zp, yp])
 
 
-    def cart_to_sph(x, y, z):
-        r = np.sqrt(x ** 2 + y ** 2 + z ** 2)
-
-        if z > 0:
-            elev = np.arctan((x ** 2 + y ** 2) / z)
-        elif z < 0:
-            raise NotImplementedError('Not done yet')
-        elif (z == 0) and (np.sqrt(x ** 2 + y ** 2) != 0):
-            elev = np.pi / 2
-
-        elev = np.pi / 2 - elev
-
-        if x > 0:
-            az = np.arctan(y / x)
-        elif (x < 0) and (y >= 0):
-            az = np.arctan(y / x) + np.pi
-        elif (x < 0) and (y < 0):
-            az = np.arctan(y / x) - np.pi
-        elif (x == 0) and (y > 0):
-            az = np.pi / 2
-        elif (x == 0) and (y < 0):
-            az = -np.pi / 2
-        elif (x == 0) and (y == 0):
-            az = np.nan
-
-        return az, elev
-
-
     N = reinhart_num_total
     fhs = fibonacci_half_sphere(N)
 
-    azimuts = []
-    elevations = []
+    # cart_to_sph returns (azimuth, zenith angle), both in radians
+    azimuths_trig = []
+    zeniths = []
     for xyz in fhs:
         x, y, z = xyz
-        az, elev = cart_to_sph(x, y, z)
-        azimuts.append(az)
-        elevations.append(elev)
+        az_trig, zenith = cart_to_sph(x, y, z, frame=TRIGONOMETRIC)
+        azimuths_trig.append(az_trig)
+        zeniths.append(zenith)
 
-    azimuts[0] = 0
+    azimuths_trig[0] = 0
+    elevations = 90 - np.degrees(zeniths)  # [deg] to compare against the 'el' column
 
     #  Plot vs Fibonacci half sphere
     fig = plt.figure()
 
     plt.plot(reinhart_patches['az'], reinhart_patches['el'], 'x', label='Reinhart')
-    plt.plot(np.degrees(azimuts)+180, np.degrees(elevations), '+', label='Fibonacci hs')
+    plt.plot(np.degrees(azimuths_trig)+180, elevations, '+', label='Fibonacci hs')
 
     plt.xlabel('Azimuth [°]')
     plt.ylabel('Elevation [°]')

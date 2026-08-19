@@ -79,6 +79,27 @@ Each YAML parameter has `Type/Value/Limits/Unit/Definition` fields. `InputsEvalu
 - Unit tests rely on pytest only (no unittest)
 - No lazy imports for common libraries, OK for optional backends 
 
+### Angles
+
+Normative reference: `DOCUMENTATION/angle_conventions.md`. Read it before touching any
+angle. The short version:
+
+- World frame: East = X, North = Y, Zenith = Z.
+- Two azimuth frames, always named: **compass** (0 = North, clockwise, `(sin A, cos A)`) and
+  **trigonometric** (0 = East, counterclockwise, `(cos A, sin A)`). `az_trig = 90 - az_compass`,
+  a reflection — so NE and SW are fixed points and a test with the sun there is blind.
+- Name frame-bearing angles `<quantity>_<frame>_<unit>` (`az_compass_deg`); others
+  `<quantity>_<unit>` (`el_deg`, `tilt_deg`). Never a bare `az` / `azimuth` in a public
+  signature or a dataframe column, and never the French spelling `azimut`.
+- Cross frames only through the helpers in `pase/conversion_functions.py`
+  (`compass_to_unit_vector`, `unit_vector_to_compass_deg`, `compass_to_trig`), never with
+  inline arithmetic. `sph_to_cart` / `cart_to_sph` require a keyword-only `frame=`.
+- Rotating a scene *by* a compass azimuth is `rotate_z(-A)`, a sign flip — not the `90 - A`
+  relabelling. Do not confuse them.
+- Witness angles with **absolute** assertions (north → `(0,1,0)`), never round-trips alone:
+  a round-trip is satisfied by both frames, which is how issue 300 survived. See
+  `tests/test_angle_conventions.py`.
+
 ## Remote Repo & Branching
 
 - PASE is hosted on a GitLab repository; use `glab` to access the repository (e.g. list issues, read or write an issue, etc.)

@@ -38,13 +38,13 @@ class Mesh:
     centers, normals, and areas for any registered mesh.
     """
 
-    def __init__(self, default_azimut: float = 0.0) -> None:
+    def __init__(self, default_zone_az_trig_deg: float = 0.0) -> None:
         self.meshes = pv.MultiBlock()
         self.metadata = pd.DataFrame(
             columns=["id", "name", "type", "parameters"], dtype=object
         )
-        # Default orientation of the interest zone ("zone_azimut")
-        self.default_azimut = default_azimut
+        # Default orientation of the interest zone ("zone_az_trig_deg")
+        self.default_zone_az_trig_deg = default_zone_az_trig_deg
 
     # ======================================================================
     # Public API
@@ -131,7 +131,7 @@ class Mesh:
     ) -> int:
         """Create an azimuth-oriented rectangular ground surface.
 
-        This method preserves the ``zone_azimut`` concept: when no azimuth is
+        This method preserves the ``zone_az_trig_deg`` concept: when no azimuth is
         provided, the default orientation defined for the interest zone is used.
         The ``X_increment`` and ``Y_increment`` parameters are converted into a
         minimum density to generate the mesh.
@@ -144,7 +144,7 @@ class Mesh:
             match the ground plane at the mesh center.
         """
 
-        azimuth_to_use = self.default_azimut if azimuth_deg is None else azimuth_deg
+        azimuth_to_use = self.default_zone_az_trig_deg if azimuth_deg is None else azimuth_deg
 
         width = X_max - X_min
         height = Y_max - Y_min
@@ -287,13 +287,21 @@ class Mesh:
     def set_interest_zone_orientation(
         self, Loc_1: Dict[str, object], AV_1: Dict[str, object]
     ) -> float:
-        """Define the default orientation (zone_azimut) of the interest zone.
+        """Define the default orientation (zone_az_trig_deg) of the interest zone.
 
         Modes available in ``Loc_1['InterestZoneOrientationMode']``:
 
         - ``default``: azimuth = 0°
         - ``auto``: azimuth = ``AV_1['CentralAzimut']``
         - ``custom``: azimuth = ``Loc_1['InterestZoneCustomAngle']``
+
+        Both inputs are **compass** azimuths (0 = North, positive clockwise). The
+        value returned is a **trigonometric** azimuth (0 = East, positive
+        counterclockwise): the negated compass value, which
+        ``add_oriented_plane_ground_mesh`` turns into the zone's reference
+        direction as ``(cos, sin)``. The zone's width therefore runs along compass
+        heading ``90 + CentralAzimut``, i.e. across the rows, which is the
+        direction the panels face. See DOCUMENTATION/angle_conventions.md.
         """
 
         try:
@@ -304,16 +312,16 @@ class Mesh:
 
         mode_lower = mode.lower()
         if mode_lower == "default":
-            zone_azimut = 0.0
+            zone_az_trig_deg = 0.0
         elif mode_lower == "auto":
-            zone_azimut = -float(AV_1["CentralAzimut"])
+            zone_az_trig_deg = -float(AV_1["CentralAzimut"])
         elif mode_lower == "custom":
-            zone_azimut = -float(custom_angle)
+            zone_az_trig_deg = -float(custom_angle)
         else:
             raise ValueError(f"Unknown InterestZoneOrientationMode: {mode}")
 
-        self.default_azimut = zone_azimut
-        return zone_azimut
+        self.default_zone_az_trig_deg = zone_az_trig_deg
+        return zone_az_trig_deg
 
     def add_polydata(
         self,

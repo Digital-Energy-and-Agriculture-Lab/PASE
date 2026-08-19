@@ -164,7 +164,7 @@ class TestSetInterestZoneOrientation:
             {"CentralAzimut": 45.0},
         )
         assert result == 0.0
-        assert mesh.default_azimut == 0.0
+        assert mesh.default_zone_az_trig_deg == 0.0
 
     def test_auto_mode_negates_central_azimut(self):
         """'auto' mode must return the negation of AV_1['CentralAzimut']."""
@@ -174,7 +174,7 @@ class TestSetInterestZoneOrientation:
             {"CentralAzimut": 30.0},
         )
         assert result == -30.0
-        assert mesh.default_azimut == -30.0
+        assert mesh.default_zone_az_trig_deg == -30.0
 
     def test_custom_mode_negates_custom_angle(self):
         """'custom' mode must return the negation of InterestZoneCustomAngle."""
@@ -184,7 +184,7 @@ class TestSetInterestZoneOrientation:
             {"CentralAzimut": 0.0},
         )
         assert result == -120.0
-        assert mesh.default_azimut == -120.0
+        assert mesh.default_zone_az_trig_deg == -120.0
 
     def test_mode_is_case_insensitive(self):
         """Mode string comparison must be case-insensitive."""
