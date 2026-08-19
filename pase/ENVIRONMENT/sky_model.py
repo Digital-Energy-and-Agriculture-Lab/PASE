@@ -21,7 +21,7 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
 
-from pase.conversion_functions import compass_to_unit_vector
+from pase.conversion_functions import compass_to_trig, compass_to_unit_vector
 from pase.paths import static_data_path
 
 logger = logging.getLogger(__name__)
@@ -442,8 +442,8 @@ class ReinhartSky:
         #value should be a flattened array of size N, N = number of patches
         # The direction labels below read as compass headings (0 deg up, 90 deg
         # right), while subpatch_polygon places its polygons by trigonometric
-        # angle (0 deg right, positive counterclockwise): hence 90 - az.
-        az = 90 - np.asarray(self.reinhart_patches['az'])
+        # angle (0 deg right, positive counterclockwise), hence the conversion.
+        az_trig_deg = np.asarray(compass_to_trig(self.reinhart_patches['az']))
         el = np.asarray(self.reinhart_patches['el'])
         daz = np.asarray(self.reinhart_patches['d_az'])
         del_ = np.asarray(self.reinhart_patches['d_el'])
@@ -461,7 +461,7 @@ class ReinhartSky:
 
         for k in range(N):
 
-            azc = az[k]
+            azc = az_trig_deg[k]
             elc = el[k]
 
             AZ = np.array([azc - daz[k] / 2,
