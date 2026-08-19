@@ -103,7 +103,7 @@ discrete_sky = ReinhartSky(MF=Loc_1['MF']).reinhart_patches
 
 # Computation of sun and light data
 Light_instance = Light(WD.nyears_data, Sun_positions_complete, Loc_1['DiffuseSkyType'])
-Diffuser = LenticularDiffuser(PV_params_dict['LensAzimuth'], AV_1['CentralAzimut'], PV_params_dict['TiltY'],
+Diffuser = LenticularDiffuser(PV_params_dict['LensDirectionAngle'], AV_1['CentralAzimut'], PV_params_dict['TiltY'],
                               omega=PV_params_dict['half_aperture_angle'],
                               res=PV_params_dict['Resolution'])
 
