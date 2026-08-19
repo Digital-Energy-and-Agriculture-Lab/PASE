@@ -184,7 +184,7 @@ class LenticularDiffuser(Diffuser):
         l = rotation_coordinate(l, np.array([0, 0, 1]), self.azimuth_lens)
         l = rotation_coordinate(l, np.array([0, 1, 0]), self.tilt_rad)
         l = rotation_coordinate(l, np.array([0, 0, 1]), self.az_rotation_rad)
-        self.lens_vector = l[:, 0,0]
+        self.lens_vector = l[:, 0,0]  # the vector parallel to the axis of the lens (in the diffuser plane)
         self.normal =l[:,1,0]
         self.res=res
 
