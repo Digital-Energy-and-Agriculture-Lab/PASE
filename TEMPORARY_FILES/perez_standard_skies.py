@@ -8,8 +8,8 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
-from MODULES.conversion_functions import sph_to_cart
-from MODULES.ENVIRONMENT.sky_model import ReinhartSky
+from pase.conversion_functions import sph_to_cart
+from pase.ENVIRONMENT.sky_model import ReinhartSky
 
 logger = logging.getLogger(__name__)
 logger.setLevel('DEBUG')

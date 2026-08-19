@@ -3,6 +3,11 @@
 *.egg-info
 .coverage
 
+# Build artifacts (wheel/sdist + setuptools-scm generated version file)
+dist/
+build/
+pase/_version.py
+
 # pytest
 .coverage
 htmlcov/*
@@ -43,3 +48,7 @@ TEMPORARY_FILES/
 
 # Claude Code user-local settings (never commit)
 .claude/settings.local.json
+.claude/
+
+# Local development scratch scripts (not part of the distribution)
+dev_script_outputs_manager.py

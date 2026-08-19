@@ -77,7 +77,7 @@ Each YAML parameter has `Type/Value/Limits/Unit/Definition` fields. `InputsEvalu
 - No bare `except:`
 - American English only (code, comments, commits) — no other languages
 - Unit tests rely on pytest only (no unittest)
-- No lazy imports
+- No lazy imports for common libraries, OK for optional backends 
 
 ## Remote Repo & Branching
 
@@ -95,6 +95,10 @@ Each YAML parameter has `Type/Value/Limits/Unit/Definition` fields. `InputsEvalu
 
 - NEVER push without explicit permission. Always ask before any git working-tree operation (commit, stash, shelve, push, pull, merge, reset).
 - Store working documents (plans, specs, notes) under a working subdirectory (e.g. `.claude/`) to avoid cluttering the project root.
+- When writing a plan, mind the use of # symbol:
+  - in markdown, it sometimes designates a header
+  - on Gitlab, it references issues
+  - make sure there is no conflict between the 2 ; typically a leading space helps avoid unwanted headers in the text (which break export to PDF and md rendering in some cases)
 - When using plan mode, when the plan is finalized, save it as a `.md` file in the working subdirectory with an explicit name for further reference
 
 ## Test-Driven Development
@@ -108,7 +112,7 @@ When writing code, adopt a test-driven development cycle:
 ## Writing Commit Messages
 
 The standard commit structure is:
-- a title line with the type of commit in square brackets, e.g. `[feature]`
+- a title line with the type of commit in square brackets, e.g. `[feature]`. Accepted categories are: feature, fix, chore, cleanup, refactor, docs, doc, style, test, perf, ci, build, revert
 - followed by a blank line
 - followed by the body of the commit message
 
@@ -117,5 +121,7 @@ The message should inform on:
 - why it was done
 
 Flag agent-assisted commits with a `Co-Authored-By:` trailer so the reviewer can stay vigilant and not accept nice-looking code without analyzing it in depth.
+
+Mention the associated issue number in the trailer, with the issue marker (e.g.: "#248")
 
 Write the commit message to a `commit.txt` file in the working subdirectory so it can be copy/pasted into the IDE's commit text box.

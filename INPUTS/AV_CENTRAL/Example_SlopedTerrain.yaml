@@ -1,23 +1,23 @@
 NumberOfPanelsX:
-   Value: 2
+   Value: 1
    Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
    Definition: Number of panels on the x axis in one block of panels (x axis being the second potential axis of rotation of the block of panels)
 NumberOfPanelsY:
-   Value: 8
+   Value: 5
    Type: integer
    Limit: [1, 1000]
    Unit: dimensionless [-]
    Definition: Number of panels on the y axis in one block of panels
 RepetitionDistanceOfPanelsX:
-   Value: 1.5
+   Value: 1.31
    Type: float
    Limit: [0, 100]
    Unit: meters [m]
    Definition: Length between the repetition of 2 panels on the x axis of one block of panels
 RepetitionDistanceOfPanelsY:
-   Value: 3.4
+   Value: 2.5
    Type: float
    Limit: [0, 100]
    Unit: meters [m]
@@ -29,7 +29,7 @@ RotationAxisNumber:
    Unit: dimensionless [-]
    Definition: Number of rotation axis that drive the block of panels
 TiltY:
-   Value: 35
+   Value: 0
    Type: float
    Limit: [-80, 80]
    Unit: degree [°]
@@ -76,3 +76,15 @@ CentralAzimut:
    Limit: [0,360]
    Unit: degrees [°]
    Definition: Rotation angle of the central around the z axis. 0 is N ; 90 is E ; 180 is S ; 270 is W
+TerrainSlopeAngle:
+   Value: 10
+   Type: float
+   Limit: [0, 60]
+   Unit: degrees [°]
+   Definition: The slope of the ground relative to the horizontal. 0 indicates flat ground; positive values indicate a downward slope. The bases of the posts are adjusted to match the ground elevation.
+TerrainSlopeAspect:
+   Value: 180
+   Type: float
+   Limit: [0, 360]
+   Unit: degrees [°]
+   Definition: Slope direction (direction of descent), meteorological convention. 0 is N; 90 is E; 180 is S; 270 is W

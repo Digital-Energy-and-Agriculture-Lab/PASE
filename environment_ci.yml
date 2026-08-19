@@ -6,6 +6,7 @@ dependencies:
   - conda
   - conda-libmamba-solver
   - pip
+  - git  # needed at build time: setuptools-scm shells out to git to derive the version
   - numpy
   - matplotlib-base
   - pandas
@@ -25,3 +26,5 @@ dependencies:
   - yaml
   - pytest==9.0.2
   - pytest-cov
+  - rasterio
+  - pyproj

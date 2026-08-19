@@ -19,15 +19,10 @@ import os
 import pandas as pd
 from pathlib import Path
 from matplotlib import pyplot as plt
-import matplotlib
 from matplotlib.patches import Polygon
-if os.environ.get("CI") == "true":
-    matplotlib.use('Agg')
-else:
-    matplotlib.use('TkAgg')
-
 
 from pase.conversion_functions import sph_to_cart
+from pase.paths import static_data_path
 
 logger = logging.getLogger(__name__)
 _CIE_STANDARD_SKIES = None
@@ -66,15 +61,8 @@ def _load_standard_skies() -> pd.DataFrame:
     """
     global _CIE_STANDARD_SKIES
     if _CIE_STANDARD_SKIES is None:
-        if '__file__' in globals():
-            pase_dir_path = Path(__file__).parents[2]
-        else:  # Assuming current dire is pase root directory.
-            pase_dir_path = Path('.')
-
-        _CIE_STANDARD_SKIES = pd.read_csv(os.path.join(pase_dir_path,
-                                                       'INPUTS',
-                                                       'CIE_standard_skies.csv')
-                                          )
+        _CIE_STANDARD_SKIES = pd.read_csv(
+            static_data_path('CIE_standard_skies.csv'))
     return _CIE_STANDARD_SKIES
 
 def fibonacci_half_sphere(samples=18):
@@ -355,13 +343,20 @@ class ReinhartSky:
     def get_patches_xyz(self):
         """
         Compute xyz coords of the sky patches on the sky dome (i.e. upper
-        half-sphere)
+        half-sphere), in the PASE world frame: East = X, North = Y, Zenith = Z.
+
+        The 'az' column holds compass azimuths (0 deg = North, positive clockwise
+        towards East), as read by the CIE radiance model and by the horizon mask.
+        sph_to_cart expects the trigonometric convention (0 deg = East, positive
+        counterclockwise), so the azimuth is converted here: az_trig = 90 - az.
+        Feeding the compass value in directly would place each patch at the
+        heading 90 - az, a reflection about the north-east diagonal (issue #300).
         """
 
         (self.reinhart_patches['x'],
          self.reinhart_patches['y'],
          self.reinhart_patches['z']) = sph_to_cart(units='deg',
-                                                   azimut=self.reinhart_patches['az'],
+                                                   azimut=90.0 - self.reinhart_patches['az'],
                                                    elev=self.reinhart_patches['el'])
 
     def compute_cos_zenith(self):
@@ -446,7 +441,10 @@ class ReinhartSky:
         - show_colorbar: Show colorbar (default: True) --> Boolean
         """
         #value should be a flattened array of size N, N = number of patches
-        az = np.asarray(-self.reinhart_patches['az']) +270
+        # The direction labels below read as compass headings (0 deg up, 90 deg
+        # right), while subpatch_polygon places its polygons by trigonometric
+        # angle (0 deg right, positive counterclockwise): hence 90 - az.
+        az = 90 - np.asarray(self.reinhart_patches['az'])
         el = np.asarray(self.reinhart_patches['el'])
         daz = np.asarray(self.reinhart_patches['d_az'])
         del_ = np.asarray(self.reinhart_patches['d_el'])
@@ -686,10 +684,139 @@ class CIEStandardSky:
         return rel_quantity
 
     def compute_rel_radiance(self, az=None, el=None):
+        """
+        Compute the radiance distribution relative to the zenith radiance.
+
+        :param az: sky azimuth angles [deg]. Defaults to the azimuths of the
+                   discrete sky passed at instantiation.
+        :type az: array of float or float or None
+        :param el: sky elevation angles [deg]. Defaults to the elevations of
+                   the discrete sky passed at instantiation.
+        :type el: array of float or float or None
+        :return: relative radiance [-], broadcast shape of az and el
+        """
         if self.sky_type == 5:
-            return np.ones_like(self.az)
+            # Sky of uniform luminance: no gradation, no scattering indicatrix
+            az_arr = self.az if az is None else np.asarray(az)
+            el_arr = self.el if el is None else np.asarray(el)
+            return np.ones(np.broadcast_shapes(np.shape(az_arr),
+                                               np.shape(el_arr)))
         rel = self.relative_radiance_fun(az=az, el=el)
         return rel
+
+    def get_sky_description(self) -> str:
+        """
+        Get the CIE description of the luminance distribution of the current
+        sky type.
+
+        :return: description of the sky type (empty string if unavailable)
+        """
+        col = 'Description of luminance distribution'
+        if col not in self.standard_skies.columns:
+            return ''
+        description = self.standard_skies.loc[
+            self.standard_skies['Type'] == self.sky_type, col]
+
+        return str(description.values[0]) if len(description) else ''
+
+    def plot_radiance_map(self, az_step=5.0, el_step=5.0, zenith_value=None,
+                          quantity='radiance', polar=True, colormap='jet',
+                          show_sun=True):
+        """
+        Plot a map of the radiance (or luminance) distribution of the current
+        CIE standard sky.
+
+        The distribution is evaluated on a regular azimuth-elevation grid,
+        i.e. independently from the sky discretization scheme held by the
+        instance. This gives a smooth reference picture of the model output,
+        useful to check the sky type parameters and the gradation/scattering
+        behavior against the CIE reference plots.
+
+        :param az_step: azimuth step of the plotting grid [deg]
+        :type az_step: float
+        :param el_step: elevation step of the plotting grid [deg]
+        :type el_step: float
+        :param zenith_value: absolute radiance [W/(m²⋅sr)] or luminance
+                             [cd/m²] at the zenith, used to scale the relative
+                             distribution. If None, the relative distribution
+                             is plotted.
+        :type zenith_value: float or None
+        :param quantity: 'radiance' or 'luminance'; only affects the labels
+        :type quantity: str
+        :param polar: plot on a polar projection (sky dome seen from the
+                      ground, North up and East right). Otherwise plot
+                      azimuth against zenith angle on cartesian axes.
+        :type polar: bool
+        :param colormap: name of the matplotlib colormap
+        :type colormap: str
+        :param show_sun: mark the Sun position on the map
+        :type show_sun: bool
+        :return:
+            - fig: matplotlib figure
+            - ax: matplotlib axes
+        """
+        if quantity not in ('radiance', 'luminance'):
+            raise ValueError("quantity must be 'radiance' or 'luminance', "
+                             f"received {quantity!r}")
+
+        # Regular grid covering the whole sky dome (bounds included)
+        az = np.arange(0.0, 360.0 + az_step, az_step)  # [deg]
+        el = np.arange(0.0, 90.0 + el_step, el_step)  # [deg]
+        az_grid, el_grid = np.meshgrid(az, el)
+
+        values = self.compute_rel_radiance(az=az_grid, el=el_grid)
+
+        if zenith_value is None:
+            clabel = f'Relative {quantity} [-]'
+        else:
+            values = values * zenith_value
+            unit = 'W/(m²⋅sr)' if quantity == 'radiance' else 'cd/m²'
+            clabel = f'{quantity.capitalize()} [{unit}]'
+
+        logger.debug(f'Sky type {self.sky_type}: {quantity} map spans '
+                     f'[{np.min(values):.4g}, {np.max(values):.4g}] '
+                     f'for a Sun at az={self.az_s}°, el={self.el_s}°')
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, polar=polar)
+
+        # The radial (or vertical) coordinate is the zenith angle, so that the
+        # zenith sits at the center of the polar plot
+        mesh = ax.pcolormesh(np.deg2rad(az) if polar else az,
+                             90.0 - el,
+                             values,
+                             cmap=colormap)
+
+        if polar:
+            # North at the top, East to the right
+            ax.set_theta_zero_location('N')
+            ax.set_theta_direction(-1)
+        else:
+            ax.set_xlabel('Azimuth [deg]')
+            ax.set_ylabel('Zenith angle [deg]')
+            # Zenith on top, horizon at the bottom
+            ax.invert_yaxis()
+
+        cbar = fig.colorbar(mesh, ax=ax)
+        cbar.set_label(clabel)
+
+        if show_sun:
+            ax.plot(np.deg2rad(self.az_s) if polar else self.az_s,
+                    90.0 - self.el_s,
+                    'ro', markeredgecolor='yellow', label='Sun position')
+            if polar:
+                # Keep the legend clear of the sky dome
+                ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05))
+            else:
+                ax.legend(loc='upper right')
+
+        ax.set_title(f'CIE standard sky type {self.sky_type}\n'
+                     f'{self.get_sky_description()}',
+                     fontsize=10)
+
+        fig.tight_layout()
+
+        return fig, ax
 
 
 if __name__ == '__main__':
@@ -712,10 +839,12 @@ if __name__ == '__main__':
 
         if MF < 8:
             sky.scatter_2D(text_id=text_id)
-            sky.scatter_3D(text_id=text_id)
+            # sky.scatter_3D(text_id=text_id)
 
-    sky.reinhart_patches['Relative radiance distribution'] = CIEStandardSky(sky.reinhart_patches,
-                               sun_az=147.67, sun_el=38.02, sky_type=15).rel_radiance_distribution
+
+    cie_sky = CIEStandardSky(sky.reinhart_patches,
+                             sun_az=147.67, sun_el=38.02, sky_type=15)
+    sky.reinhart_patches['Relative radiance distribution'] = cie_sky.rel_radiance_distribution
 
     DHI = 100  # [W/m²] arbitrary value for example's sake
     integral_rel_sky_radiance = (sky.reinhart_patches['Relative radiance distribution']
@@ -723,4 +852,13 @@ if __name__ == '__main__':
     zenith_radiance = DHI/integral_rel_sky_radiance
     sky.reinhart_patches['Absolute radiance distribution'] = (sky.reinhart_patches['Relative radiance distribution']
                                                               * zenith_radiance)
+    fig, ax = sky.patch_plot_value(sky.reinhart_patches['Absolute radiance distribution'])
 
+    # Continuous radiance map, independent of the discretization scheme, to
+    # check the sky type parameters and the radiance distribution model
+    cie_sky.plot_radiance_map(zenith_value=zenith_radiance,
+                              quantity='radiance',
+                              polar=True,
+                              colormap='jet')
+
+    plt.show()

@@ -21,6 +21,7 @@ import pase.conversion_functions as cf
 from pase.DATA_MANAGEMENT.visualization_in_3D import open_pyvista_3D_visualization
 from pase.ENVIRONMENT.sky_model import ReinhartSky, fibonacci_half_sphere
 from pase.ENVIRONMENT.sky_model import CIEStandardSky
+from pase.paths import static_data_path
 from pase.user_support_tools import PASE_Logger
 from pase.ENVIRONMENT.shading import Horizon
 from pase.DATA_MANAGEMENT.visualization_in_3D import compute_ground_extent
@@ -174,8 +175,8 @@ class Light:
 
         self.data = {}
         self.daily_sky_type = {}
-        sky_type_lut_path = os.path.join('INPUTS', 'Igawa-5_sky_types_lut.csv')
-        self.sky_type_lut = pd.read_csv(sky_type_lut_path, sep=';')
+        self.sky_type_lut = pd.read_csv(
+            static_data_path('Igawa-5_sky_types_lut.csv'), sep=';')
 
         for year in WD.keys():
             
@@ -1175,25 +1176,48 @@ class Ray_casting_scene:
         sky_type = df['CIE Sky Type'].to_numpy()  # (T,)
         T = dhi.shape[0]
 
-        outs = [self.get_shaded_radiance_contrib(az[i], el[i], sky_type[i]) for i in range(T)]
+        # The shading mask is constant over the day (no tracking) or indexed by
+        # orientation (tracking); only the relative sky radiance rd_t varies per
+        # instant. We therefore accumulate matrix-vector products instead of
+        # materializing the full (nSourcePoints x nSkyPatches) array T times via
+        # get_shaded_radiance_contrib. This is a pure re-association of the sum,
+        # so the result is identical (see tests/ENVIRONMENT/test_diff_irradiation_perf.py).
+        self.get_diffuse_shaded_weights_map()
+        mask = self.diffuse_shaded_weights_map
 
-        # Determine if outputs are 2D or 3D per-time and stack appropriately
-        if outs[0].ndim == 2:  # No tracking
-            stacked = np.stack(outs, axis=0)   # (T, M, P) if each out is (M,P)
-            weighted = stacked * dhi[:, None, None]
-            diff_irradiance_map = weighted.sum(axis=(0,2))  # returns (nSourcePoints,) ndarray
-        elif outs[0].ndim == 3:  # ndim==3; Tracking active
+        # Relative sky radiance per instant: small (nSkyPatches,) vectors.
+        rds = [CIEStandardSky(self.discrete_sky, az[i], el[i], sky_type[i])
+               .rel_radiance_distribution.astype(mask.dtype, copy=False)
+               for i in range(T)]
+
+        if type(self.geometry) != list and mask.ndim == 2:
+            # No tracking, with panels: mask (M, P) is constant -> one matmul.
+            # Normalize each instant by its sky integral, as in
+            # get_shaded_radiance_contrib (sky-type-dependent integral).
+            norm = np.asarray(self.normalized_diffuse_weights_map, dtype=mask.dtype)
+            w = np.zeros(mask.shape[1], dtype=mask.dtype)
+            for i in range(T):
+                w += (dhi[i] / (rds[i] * norm).sum()) * rds[i]
+            diff_irradiance_map = mask @ w  # (nSourcePoints,)
+        elif type(self.geometry) == list and mask.ndim == 3:
+            # Tracking: at instant i only the slice indices[i] of the 3D mask
+            # (nSourcePoints, nSunPositions, nSkyPatches) is used.
             if indices is None:
                 raise ValueError("indices required")
-            stacked = np.stack(outs, axis=0)   # (nHours, nSourcePoints, nSunPositions, Nskypatches) ; nHours is the number of hours with sunlight during the day that is being computed
-            t_idx = np.arange(T)
-            selected = stacked[t_idx, :, indices, :]
-            weighted = selected * dhi[:, None, None]
-            diff_irradiance_map = weighted.sum(axis=(0, 2))
-        elif outs[0].ndim == 1: # for unity benchmarking case (only ?)
+            k = np.asarray(indices)
+            diff_irradiance_map = np.zeros(mask.shape[0], dtype=mask.dtype)
+            for i in range(T):
+                diff_irradiance_map += dhi[i] * (mask[:, k[i], :] @ rds[i])
+        else:
+            # No panels (mask.ndim == 1) or unit-benchmarking case: keep the
+            # original per-instant path (get_shaded_radiance_contrib does not
+            # normalize by the sky integral in these cases).
+            outs = [self.get_shaded_radiance_contrib(az[i], el[i], sky_type[i])
+                    for i in range(T)]
             stacked = np.stack(outs, axis=0)
             weighted = stacked * dhi[:, None, None]
-            diff_irradiance_map = weighted.sum(axis=-1)
+            diff_irradiance_map = (weighted.sum(axis=(0, 2)) if stacked.ndim >= 3
+                                   else weighted.sum(axis=-1))
 
         diff_irradiance_map_MJ_m2 = diff_irradiance_map * 3600.0 * 1e-6 / n_freq
         return diff_irradiance_map_MJ_m2  # shape (nSourcePoints,)

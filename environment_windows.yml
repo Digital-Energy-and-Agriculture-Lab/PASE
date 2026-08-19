@@ -26,3 +26,5 @@ dependencies:
   - pytest-cov
   - xmltodict
   - unidecode
+  - rasterio
+  - pyproj

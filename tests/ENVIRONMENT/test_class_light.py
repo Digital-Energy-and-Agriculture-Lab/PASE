@@ -9,6 +9,9 @@ Created on Tue Sep 23 11:20:22 2025
 import numpy as np
 import pytest
 
+# Both tests use the session-scoped light_fixture, which fetches from PVGIS.
+pytestmark = pytest.mark.network
+
 
 def test_get_anisotropy_index(light_fixture):
     rad_top_atm = np.array([0, 0, 0, 52.01, 215.54, 453.69, 273.43, 127.08, 0, 0, 0])

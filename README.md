@@ -13,6 +13,27 @@ Visit regularly to access the most up-to-date versions.
 
 ## Installation
 
+### Install with pip
+
+PASE is published on PyPI as **`pase-agrivoltaics`** — note the distribution name
+differs from the import name (as with `scikit-learn` / `sklearn`):
+
+```bash
+pip install pase-agrivoltaics
+```
+
+```python
+import pase
+```
+
+This installs the core library: the PV, light and environment modules, plus the
+pure-Python **SIMPLE** and **GRASSIM** crop models. The **STICS** and
+**CPlantBox** crop backends are not distributed on PyPI (they rely on external
+tools) and are set up separately. To run the bundled **examples and notebooks**,
+or for a full development environment, use the conda setup below — it also brings
+the repository's `INPUTS/` and example scripts.
+
+### Install with conda
 > **⚠ Breaking change (issue [#256](https://gitlab.uliege.be/deal-public/pase/-/issues/256), July 2026):** the conda environment files were rebuilt: Python `3.10` → `3.12`, `pyembree` replaced by `embreex`, and the `pyvista`/`vtk`/`pvlib`/`trimesh` pins were updated. This pulls in pandas 2.2+, which removed the uppercase `"H"` hourly frequency alias in favor of lowercase `"h"`. **If your own scripts or notebooks call PASE functions with `freq="H"`** (e.g. weather-data resampling) **or use pandas directly with `"H"`**, update them to `freq="h"` or they will error after rebuilding your environment. See the wiki's [Installation](https://gitlab.uliege.be/deal-public/pase/-/wikis/documentation/installation) page for full details.
 
 The repository provides environment files for setting up a conda virtual environment with all necessary dependencies. There are two separate files:
@@ -20,7 +41,7 @@ The repository provides environment files for setting up a conda virtual environ
 - One for Windows users (`environment_windows.yml`)
 - One for Unix-based systems (macOS and GNU/Linux, such as Ubuntu, Debian, etc.) (`environment_unix.yml`)
 
-### Conda Installation
+
 
 If you haven’t installed Conda, we recommend following the [Conda installation guide](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html). Here are some options to consider:
 
