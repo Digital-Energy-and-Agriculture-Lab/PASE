@@ -1366,7 +1366,7 @@ class Ray_casting_scene:
         D = self.geometry.polydata_by_property(property_dict={'Type':['Diffuser']}).center_of_mass()
         plotter.add_lines(np.array([D, D+sun_P[Sun_P_map_to_visualize]]), color='yellow', width=1)
         plotter.add_lines(np.array([D, D + self.diffusers.normal]), color='black',width=1)
-        plotter.add_lines(np.array([D, D + self.diffusers.len_vector]), color = 'green', width = 1)
+        plotter.add_lines(np.array([D, D + self.diffusers.lens_vector]), color = 'green', width = 1)
         dr = 3*np.array([self.diffusers.x_sr[Sun_P_map_to_visualize, :],
                        self.diffusers.y_sr[Sun_P_map_to_visualize, :],
                        self.diffusers.z_sr[Sun_P_map_to_visualize, :],
