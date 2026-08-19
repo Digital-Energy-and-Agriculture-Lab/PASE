@@ -14,9 +14,8 @@ def test_LenticularDiffuser_configuration():
             lens.append([np.cos(np.radians(tij))*np.cos(np.radians(azi)), np.cos(np.radians(tij))*np.sin(np.radians(azi)), -np.sin(np.radians(tij))])
             normals.append([np.sin(np.radians(tij))*np.cos(np.radians(azi)), np.sin(np.radians(tij))*np.sin(np.radians(azi)), np.cos(np.radians(tij))])
     for i, D in enumerate(Diffusers):
-            assert np.isclose(np.sum(D.len_vector*D.normal), 0, rtol=1e-08)
-            print(D.len_vector, lens[i])
-            assert np.allclose(D.len_vector, lens[i], rtol=1e-08)
+            assert np.isclose(np.sum(D.lens_vector*D.normal), 0, rtol=1e-08)
+            assert np.allclose(D.lens_vector, lens[i], rtol=1e-08)
             assert np.allclose(D.normal, normals[i], rtol=1e-08)
 suns  = [np.array([i, j, 1]).reshape((1,3))/np.sqrt(i**2+j**2+1) for i in range(-1, 2, 1) for j in range(-1, 2, 1)] # some sun positions
 def test_LenticularDiffuser_beta_gamma():
@@ -27,11 +26,11 @@ def test_LenticularDiffuser_beta_gamma():
             print(sun)
             beta = D.get_beta_angle(sun, 0.1) # beta angle to validate
             gamma = D.get_gamma_angle(sun, 0.1) # gamma angle to validate
-            dot_gl = np.sum(sun*D.len_vector) # inner product between sun vector and len vector
-            cross_gl = np.array([sun[0,1]*D.len_vector[2] - sun[0,2]*D.len_vector[1], # cross product between sun vector
-                                 sun[0,2]*D.len_vector[0] - sun[0,0]*D.len_vector[2], # and len vector
-                                 sun[0,0]*D.len_vector[1] - sun[0,1]*D.len_vector[0]])
-            lenv = D.len_vector / np.linalg.norm(D.len_vector)
+            dot_gl = np.sum(sun*D.lens_vector) # inner product between sun vector and len vector
+            cross_gl = np.array([sun[0,1]*D.lens_vector[2] - sun[0,2]*D.lens_vector[1], # cross product between sun vector
+                                 sun[0,2]*D.lens_vector[0] - sun[0,0]*D.lens_vector[2], # and len vector
+                                 sun[0,0]*D.lens_vector[1] - sun[0,1]*D.lens_vector[0]])
+            lenv = D.lens_vector / np.linalg.norm(D.lens_vector)
             b = np.arctan2(
                 np.dot(np.cross(cross_gl, D.normal), lenv),
                 np.dot(cross_gl, D.normal)
