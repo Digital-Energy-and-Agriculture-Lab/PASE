@@ -50,6 +50,8 @@ import math
 import numpy as np
 import pyvista as pv
 
+from pase.conversion_functions import compass_to_unit_vector
+
 
 # ── Utility functions ─────────────────────────────────────────────────────────
 
@@ -208,19 +210,17 @@ class SlopedGround(Ground):
         terrain_normal_elevation: float,
         origin: tuple = (0.0, 0.0, 0.0),
     ):
-        az = math.radians(terrain_normal_azimuth)
-        # Internal tilt from horizontal = 90° − TerrainNormalElevation
-        t  = math.radians(90.0 - terrain_normal_elevation)
-        # The downhill direction is d = (sin(az), cos(az)).
-        # Elevation decreases in that direction at rate sin(t), so:
-        #   dz/dx = -sin(t)*sin(az),  dz/dy = -sin(t)*cos(az)
-        # The upward surface normal is proportional to (-dz/dx, -dz/dy, 1),
-        # normalized to unit length → (sin(az)*sin(t), cos(az)*sin(t), cos(t)).
-        self._normal = np.array([
-            math.sin(az) * math.sin(t),
-            math.cos(az) * math.sin(t),
-            math.cos(t),
-        ])
+        # terrain_normal_azimuth is a compass azimuth and equals the downhill
+        # direction d = (sin(az), cos(az)). Elevation decreases that way at rate
+        # cos(terrain_normal_elevation), so
+        #   dz/dx = -cos(el)*sin(az),  dz/dy = -cos(el)*cos(az)
+        # and the upward unit normal is (-dz/dx, -dz/dy, sin(el)) — which is just
+        # the compass direction (azimuth, elevation) as a unit vector.
+        # See DOCUMENTATION/angle_conventions.md.
+        self._normal = np.array(
+            compass_to_unit_vector(terrain_normal_azimuth,
+                                   el_deg=terrain_normal_elevation),
+            dtype=float)
         self._origin = np.array(origin, dtype=float)
 
     def elevation(self, x, y) -> float | np.ndarray:

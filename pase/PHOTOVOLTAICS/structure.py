@@ -50,7 +50,11 @@ def build_structure(config_dict, ground=None, x_center=0.0, y_center=0.0,
     y_center : float
         World Y coordinate of the block center (pre-rotation, used with ``ground``).
     azimuth_deg : float
-        CentralAzimut rotation applied after building (degrees, clockwise from North).
+        CentralAzimut rotation applied after building: a **compass** azimuth in
+        degrees, 0 = North, positive clockwise from North towards East (see
+        DOCUMENTATION/angle_conventions.md). The ``z_world`` helper below rotates
+        clockwise by it directly, which is why its matrix is the transpose of the
+        usual counterclockwise one.
         Used to compute terrain elevation at the correct post-rotation world positions.
     z_center : float, optional
         Reference Z elevation at which the block is anchored.  When omitted, it

@@ -31,7 +31,10 @@ logger = logging.getLogger(__name__)
 def get_sun_vector(beta, gamma):
     #Vectorial based system = {0,East=X, North=Y, Zenith=Z}
     #beta : sun elevation (from -90 to 90°), negative angle means it's night
-    #gamma : azimuth from north to east
+    #gamma : compass azimuth [deg], 0 = North, positive clockwise towards East
+    #        (see DOCUMENTATION/angle_conventions.md). Equivalent to
+    #        conversion_functions.compass_to_unit_vector, which is witnessed
+    #        against this function in tests/test_angle_conventions.py.
     gamma, beta = gamma*np.pi/180, beta*np.pi/180
     solar_vector = np.zeros((len(gamma),3))
     solar_vector[:,0]=np.sin(gamma)*np.cos(beta)
