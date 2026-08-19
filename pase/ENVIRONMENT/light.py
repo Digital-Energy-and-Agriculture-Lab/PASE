@@ -24,6 +24,7 @@ from pase.ENVIRONMENT.sky_model import CIEStandardSky
 from pase.paths import static_data_path
 from pase.user_support_tools import PASE_Logger
 from pase.ENVIRONMENT.shading import Horizon
+from pase.DATA_MANAGEMENT.visualization_in_3D import compute_ground_extent
 
 logger = logging.getLogger(__name__)
 
@@ -294,11 +295,9 @@ class Light:
         Ai[ind_ai_too_big] = 1
 
         if len(ind_ai_too_big[0]) > 5:
-            print(
-                "\u001B[38;5;208mWarning: BHI exceeds top of atmosphere "
-                "radiation {0} times : check weather data location and "
-                "input location coherence\u001B[0m".format(
-                str(len(ind_ai_too_big[0]))))
+            logger.warning(f"Warning: BHI exceeds top of atmosphere "
+                f"radiation at {len(ind_ai_too_big[0])} occurrences : check weather data location and "
+                "input location coherence.")
 
         return Ai
 
@@ -1344,10 +1343,11 @@ class Ray_casting_scene:
 
         plotter.add_mesh(self.geometry.polydata_by_property(property_dict={'Type':['PV']}), color='black')
         plotter.add_mesh(self.geometry.polydata_by_property(property_dict={'Type':['Diffuser']}), color='skyblue')
-        ground = np.array([[-200, 200, 0],
-                           [200, 200, 0],
-                           [-200, -200, 0],
-                           [200, -200, 0]])
+        x_min, x_max, y_min, y_max = compute_ground_extent(self.geometry.polydata_by_property(property_dict={'Type':['PV']}))
+        ground = np.array([[x_min, y_max, 0],
+                           [x_max, y_max, 0],
+                           [x_min, y_min, 0],
+                           [x_max, y_min, 0]])
 
         ground_m = np.hstack([[3, 0, 1, 2],
                               [3, 1, 2, 3], ])
@@ -1369,72 +1369,7 @@ class Ray_casting_scene:
         D = self.geometry.polydata_by_property(property_dict={'Type':['Diffuser']}).center_of_mass()
         plotter.add_lines(np.array([D, D+sun_P[Sun_P_map_to_visualize]]), color='yellow', width=1)
         plotter.add_lines(np.array([D, D + self.diffusers.normal]), color='black',width=1)
-        plotter.add_lines(np.array([D, D + self.diffusers.len_vector]), color = 'black', width = 1)
-        dr = 3*np.array([self.diffusers.x_sr[Sun_P_map_to_visualize, :],
-                       self.diffusers.y_sr[Sun_P_map_to_visualize, :],
-                       self.diffusers.z_sr[Sun_P_map_to_visualize, :],
-                       ])
-        dr = dr.T
-        N = dr.shape[0]
-        points = np.vstack([np.repeat(D[None, :], N, axis=0), D - dr])
-
-        lines = np.hstack([[2, i, i + N] for i in range(N)])
-        poly = pyV.PolyData(points, lines=lines)
-
-        plotter.add_mesh(poly, color='red', line_width=1)
-        plotter.show()
-
-    def visualize_diffuser_light_map(self, Sun_P_map_to_visualize, sun_P):
-        """
-        Open the visualization of the diffuser light map for a specific
-        tilt of the PV modules if there is a rotation axis
-        (corresponding to a sun position from the sun positions sampled vector)
-
-        Parameters
-        ----------
-        Sun_P_map_to_visualize : integer
-            id of the sun position in the sun positions sampled vector
-
-        Sun_P : array Nx3
-            sun positions sampled vector
-
-        Returns
-        -------
-        None.
-
-        """
-        labels = dict(zlabel='Z (ZENITH)', xlabel='X (EAST)', ylabel='Y (NORTH)')
-
-        plotter = pyV.Plotter()
-
-        plotter.add_mesh(self.geometry.polydata_by_property(property_dict={'Type':['PV']}), color='black')
-        plotter.add_mesh(self.geometry.polydata_by_property(property_dict={'Type':['Diffuser']}), color='skyblue')
-        ground = np.array([[-200, 200, 0],
-                           [200, 200, 0],
-                           [-200, -200, 0],
-                           [200, -200, 0]])
-
-        ground_m = np.hstack([[3, 0, 1, 2],
-                              [3, 1, 2, 3], ])
-
-        grnd = pyV.PolyData(ground, ground_m)
-
-        plotter.add_mesh(grnd, color='green')
-
-        plotter.add_axes(**labels)
-
-        plotter.add_mesh(self.sourcepoints[:, :],
-                         scalars=np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32),
-                         point_size=10,
-                         lighting=False,
-                         show_edges=False,
-                         scalar_bar_args={"title": 'Diffuser map'},
-                         clim=[np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32).min(),
-                               np.array(self.diffuser_map[Sun_P_map_to_visualize,:], dtype=np.float32).max()])
-        D = self.geometry.polydata_by_property(property_dict={'Type':['Diffuser']}).center_of_mass()
-        plotter.add_lines(np.array([D, D+sun_P[Sun_P_map_to_visualize]]), color='yellow', width=1)
-        plotter.add_lines(np.array([D, D + self.diffusers.normal]), color='black',width=1)
-        plotter.add_lines(np.array([D, D + self.diffusers.len_vector]), color = 'black', width = 1)
+        plotter.add_lines(np.array([D, D + self.diffusers.lens_vector]), color = 'green', width = 1)
         dr = 3*np.array([self.diffusers.x_sr[Sun_P_map_to_visualize, :],
                        self.diffusers.y_sr[Sun_P_map_to_visualize, :],
                        self.diffusers.z_sr[Sun_P_map_to_visualize, :],

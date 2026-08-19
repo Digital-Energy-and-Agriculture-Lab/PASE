@@ -16,27 +16,39 @@ class Diffuser:
     General class for diffusers, allowing transfer functions not to be specified.
     Must be completed (by inheritance) by a specific diffuser class such as Lenticular_diffuser.
 
-    Input
-        azimuth: Diffuser azimuth in the global reference frame in degrees.
-        elevation: Diffuser elevation in the global reference frame in degrees.
-
-    Attributes:
-        x_dr, y_dr, z_dr: Transmitted ray directions in the diffuser reference frame.
-        azimuth_diff, elevation_diff: Diffuser azimuth and elevation in the global reference frame in radians
-                                      using the trigonometric convention for defining angles.
-
     Diffuser reference frame (e_x, e_y, e_z):
         e_z: Normal of the diffuser plane
         e_y: unit vector in the direction of the diffuser lenses in the case of a lenticular diffuser
         e_x: Cross product between e_y and e_z
     """
 
-    def __init__(self, azimuth, elevation):
+    def __init__(self, az_compass_deg, tilt_deg):
+        """
+        Input:
+            az_compass_deg: Diffuser azimuth in degrees, using the compass convention (0 =
+                North, positive clockwise towards East). Placing the diffuser at this azimuth
+                uses the same rotate_z(-az_compass_deg) idiom as PVConfiguration3D (see
+                DOCUMENTATION/angle_conventions.md), so this value must stay consistent with
+                how the diffuser's own mesh is placed by
+                PVConfiguration3D.add_diffusers_to_central.
+            tilt_deg: Diffuser tilt in degrees (0 = flat/horizontal, 90 = vertical).
+
+        Attributes:
+            x_dr, y_dr, z_dr: Transmitted ray directions in the diffuser reference frame.
+            az_rotation_rad: Rotation, in radians, placing the diffuser at az_compass_deg. This
+                is a rotation angle, not an azimuth in either frame -- the same pattern as
+                zone_azimut in DOCUMENTATION/angle_conventions.md -- obtained by negating the
+                compass azimuth to match pyvista's counterclockwise rotate_z convention.
+            tilt_rad: Diffuser tilt in radians.
+        """
         self.x_dr = None
         self.z_dr = None
         self.y_dr = None
-        self.azimuth_diff = -np.radians(azimuth-90)
-        self.elevation_diff = np.radians(elevation)
+        # Rotating a scene by a compass azimuth is rotate_z(-A), not a frame relabelling;
+        # see "Rotating by an azimuth is a different operation" in
+        # DOCUMENTATION/angle_conventions.md.
+        self.az_rotation_rad = -np.radians(az_compass_deg)
+        self.tilt_rad = np.radians(tilt_deg)
 
     def generate_direction_diffuser_referential(self, vect_sun, angle_discr):
         """
@@ -62,9 +74,13 @@ class Diffuser:
         y_vector = np.array([0, 1, 0])
         z_vector = np.array([0, 0, 1])
         vect_0 = np.array([self.x_dr, self.y_dr, self.z_dr])
-        vect_1 = rotation_coordinate(vect_0, z_vector, self.azimuth_diff)
-        vect_2 = rotation_coordinate(vect_1, y_vector, self.elevation_diff)
-        self.x_sr, self.y_sr, self.z_sr = vect_2
+        if hasattr(self, 'azimuth_lens'):
+            vect_1 = rotation_coordinate(vect_0, z_vector, self.azimuth_lens)
+        else:
+            vect_1 = vect_0
+        vect_2 = rotation_coordinate(vect_1, y_vector, self.tilt_rad)
+        vect_3 = rotation_coordinate(vect_2, z_vector, self.az_rotation_rad)
+        self.x_sr, self.y_sr, self.z_sr = vect_3
 
     def get_light_direction(self, vect_sun, discr, sigma, angle_discr):
         """
@@ -138,17 +154,37 @@ class Diffuser:
 class LenticularDiffuser(Diffuser):
     """
     Specific class that inherits from the Diffuser class. Adds the transfer function specific to lenticular diffusers
-
-    Omega = Lens aperture angle in degrees
     """
 
-    def __init__(self, azimuth_diff, elevation_diff, omega=30, res=0.1, **kwargs):
-        super().__init__(azimuth_diff, elevation_diff)
+    def __init__(self, lens_direction_angle, az_compass_deg, tilt_deg, omega=30, res=0.1, **kwargs):
+        """
+        Input:
+            lens_direction_angle: Direction of the lens on the diffuser in degrees, in the
+            diffuser's own local frame (not a compass bearing). 0 \
+            is across the PV row (parallel to Y axis), 90 is along the PV row (parallel \
+            to X axis). See the Wiki for reference on axes directions.
+            az_compass_deg: Diffuser azimuth in degrees, using the compass convention. It's
+            usually the central azimuth (same convention as CentralAzimut; see Diffuser.__init__)
+            tilt_deg: Diffuser tilt in degrees. It's usually the PV panel tilt (TiltY)
+            Omega (float): Lens aperture angle in degrees
+            res (float): dimensionless multiplicative factor of the minimum root squared solid angle\
+            of the sky discretization. It produces the resolution at which the rays are projected
+
+        Attributes:
+            x_dr, y_dr, z_dr: Transmitted ray directions in the diffuser reference frame.
+            az_rotation_rad, tilt_rad: see Diffuser.__init__.
+            """
+        super().__init__(az_compass_deg, tilt_deg)
+        # lens_direction_angle is a local diffuser-frame angle, not a compass bearing, so it is
+        # not run through compass_to_trig. The minus sign rotates the pattern from the Y axis
+        # towards +X as the angle increases from 0 to 90, matching the docstring above.
+        self.azimuth_lens = -np.radians(lens_direction_angle)
         self.omega = np.deg2rad(omega)  # aperture angle
         l = np.array([[[0,1,0],[0,0,1]]]).T
-        l = rotation_coordinate(l,np.array([0,0,1]), self.azimuth_diff)
-        l = rotation_coordinate(l, np.array([0, 1, 0]), self.elevation_diff)
-        self.len_vector = l[:, 0,0]
+        l = rotation_coordinate(l, np.array([0, 0, 1]), self.azimuth_lens)
+        l = rotation_coordinate(l, np.array([0, 1, 0]), self.tilt_rad)
+        l = rotation_coordinate(l, np.array([0, 0, 1]), self.az_rotation_rad)
+        self.lens_vector = l[:, 0,0]  # the vector parallel to the axis of the lens (in the diffuser plane)
         self.normal =l[:,1,0]
         self.res=res
 
@@ -190,12 +226,12 @@ class LenticularDiffuser(Diffuser):
         Output:
             beta (nSolPos, Nvec): beta angle in radians
         """
-        plan_sunl = np.cross(vect_sun, self.len_vector)
-        norm_psl = np.linalg.norm(plan_sunl, axis=1)
-        ind = np.where(np.linalg.norm(plan_sunl, axis=1) == 0)
-        norm_psl[ind] = 1
-        cos_beta = np.clip(np.dot(plan_sunl, self.normal) / (norm_psl * np.linalg.norm(self.normal)), -1, 1)
-        beta = np.arccos(cos_beta)
+        plane_sun_lens = np.cross(vect_sun, self.lens_vector) # Plane (defined by its normal vector) build from the \
+                                                             # sun vector and the lens vector
+        beta = np.arctan2(
+            np.dot(np.cross(plane_sun_lens, self.normal), self.lens_vector),
+            np.dot(plane_sun_lens, self.normal)
+        )
         beta_t = np.arange(-self.omega+angle_res/2, self.omega + angle_res/2, angle_res)
         beta = beta[:, np.newaxis] + beta_t
         return beta
@@ -212,7 +248,7 @@ class LenticularDiffuser(Diffuser):
             gamma (nSolPos, Nvec): gamma angle in radians, Nvec is the number of segments
             discretizing the diffuser trace
         """
-        cos_gamma = np.clip(np.dot(vect_sun, self.len_vector), -1, 1)
+        cos_gamma = np.clip(np.dot(vect_sun, self.lens_vector), -1, 1)
         gamma = np.arccos(cos_gamma)
         gamma = gamma[:, np.newaxis]
         gamma = np.tile(gamma, (1, int((2 * self.omega + angle_res) // angle_res)))

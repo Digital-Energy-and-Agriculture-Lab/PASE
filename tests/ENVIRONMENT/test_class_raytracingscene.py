@@ -80,8 +80,8 @@ sky = ReinhartSky(MF=1).reinhart_patches
 suns = np.array([np.array([i, j, 1]).reshape((1,3))/np.sqrt(i**2+j**2+1)
                  for i in range(-1, 2, 1)
                  for j in range(-1, 2, 1)]).reshape((9, 3))
-Diffusers = LenticularDiffuser(0, 10, omega = 30)
-Diffusers2 = LenticularDiffuser(0, 0, omega = 30)
+Diffusers = LenticularDiffuser(90, 0, 10, omega = 30)
+Diffusers2 = LenticularDiffuser(90, 0, 0, omega = 30)
 
 
 def test_check_mask_Ray_casting_scene():
