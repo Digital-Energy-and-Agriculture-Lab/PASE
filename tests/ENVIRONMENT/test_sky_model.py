@@ -181,6 +181,17 @@ class TestCIEStandardSky:
             f"sky_type={sky_type}: sky_integral={sky_integral:.4f} is not positive"
         )
 
+    def test_sky_params_table_is_shared_between_instances(self, patches):
+        """Check the CIE coefficient table is not rebuilt on every instance."""
+        first = CIEStandardSky(patches, sun_az=145.0, sun_el=30.0, sky_type=12)
+        second = CIEStandardSky(patches, sun_az=270.0, sun_el=10.0, sky_type=3)
+        # Identity, not equality: a rebuilt dict holds equal values, so an ==
+        # comparison passes while costing exactly what this test exists to
+        # prevent. The coefficients themselves stay guarded by
+        # test_rel_radiance_non_negative and test_rel_radiance_not_divided_by_N,
+        # which run over all 15 sky types.
+        assert first._sky_params_by_type is second._sky_params_by_type
+
 
 # ---------------------------------------------------------------------------
 # Sky patch azimuth pairing (issue #300)

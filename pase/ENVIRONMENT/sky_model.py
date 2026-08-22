@@ -26,6 +26,7 @@ from pase.paths import static_data_path
 
 logger = logging.getLogger(__name__)
 _CIE_STANDARD_SKIES = None
+_CIE_SKY_PARAMS_BY_TYPE = None
 
 
 def subpatch_polygon(az_start_deg, az_stop_deg, el_start, el_end,
@@ -64,6 +65,23 @@ def _load_standard_skies() -> pd.DataFrame:
         _CIE_STANDARD_SKIES = pd.read_csv(
             static_data_path('CIE_standard_skies.csv'))
     return _CIE_STANDARD_SKIES
+
+def _load_sky_params_by_type() -> dict:
+    """
+    Build the {sky type: (a, b, c, d, e)} lookup and store it in a global
+    variable upon first use. The CIE General Sky coefficients are constants,
+    so the mapping is shared by every CIEStandardSky instance.
+    :return:
+        _CIE_SKY_PARAMS_BY_TYPE: dict mapping each sky type to its gradation
+        (a, b) and scattering (c, d, e) parameters
+    """
+    global _CIE_SKY_PARAMS_BY_TYPE
+    if _CIE_SKY_PARAMS_BY_TYPE is None:
+        _CIE_SKY_PARAMS_BY_TYPE = {
+            int(row['Type']): (row['a'], row['b'], row['c'], row['d'], row['e'])
+            for _, row in _load_standard_skies().iterrows()
+        }
+    return _CIE_SKY_PARAMS_BY_TYPE
 
 def fibonacci_half_sphere(samples=18):
     """
@@ -528,13 +546,8 @@ class CIEStandardSky:
         # Load the cached table (see top of this module)
         self.standard_skies = _load_standard_skies()
 
-        # cache sky params dict (all types) to avoid repeated DataFrame lookups
-        # do this once per instance (cheap)
-        types = self.standard_skies['Type'].values
-        self._sky_params_by_type = {
-            int(row['Type']): (row['a'], row['b'], row['c'], row['d'], row['e'])
-            for _, row in self.standard_skies.iterrows()
-        }
+        # Shared sky params dict (all types), built once (see top of this module)
+        self._sky_params_by_type = _load_sky_params_by_type()
         # store current params for quick use later
         self._current_sky_params = self._sky_params_by_type[self.sky_type]
 
