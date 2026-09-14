@@ -149,7 +149,8 @@ class PV_Production:
                                                           light['Ai'].to_numpy(),
                                                           light['f'].to_numpy(),
                                                           SF_f,
-                                                          tiltY)
+                                                          tiltY,
+                                                          side="front")
         
         if self.bifaciality == 1:
             
@@ -166,7 +167,8 @@ class PV_Production:
                                                              light['Ai'].to_numpy(),
                                                              light['f'].to_numpy(),
                                                              SF_r,
-                                                             tiltY)
+                                                             tiltY,
+                                                             side="rear")
             
         else:
             GTI_rear = np.zeros(len(sun_vect))
@@ -174,7 +176,7 @@ class PV_Production:
         return GTI_front, GTI_rear
             
     def compute_global_tilted_irradiance(self, Rb, GHI_ground, albedo, BHI,
-                                         DHI, Ai, f, SF, tiltY):
+                                         DHI, Ai, f, SF, tiltY, side):
         """
 
         Args:
@@ -194,7 +196,14 @@ class PV_Production:
         one = np.ones((len(Ai)))
         zero_vector = np.zeros((len(Ai)))  # TODO   remove ? this is unused
         
-        tilt = tiltY*np.pi/180
+        if side == "front":
+            tilt_side = tiltY
+        elif side == "rear":
+            tilt_side = tiltY - 180
+        else:
+            raise ValueError("side must be 'front' or 'rear'")
+
+        tilt = tilt_side*np.pi/180
         
         direct_component = (BHI + DHI*Ai)*Rb*(one - SF)
         
