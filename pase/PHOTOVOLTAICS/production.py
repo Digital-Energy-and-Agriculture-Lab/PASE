@@ -84,9 +84,16 @@ class PV_Production:
             SF_front = self.get_shading_factor_front(sv_CC, tiltY)
             SF_rear =self.get_shading_factor_rear(sv_CC, tiltY)
 
-            # Improved ground-transmitted GHI based on ground coverage ratio
-            ground_coverage_ratio = self.get_ground_coverage_ratio(tiltY)
-            GHI_reaching_ground = light[year]['GHI'].to_numpy() * (1.0 - ground_coverage_ratio)
+            # Ground-transmitted irradiance:
+            # direct component based on projected shadow length,
+            # diffuse component based on 1 - GCR
+            BHI = light[year]['BHI'].to_numpy()
+            DHI = light[year]['DHI'].to_numpy()
+
+            T_diffuse_ground = self.get_ground_diffuse_transmission(tiltY)
+            T_direct_ground = self.get_ground_direct_transmission(sv_CC, tiltY)
+
+            GHI_reaching_ground = (BHI * T_direct_ground + DHI * T_diffuse_ground)
 
             GTI_front, GTI_rear = self.get_GTI(sun_vect, app_zenith, 
                                                light[year], GHI_reaching_ground,
@@ -274,14 +281,49 @@ class PV_Production:
             tiltY = tiltY_limited*180/np.pi
             
         return tiltY, sun_vect_central_coord
-    def get_ground_coverage_ratio(self, tiltY_deg):
 
-        #Ground coverage ratio (fraction of ground covered by the projection of PV panels), computed at each instant.
-        tilt_rad = np.deg2rad(tiltY_deg)
-        # Projection effect along X (rotation around Y): projected length scales with cos(tilt)
-        coverage = self.GCR_x * np.cos(tilt_rad)
+    def get_ground_diffuse_transmission(self, tiltY_deg):
+        one = np.ones(len(tiltY_deg))
+        T_diff = one - self.GCR_x
+        return T_diff
 
-        return coverage
+    def get_ground_direct_transmission(self, sun_vect_cc, tiltY_deg):
+        tilt_rad = np.deg2rad(np.abs(tiltY_deg))
+
+        # Composantes solaire horizontale perpendiculaire aux rangées et verticale dans le repère de la centrale
+        x = np.abs(sun_vect_cc[:, 0])
+        z = sun_vect_cc[:, 2]
+
+        # Pas de rayonnement direct lorsque le soleil est sous l'horizon
+        T_dir = np.zeros_like(z, dtype=float)
+        above_horizon = z > 0
+
+        if np.any(above_horizon):
+            theta = np.arctan2(
+                z[above_horizon],
+                x[above_horizon]
+            )
+
+            L = self.block_dim_x
+            pitch = self.block_space_x
+            tan_theta = np.tan(theta)
+
+            shadow_length = (
+                    L * np.cos(tilt_rad[above_horizon])
+                    + np.divide(
+                L * np.sin(tilt_rad[above_horizon]),
+                tan_theta,
+                out=np.full_like(theta, np.inf),
+                where=np.abs(tan_theta) > 1e-9
+            )
+            )
+
+            shadow_fraction = shadow_length / pitch
+            shadow_fraction = np.clip(shadow_fraction, 0.0, 1.0)
+
+            T_dir[above_horizon] = 1.0 - shadow_fraction
+
+        return T_dir
     
     def get_sun_vect_in_central_coord(self, sun_vect):
         # Do not take into account the slope of the area and the slope of the 

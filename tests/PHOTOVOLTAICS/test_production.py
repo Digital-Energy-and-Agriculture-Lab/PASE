@@ -76,13 +76,11 @@ def test_get_several_years_of_electricity_production(default_PV_Central,
     default_Sun_positions,default_Light,default_WD=default_series_input
     # Using a PV central facing down (tilt=180) so direct component is null
     # Using no diffuse component in light data so diffuse component is null
-    default_WD.nyears_data['2020']['G(h)']=100
-    default_WD.nyears_data['2020']['Gb(n)'] = 100
-    default_WD.nyears_data['2020']['Gd(h)'] = 0
+    default_Light.data['2020']['BHI'] = 0
+    default_Light.data['2020']['DHI'] = 100
+    default_Light.data['2020']['GHI'] = 100
     # Using Ai=1 so diffuse component is null
-    default_Light.data['2020'].Ai=1
-    # Using constant GHI, which means constant GHI reaching ground
-    default_Light.data['2020'].GHI=100
+    default_Light.data['2020']['Ai'] = 1
     # front panel GTI is constant except for albedo
     default_PV_Central.get_several_years_of_electricity_production(
         default_Sun_positions,
