@@ -38,3 +38,9 @@ PanelThickness:
    Type: boolean
    Possibilities: [False, True]
    Definition: Boolean telling if the panels have a thickness in the simulation
+TemperatureCoefficientPower:
+  Value: -0.26
+  Type: float
+  Limit: [-1, 0]
+  Unit: percent/°C
+  Definition: Temperature coefficient of power

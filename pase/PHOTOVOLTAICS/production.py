@@ -17,6 +17,7 @@ class PV_Production:
     
     def __init__(self, inputs):
         
+        self.temp_coeff_power = inputs.get('TemperatureCoefficientPower', -0.26)
         self.bifaciality = inputs['Bifaciality']
         self.bifaciality_factor = inputs['Bifaciality_factor']
         # Compass azimuth of the central, in radians (0 = North, clockwise).
@@ -113,10 +114,11 @@ class PV_Production:
             
             self.production[year] = df 
 
-    def get_power_production(self, panels_T, GTI_front, GTI_rear, alpha=-0.4, T_std=25):
+    def get_power_production(self, panels_T, GTI_front, GTI_rear, T_std=25):
         
         one = np.ones((len(panels_T)))
-        
+        alpha = self.temp_coeff_power
+
         front_power_panel = (self.panel_efficiency*GTI_front
                                   *(1+((alpha/100)*(panels_T-T_std*one)))
                                   *self.panel_area) # W
