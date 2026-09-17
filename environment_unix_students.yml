@@ -1,0 +1,40 @@
+# PASE - teaching environment (macOS / Linux)
+#
+# Same dependency set as environment_unix.yml, but every version is pinned so
+# that all students end up with an identical, known-good stack. Versions are
+# those of the reference environment pase-2026-07 (verified 2026-09-17).
+# Build strings are deliberately left out so the same file works on linux-64,
+# osx-64 and osx-arm64.
+#
+#   conda env create -f environment_unix_students.yml
+#   conda activate pase-students
+#
+name: pase-students
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12.13
+  - pip=26.1.2
+  - numpy=2.4.6
+  - pandas=3.0.3
+  - scipy=1.18.0
+  - matplotlib-base=3.10.9
+  - seaborn=0.13.2
+  - windrose=1.10.0
+  - conda-forge::vtk=9.4.2
+  - conda-forge::vtk-base=9.4.2
+  - pyvista=0.48.4
+  - trimesh=4.12.2
+  - rtree=1.4.1
+  - pvlib=0.15.2
+  - pvlib-python=0.15.2
+  - pyyaml=6.0.3
+  - yaml=0.2.5
+  - xmltodict=1.0.4
+  - unidecode=1.4.0
+  - rasterio=1.4.3
+  - pyproj=3.7.2
+  - pytest=9.1.1
+  - pytest-cov=7.1.0
+  - pip:
+      - embreex==4.4.0
