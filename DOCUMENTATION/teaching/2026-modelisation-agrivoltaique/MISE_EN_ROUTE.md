@@ -86,13 +86,15 @@ Si l'une d'elles renvoie `command not found` ou `n'est pas reconnu`, voir la sec
 
 *En séance, 5 minutes de manipulation, puis 15 à 25 minutes en arrière-plan.*
 
-Placez-vous dans le dossier où vous voulez travailler (exemple : Documents/Cours/MA2/modelisation_agrivoltaique/), puis :
+Pour créer l'environnement virtuel à partir du fichier de configuration, placez-vous dans le dossier où vous voulez travailler (exemple : Documents/Cours/MA2/modelisation_agrivoltaique/), puis :
 
 ```bash
 git clone https://gitlab.uliege.be/deal-public/pase.git
 cd pase
+git checkout develop-students
 mamba env create -f environment_*_students.yml
 ```
+Note : selon votre système d'exploitation, choisissez soit `environment_windows_students.yml`, soit `environment_unix_students.yml` (OS Mac ou GNU/Linux).
 
 La dernière commande télécharge et installe l'ensemble des dépendances. **C'est long.**
 Laissez le terminal tourner et ne l'interrompez pas : on reprend le cours pendant ce temps.
