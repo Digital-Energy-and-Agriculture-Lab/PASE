@@ -21,10 +21,11 @@
 | **Miniforge** (ou Conda/Miniconda) | gestionnaire d'environnements conda/mamba | `conda --version` |
 | **git** | suivi de version | `git --version` |
 | **Compte GitLab ULiège** | accès au dépôt et aux merge requests | connexion à `gitlab.uliege.be` |
+| **Clé SSH** enregistrée sur GitLab | authentification pour `git push` | `ssh -T git@ssh.gitlab.uliege.be` |
 
-**Vous n'avez pas besoin de clé SSH ni de jeton d'accès GitLab aujourd'hui.** 
-Le dépôt PASE est public : le clone se fait en HTTPS, sans authentification. 
-La configuration des accès en écriture est prévue plus tard.
+**Le dépôt se clone en SSH, pas en HTTPS.**
+Le dépôt PASE est public: un clone HTTPS fonctionnerait pour la lecture, mais bloquerait
+au premier `git push`. Autant configurer l'accès SSH dès le départ (voir [Étape 2](#étape-2--cloner-le-dépôt-et-lancer-la-création-de-lenvironnement)).
 
 ---
 
@@ -84,17 +85,61 @@ Si l'une d'elles renvoie `command not found` ou `n'est pas reconnu`, voir la sec
 
 ## Étape 2 — Cloner le dépôt et lancer la création de l'environnement
 
-*En séance, 5 minutes de manipulation, puis 15 à 25 minutes en arrière-plan.*
+*En séance, 10 minutes de manipulation, puis 15 à 25 minutes en arrière-plan.*
+
+### 2.1 — Configurer l'authentification SSH
+
+Référence complète: <https://docs.gitlab.com/user/ssh/>. L'essentiel:
+
+1. **Générer une paire de clés** (sous Windows, dans Miniforge Prompt ou Git Bash):
+
+   ```bash
+   ssh-keygen -t ed25519 -C "prenom.nom@student.uliege.be"
+   ```
+
+   Acceptez l'emplacement par défaut (`~/.ssh/id_ed25519`). Une phrase de passe est
+   recommandée. Si une clé existe déjà à cet emplacement, ne l'écrasez pas: réutilisez-la.
+
+2. **Copier la clé publique** — le fichier qui se termine par `.pub`, jamais l'autre:
+
+   ```bash
+   cat ~/.ssh/id_ed25519.pub                 # macOS / Linux / Git Bash
+   type %USERPROFILE%\.ssh\id_ed25519.pub    # Miniforge Prompt (Windows)
+   ```
+
+3. **L'ajouter sur GitLab**: sur `gitlab.uliege.be`, avatar → *Edit profile* → *SSH Keys*
+   → *Add new key*, coller la clé, enregistrer.
+
+4. **Vérifier la connexion**:
+
+   ```bash
+   ssh -T git@ssh.gitlab.uliege.be
+   ```
+
+   À la première connexion, SSH demande de confirmer l'empreinte du serveur: répondez `yes`.
+   Vous devez obtenir `Welcome to GitLab, @votre_identifiant!`.
+
+> **Attention à l'hôte:** le serveur SSH est `ssh.gitlab.uliege.be`, et non `gitlab.uliege.be`.
+
+### 2.2 — Cloner le dépôt et créer l'environnement
 
 Pour créer l'environnement virtuel à partir du fichier de configuration, placez-vous dans le dossier où vous voulez travailler (exemple : Documents/Cours/MA2/modelisation_agrivoltaique/), puis :
 
 ```bash
-git clone https://gitlab.uliege.be/deal-public/pase.git
+git clone git@ssh.gitlab.uliege.be:deal-public/pase.git
 cd pase
 git checkout develop-students
 mamba env create -f environment_*_students.yml
 ```
 Note : selon votre système d'exploitation, choisissez soit `environment_windows_students.yml`, soit `environment_unix_students.yml` (OS Mac ou GNU/Linux).
+
+> **Vous avez déjà cloné en HTTPS?** Inutile de recloner. Après l'étape 2.1, basculez le
+> remote vers SSH depuis le dossier `pase`:
+>
+> ```bash
+> git remote set-url origin git@ssh.gitlab.uliege.be:deal-public/pase.git
+> git remote -v    # les deux lignes doivent afficher l'URL SSH
+> ```
 
 La dernière commande télécharge et installe l'ensemble des dépendances. **C'est long.**
 Laissez le terminal tourner et ne l'interrompez pas : on reprend le cours pendant ce temps.
@@ -160,10 +205,22 @@ mamba list --show-channel-urls
 Si vous voyez un mélange de `defaults` et `conda-forge`, la solution la plus rapide est de
 repartir d'un environnement neuf plutôt que d'essayer de le réparer.
 
-### `git clone` demande un identifiant
+### `git clone` ou `git push` demande un identifiant et un mot de passe
 
-Vous avez probablement utilisé une URL SSH (`git@gitlab.uliege.be:...`). Utilisez l'URL
-HTTPS donnée plus haut.
+Vous utilisez une URL HTTPS (`https://gitlab.uliege.be/...`). Passez en SSH:
+
+```bash
+git remote set-url origin git@ssh.gitlab.uliege.be:deal-public/pase.git
+```
+
+### `Permission denied (publickey)`
+
+- Vérifiez l'hôte: `ssh.gitlab.uliege.be`, et non `gitlab.uliege.be`.
+- Vérifiez que c'est bien la clé **publique** (`.pub`) qui a été ajoutée sur GitLab.
+- Lancez `ssh -Tv git@ssh.gitlab.uliege.be` pour voir quelles clés sont proposées au serveur,
+  et joignez cette sortie à votre message si le problème persiste.
+
+Voir aussi la section dépannage de la [documentation GitLab](https://docs.gitlab.com/user/ssh/).
 
 ### Windows : avertissements sur les fins de ligne (`LF will be replaced by CRLF`)
 
@@ -190,7 +247,8 @@ Contact : abouvry@uliege.be
 ## Pour le 25 septembre
 
 - [ ] `conda --version`, `git --version` répondent
-- [ ] Dépôt cloné
+- [ ] Clé SSH ajoutée sur GitLab, `ssh -T git@ssh.gitlab.uliege.be` répond `Welcome to GitLab`
+- [ ] Dépôt cloné, `git remote -v` affiche l'URL SSH
 - [ ] Environnement `pase-students` créé et activable
 - [ ] `pytest` se termine sans échec
 - [ ] Document **Évaluation et livrables** lu
