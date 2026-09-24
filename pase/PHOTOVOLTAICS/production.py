@@ -85,9 +85,16 @@ class PV_Production:
             SF_front = self.get_shading_factor_front(sv_CC, tiltY)
             SF_rear =self.get_shading_factor_rear(sv_CC, tiltY)
 
-            # Improved ground-transmitted GHI based on ground coverage ratio
-            ground_coverage_ratio = self.get_ground_coverage_ratio(tiltY)
-            GHI_reaching_ground = light[year]['GHI'].to_numpy() * (1.0 - ground_coverage_ratio)
+            # Ground-transmitted irradiance:
+            # direct component based on projected shadow length,
+            # diffuse component based on 1 - GCR
+            BHI = light[year]['BHI'].to_numpy()
+            DHI = light[year]['DHI'].to_numpy()
+
+            T_diffuse_ground = self.get_ground_diffuse_transmission(tiltY)
+            T_direct_ground = self.get_ground_direct_transmission(sv_CC, tiltY)
+
+            GHI_reaching_ground = (BHI * T_direct_ground + DHI * T_diffuse_ground)
 
             GTI_front, GTI_rear = self.get_GTI(sun_vect, app_zenith, 
                                                light[year], GHI_reaching_ground,
@@ -285,14 +292,107 @@ class PV_Production:
             tiltY = tiltY_limited*180/np.pi
             
         return tiltY, sun_vect_central_coord
-    def get_ground_coverage_ratio(self, tiltY_deg):
 
-        #Ground coverage ratio (fraction of ground covered by the projection of PV panels), computed at each instant.
-        tilt_rad = np.deg2rad(tiltY_deg)
-        # Projection effect along X (rotation around Y): projected length scales with cos(tilt)
-        coverage = self.GCR_x * np.cos(tilt_rad)
+    def get_ground_diffuse_transmission(self, tiltY_deg):
+        """
+        Compute the fraction of the diffuse irradiance transmitted between
+        panel rows, reaching ground level, from the ground coverage ratio
+        (GCR).
 
-        return coverage
+        Parameters
+        ----------
+        tiltY_deg: central tilt in degrees. Only its length is used: the
+            diffuse transmission is deliberately tilt independent (issue 308).
+
+        Returns
+        -------
+        T_diff: fraction of the diffuse irradiance transmitted between panel
+            rows, reaching ground level, constant over time.
+        """
+        one = np.ones(len(tiltY_deg))
+        T_diff = one - self.GCR_x
+        return T_diff
+
+    def get_ground_direct_transmission(self, sun_vect_cc, tiltY_deg):
+        """
+        Compute the fraction of the direct (beam) irradiance transmitted between
+        panel rows, reaching ground level, from the length of the shadow a row
+        projects on the ground.
+
+        Rows are assumed to be infinitely long sheds, so the problem is
+        two-dimensional: only the sun components lying in the vertical plane
+        perpendicular to the rows play a role. In that plane, a row of width L
+        tilted by an angle t casts on the ground a shadow of length
+
+            shadow_length = L*cos(t) + L*sin(t)/tan(theta)
+
+        where theta is the profile angle, i.e. the sun elevation seen in that
+        same vertical plane. The shaded fraction of the ground is that length
+        divided by the row pitch, capped at 1 since a row never shades more
+        than its own pitch.
+
+        Parameters
+        ----------
+        sun_vect_cc: unit sun vectors in the central coordinate system, shaped
+            (n, 3), as returned by get_sun_vect_in_central_coord. X points
+            across the rows, Y along the rows, Z to the zenith.
+        tiltY_deg: central tilt in degrees, in [-90, 90]. A single value
+            repeated over time for a fixed central, the tracking angle for a
+            tracker.
+
+        Returns
+        -------
+        T_dir: fraction of the direct irradiance transmitted between panel
+            rows, reaching ground level, in [0, 1]. Zero while the sun is below
+            the horizon.
+
+        Notes
+        -----
+        The tilt and the across-row sun component are both taken in absolute
+        value, which amounts to assuming the sun always stands on the side the
+        panels face. The shadow length is then exact for a tracker, which
+        follows the sun, and for vertical panels, where the cos(t) term
+        vanishes, but overestimated for a fixed tilted central while the sun
+        stands on the other side of the rows.
+        """
+        tilt_rad = np.deg2rad(np.abs(tiltY_deg))
+
+        # Sun component in the central coordinate system: horizontal and perpendicular to the rows
+        x = np.abs(sun_vect_cc[:, 0])
+
+        # Vertical Sun component in the central coordinate system
+        z = sun_vect_cc[:, 2]
+
+        # No direct irradiance while the sun is below the horizon
+        T_dir = np.zeros_like(z, dtype=float)
+        above_horizon = z > 0
+
+        if np.any(above_horizon):
+            theta = np.arctan2(
+                z[above_horizon],
+                x[above_horizon]
+            )
+
+            L = self.block_dim_x
+            pitch = self.block_space_x
+            tan_theta = np.tan(theta)
+
+            shadow_length = (
+                    L * np.cos(tilt_rad[above_horizon])
+                    + np.divide(
+                L * np.sin(tilt_rad[above_horizon]),
+                tan_theta,
+                out=np.full_like(theta, np.inf),
+                where=np.abs(tan_theta) > 1e-9
+            )
+            )
+
+            shadow_fraction = shadow_length / pitch
+            shadow_fraction = np.clip(shadow_fraction, 0.0, 1.0)
+
+            T_dir[above_horizon] = 1.0 - shadow_fraction
+
+        return T_dir
     
     def get_sun_vect_in_central_coord(self, sun_vect):
         # Do not take into account the slope of the area and the slope of the 
@@ -419,8 +519,8 @@ class PV_Production:
     def get_shading_factor_rear(self, sun_vect_cc, tiltY):
         
         tiltY = tiltY*np.pi/180            
-        teta_r_rear = np.arctan2(sun_vect_cc[:,2],sun_vect_cc[:,0])           # np.arctan2(y, x) gère les angles dans les bons gradiants 
-        teta_r_rear[sun_vect_cc[:,2]<0] = np.nan                                           # conversion degré-radian
+        teta_r_rear = np.arctan2(sun_vect_cc[:,2],sun_vect_cc[:,0])           # np.arctan2(y, x) manages angles in the correct quadrants 
+        teta_r_rear[sun_vect_cc[:,2]<0] = np.nan                                           # conversion degree-radian
         
         N = tiltY.shape[0]
         SF_rear = np.empty(N, dtype=float)
