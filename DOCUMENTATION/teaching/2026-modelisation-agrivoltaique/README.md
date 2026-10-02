@@ -27,6 +27,7 @@ Règle : les lignes sont classées par **ordre alphabétique du nom de famille**
 |---|---|---|---|
 | Bouvry Arnaud | Sujet Z | `[bouvry-Z.md](bouvry-Z.md)` | squelette |
 | Téo Soetens | Sujet B | `[soetens-t.md](soetens-t.md` | squelette |
+| Leroy Clément | Sujet A | `[clement_note_de_conception.md](clement_note_de_conception.md)` | squelette  |
 
 Valeurs admises pour la colonne *Statut* : `squelette`, `v1 en revue`, `v2 gelée`. Mettez-la à jour dans la MR qui fait changer le statut de votre note.
 
