@@ -17,23 +17,24 @@ Contenu attendu selon l'étape :
 
 | | |
 |---|---|
-| **Auteur·e** | <Prénom Nom> |
-| **Sujet** | <A / B / C> — <intitulé du sujet> |
+| **Auteur·e** | Clément Leroy |
+| **Sujet** | A — Électrification de la ferme |
 | **Statut** | squelette |
 | **Version** | 0 |
-| **MR** | <lien vers la MR courante> |
-| **Dernière mise à jour** | <AAAA-MM-JJ> |
+| **MR** | https://gitlab.uliege.be/deal-public/pase/-/merge_requests/181 |
+| **Dernière mise à jour** | 02-10-26 |
 
 ## 1. Contexte
 
-<!--
-Trois à cinq lignes. Qui pose la question, dans quelle situation, pourquoi PASE ne permet pas d'y répondre aujourd'hui.
-
-Au stade du squelette, cette section suffit : trois lignes, même imparfaites.
--->
+La ferme expérimentale de Gembloux envisage un démonstrateur agrivoltaïque et l'électrification du site et des opérations agricoles.
+PASE évalue le productible PV et mobilise des modèles de culture, mais le sujet A identifie nécéssite la modélisation des consommateurs.  
+Cette contribution reliera opérations agricoles, batteries, recharges et échanges réseau..
 
 ## 2. Besoin
 
+**La configuration agrivoltaïque qui maximise le productible photovoltaïque annuel est-elle aussi celle qui couvre le mieux la consommation électrique de la ferme ?**
+
+Le responsable de la ferme, les encadrants et les utilisateurs de PASE doivent pouvoir comparer les besoins et la production au moment où ils surviennent. Ils disposeront des puissances en kW, d'énergie en kWh et de SoC, ainsi que d'un bilan annuel et a des pas de temps interessant (pertinent). Ces résultats éclaireront le dimensionnement PV, batterie et recharge.
 <!--
 Cinq à dix lignes. Formulez la question à laquelle votre contribution doit permettre de répondre, du point de vue de l'utilisateur ou de l'utilisatrice de PASE, pas du point de vue du code.
 
@@ -42,6 +43,10 @@ Précisez qui utilise le résultat, sous quelle forme (grandeur, unité, résolu
 
 ## 3. Existant dans PASE
 
+PASE calcule actuellement la production électrique d'une configuration agrivoltaïque, mais inclut également des modèles de culture comme SIMPLE et STICS.
+
+
+Il manque actuellement la modélisations des consomateurs énergétiques, leur consomation, leurs évenements. Le `Modular_Framework` est déjà plus orienté modélisation énergétique, un des objectifs sera de pouvoir le fusionner à `PASE`.
 <!--
 Cinq à dix lignes. Ce que PASE fait déjà et qui est pertinent pour votre sujet : quelles chaînes de calcul, quels modules, quelles grandeurs sont disponibles et à quelle résolution. Ensuite, ce qui manque précisément.
 
@@ -51,6 +56,9 @@ Appuyez-vous sur la documentation de l'existant (L1) et faites-y des liens plut�
 ## 4. Périmètre
 
 ### 4.1 Périmètre retenu
+
+Contribution minimale proposée :
+
 
 <!--
 La contribution minimale, celle qui sera évaluée. Formulez-la sous forme d'exigences numérotées et vérifiables, par exemple :
