@@ -46,7 +46,7 @@ Précisez qui utilise le résultat, sous quelle forme (grandeur, unité, résolu
 PASE calcule actuellement la production électrique d'une configuration agrivoltaïque, mais inclut également des modèles de culture comme SIMPLE et STICS.
 
 
-Il manque actuellement la modélisations des consomateurs énergétiques, leur consomation, leurs évenements. Le `Modular_Framework` est déjà plus orienté modélisation énergétique, un des objectifs sera de pouvoir le fusionner à `PASE`.
+Il manque actuellement la modélisation des consomateurs énergétiques, leur consomation, leurs évenements. Le `Modular_Framework` est déjà plus orienté modélisation énergétique, un des objectifs sera de pouvoir le fusionner à `PASE`.
 <!--
 Cinq à dix lignes. Ce que PASE fait déjà et qui est pertinent pour votre sujet : quelles chaînes de calcul, quels modules, quelles grandeurs sont disponibles et à quelle résolution. Ensuite, ce qui manque précisément.
 
