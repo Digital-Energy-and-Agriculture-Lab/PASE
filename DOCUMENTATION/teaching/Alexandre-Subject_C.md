@@ -1,10 +1,4 @@
 <!--
-GABARIT DE NOTE DE CONCEPTION — ne modifiez pas ce fichier.
-
-Copiez-le sous le nom <nom>-<sujet>.md (par exemple dupont-B.md), dans ce même dossier.
-
-Les commentaires HTML comme celui-ci ne s'affichent pas dans GitLab. Supprimez-les au fur et à mesure que vous remplissez les sections.
-
 Longueur visée : deux pages une fois rendue, soit environ 900 à 1200 mots hors tableaux et références. Les longueurs indiquées dans chaque section sont des ordres de grandeur. Si une section déborde, c'est souvent le signe que le périmètre est trop large.
 
 Contenu attendu selon l'étape :
@@ -13,24 +7,18 @@ Contenu attendu selon l'étape :
 - v2 (après la revue du 16/10) : commentaires de revue traités, section 10 à jour, puis note gelée.
 -->
 
-# Note de conception — <maquettes végétales 3D>
+# Note de conception — maquettes végétales 3D
 
 | | |
 |---|---|
-| **Auteur·e** | < Alexandre Blauen > |
-| **Sujet** | < C > — < Intégration de maquettes végétales 3D générées par FSPM> |
+| **Auteur·e** |  Alexandre Blauen  |
+| **Sujet** |  C  —  Intégration de maquettes végétales 3D générées par FSPM |
 | **Statut** | squelette |
 | **Version** | 1 |
-| **MR** | <https://gitlab.uliege.be/deal-public/pase/-/merge_requests/182> |
-| **Dernière mise à jour** | < 2026-10-02 > |
+| **MR** | https://gitlab.uliege.be/deal-public/pase/-/merge_requests/182 |
+| **Dernière mise à jour** |  2026-10-02  |
 
 ## 1. Contexte
-
-<!--
-Trois à cinq lignes. Qui pose la question, dans quelle situation, pourquoi PASE ne permet pas d'y répondre aujourd'hui.
-
-Au stade du squelette, cette section suffit : trois lignes, même imparfaites.
--->
 
 Sous un dispositif agrivoltaïque, en vue de modéliser précisément l'impact du dispositif sur les plantes, il est nécessaire de connaître la lumière captée par chaque organe de celles-ci. La hauteur du couvert et l'ombrage entre organes font notamment varier cette lumière reçue. PASE ne l'estime aujourd'hui que sur une grille plane au sol, assimilée à la lumière reçue par l'ensemble du couvert, sans prendre en compte l'architecture 3D des plantes.
 
