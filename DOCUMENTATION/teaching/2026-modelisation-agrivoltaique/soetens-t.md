@@ -1,18 +1,3 @@
-<!--
-GABARIT DE NOTE DE CONCEPTION — ne modifiez pas ce fichier.
-
-Copiez-le sous le nom <nom>-<sujet>.md (par exemple dupont-B.md), dans ce même dossier.
-
-Les commentaires HTML comme celui-ci ne s'affichent pas dans GitLab. Supprimez-les au fur et à mesure que vous remplissez les sections.
-
-Longueur visée : deux pages une fois rendue, soit environ 900 à 1200 mots hors tableaux et références. Les longueurs indiquées dans chaque section sont des ordres de grandeur. Si une section déborde, c'est souvent le signe que le périmètre est trop large.
-
-Contenu attendu selon l'étape :
-- MR n° 1 (squelette) : en-tête rempli, tous les titres en place, section 1 en trois lignes maximum.
-- v1 (09/10) : toutes les sections remplies, MR proposée à la revue.
-- v2 (après la revue du 16/10) : commentaires de revue traités, section 10 à jour, puis note gelée.
--->
-
 # Note de conception — <titre court de la contribution>
 
 | | |
